@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+/hydra-bootstrap/wallet.json
+/hydra-bootstrap/remittance-config.json
+/hydra-bootstrap/transactions.jsonl
+/hydra-bootstrap/state.json
+.venv/
+*.egg-info/
+dist/
+build/

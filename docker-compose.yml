@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  hydra-arm3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: hydra-arm3
+    restart: unless-stopped
+    ports:
+      - "8402:8402"
+    environment:
+      # Wallet Configuration
+      - WALLET_ADDRESS=${WALLET_ADDRESS:-0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141}
+      - BASE_RPC_URL=${BASE_RPC_URL:-https://mainnet.base.org}
+      - USDC_CONTRACT_ADDRESS=${USDC_CONTRACT_ADDRESS:-0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913}
+      # App Settings
+      - DEBUG=${DEBUG:-false}
+      - HOST=0.0.0.0
+      - PORT=8402
+      # Cache Settings
+      - FEED_CACHE_TTL=${FEED_CACHE_TTL:-3600}
+      - PAYMENT_CACHE_TTL=${PAYMENT_CACHE_TTL:-86400}
+    env_file:
+      - .env
+    volumes:
+      # Optional: mount .env file for local development overrides
+      - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8402/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Optional: development mode with auto-reload
+  hydra-arm3-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: hydra-arm3-dev
+    restart: "no"
+    ports:
+      - "8402:8402"
+    environment:
+      - WALLET_ADDRESS=${WALLET_ADDRESS:-0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141}
+      - BASE_RPC_URL=${BASE_RPC_URL:-https://mainnet.base.org}
+      - USDC_CONTRACT_ADDRESS=${USDC_CONTRACT_ADDRESS:-0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913}
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8402
+      - FEED_CACHE_TTL=60
+      - PAYMENT_CACHE_TTL=300
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "pip install -r requirements.txt && 
+             uvicorn src.main:app --host 0.0.0.0 --port 8402 --reload --log-level debug"
+    profiles:
+      - dev
