@@ -37,6 +37,7 @@ from fastapi.responses import JSONResponse
 
 import config.settings as settings
 from src.api.routes import router
+from src.api.prediction_routes import prediction_router
 from src.api.system_routes import system_router
 from src.runtime.automaton import HydraAutomaton
 from src.runtime.constitution import ConstitutionCheck
@@ -205,6 +206,13 @@ app = FastAPI(
                 "then include the tx hash in X-Payment-Proof header."
             ),
         },
+        {
+            "name": "Prediction Markets",
+            "description": (
+                "Prediction market integration — regulatory signals for Polymarket, Kalshi, "
+                "and oracle data feeds. Free discovery endpoints + paid trading signals."
+            ),
+        },
     ],
 )
 
@@ -258,6 +266,9 @@ app.add_middleware(X402PaymentMiddleware)
 
 # Public + paid regulatory endpoints
 app.include_router(router)
+
+# Prediction market integration endpoints
+app.include_router(prediction_router)
 
 # System management endpoints (prefix="" — routes already carry /system/ prefix)
 app.include_router(system_router, prefix="")
