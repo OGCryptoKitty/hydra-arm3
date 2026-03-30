@@ -39,6 +39,7 @@ import config.settings as settings
 from src.api.routes import router
 from src.api.prediction_routes import prediction_router
 from src.api.system_routes import system_router
+from src.api.fed_routes import fed_router
 from src.runtime.automaton import HydraAutomaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -213,6 +214,13 @@ app = FastAPI(
                 "and oracle data feeds. Free discovery endpoints + paid trading signals."
             ),
         },
+        {
+            "name": "Fed Decision Package",
+            "description": (
+                "Federal Reserve / FOMC intelligence — the highest-value recurring regulatory data category. "
+                "$80M+ volume per FOMC meeting. Pre-decision signals, real-time classification, resolution verdicts."
+            ),
+        },
     ],
 )
 
@@ -269,6 +277,9 @@ app.include_router(router)
 
 # Prediction market integration endpoints
 app.include_router(prediction_router)
+
+# Fed Decision Package endpoints
+app.include_router(fed_router)
 
 # System management endpoints (prefix="" — routes already carry /system/ prefix)
 app.include_router(system_router, prefix="")
