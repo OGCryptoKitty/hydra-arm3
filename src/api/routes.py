@@ -46,6 +46,20 @@ router = APIRouter()
 # Free Endpoints
 # ─────────────────────────────────────────────────────────────
 
+
+@router.get("/", tags=["System"])
+async def root():
+    """Root endpoint — landing page."""
+    return {
+        "name": "HYDRA Arm 3 — Regulatory Intelligence SaaS",
+        "status": "operational",
+        "docs": "/docs",
+        "pricing": "/pricing",
+        "payment_protocol": "x402",
+        "payment_token": "USDC on Base (Chain 8453)",
+        "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
+    }
+
 @router.get("/health", response_model=HealthResponse, tags=["System"])
 async def health_check() -> HealthResponse:
     """
