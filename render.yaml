@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hydra-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: WALLET_ADDRESS
+        value: 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141
+      - key: BASE_RPC_URL
+        value: https://mainnet.base.org
+      - key: PYTHON_VERSION
+        value: 3.11.0
