@@ -258,12 +258,15 @@ class RemittanceManager:
         Calculate how much USDC can be remitted from the current balance.
 
         Returns:
-            balance - $500 operating reserve, rounded down to 6 decimal places.
+            balance - $500 operating reserve - estimated gas cost,
+            rounded down to 6 decimal places.
             Returns Decimal("0") if balance < MIN_REMITTANCE_BALANCE ($600).
         """
         if balance_usdc < self.MIN_REMITTANCE_BALANCE:
             return Decimal("0")
-        remittable = balance_usdc - self.OPERATING_RESERVE
+        # Reserve buffer for gas costs (conservative estimate for Base L2)
+        gas_reserve = Decimal("0.50")  # $0.50 covers even high-gas scenarios on Base
+        remittable = balance_usdc - self.OPERATING_RESERVE - gas_reserve
         return max(Decimal("0"), remittable.quantize(Decimal("0.000001"), rounding=ROUND_DOWN))
 
     def should_remit(self, balance_usdc: Decimal) -> bool:

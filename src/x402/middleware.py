@@ -94,7 +94,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
     })
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        path = request.url.path
+        path = request.url.path.rstrip("/") if request.url.path != "/" else "/"
 
         # ── Free endpoints pass through immediately ──────────
         if path in self._FREE_PATHS or not path.startswith("/v1/"):

@@ -13,7 +13,8 @@ class TestRemittanceCalculations:
         rm.OPERATING_RESERVE = Decimal("100")
         rm.MIN_REMITTANCE_BALANCE = Decimal("150")
         amount = rm.calculate_remittable_amount(Decimal("1000"))
-        assert amount == Decimal("900.000000")
+        # $1000 - $100 reserve - $0.50 gas reserve = $899.50
+        assert amount == Decimal("899.500000")
 
     def test_calculate_remittable_below_minimum(self) -> None:
         rm = RemittanceManager.__new__(RemittanceManager)

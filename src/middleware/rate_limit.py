@@ -40,11 +40,20 @@ _WINDOW_SECONDS = 60.0
 
 
 def _classify_path(path: str) -> str:
-    """Classify request path into rate limit tier."""
+    """Classify request path into rate limit tier based on actual pricing."""
     if path.startswith("/system/"):
         return "system"
     if path.startswith("/v1/"):
-        return "paid"
+        # Check if this path is actually a paid endpoint
+        from config.settings import PRICING
+        if path in PRICING:
+            return "paid"
+        # Check prefix matches (e.g., /v1/markets/signal/MARKET_ID)
+        for pricing_path in PRICING:
+            if path.startswith(pricing_path + "/"):
+                return "paid"
+        # /v1/ path not in PRICING dict = free discovery endpoint
+        return "free"
     return "free"
 
 
