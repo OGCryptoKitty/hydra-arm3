@@ -224,10 +224,10 @@ async def list_markets(request: Request) -> JSONResponse:
         "markets": market_list,
         "data_freshness": "5-minute cache",
         "upgrade": {
-            "signals": "POST /v1/markets/signals ($0.25 USDC) — full HYDRA regulatory analysis for all markets",
-            "single": "POST /v1/markets/signal/{market_id} ($0.10 USDC) — deep signal for one market",
-            "events": "POST /v1/markets/events ($0.15 USDC) — live regulatory events matched to markets",
-            "alpha": "POST /v1/markets/alpha ($2.00 USDC) — full alpha report: edge, entry, risk/reward",
+            "signals": "POST /v1/markets/signals ($15.00 USDC) — AI-powered regulatory analysis for all markets",
+            "single": "POST /v1/markets/signal/{market_id} ($5.00 USDC) — deep AI signal for one market",
+            "events": "POST /v1/markets/events ($1.50 USDC) — live regulatory events matched to markets",
+            "alpha": "POST /v1/markets/alpha ($30.00 USDC) — full alpha report: edge, entry, risk/reward",
         },
         "generated_at": datetime.now(timezone.utc).isoformat(),
     })
@@ -324,37 +324,44 @@ async def discover_markets(request: Request) -> JSONResponse:
         },
         "markets": discovery_payload,
         "paid_endpoints": {
-            "GET /v1/markets/feed — $0.05 USDC": (
+            "GET /v1/markets/feed — $0.25 USDC": (
                 "Latest 10 regulatory events from last hour, pre-matched to prediction markets. "
                 "Designed for bot polling every 5 minutes. Cheapest signal entry point."
             ),
-            "POST /v1/markets/signals — $0.25 USDC": (
-                "Full HYDRA regulatory signals for all matching markets. "
+            "POST /v1/markets/signals — $15.00 USDC": (
+                "Full HYDRA AI-powered regulatory signals for all matching markets. "
                 "Includes: regulatory context, historical precedent, key dates, risk factors, "
                 "signal direction (bullish_yes/bullish_no/neutral), confidence score 0-100. "
                 "Core product for pre-trade intelligence."
             ),
-            "POST /v1/markets/signal/{market_id} — $0.10 USDC": (
-                "Deep single-market signal. Full analysis for one specific Polymarket condition_id "
-                "or Kalshi ticker. Ideal when you already know which market to trade."
+            "POST /v1/markets/signal/{market_id} — $5.00 USDC": (
+                "Deep single-market signal with Claude AI analysis. Full analysis for one specific "
+                "Polymarket condition_id or Kalshi ticker. Ideal when you already know which market to trade."
             ),
-            "POST /v1/markets/events — $0.15 USDC": (
+            "POST /v1/markets/events — $1.50 USDC": (
                 "Real-time regulatory event feed matched to active markets. "
                 "Each event tagged with which markets it affects and projected impact direction."
             ),
-            "POST /v1/markets/resolution — $1.00 USDC": (
-                "Oracle-grade resolution assessment. HYDRA evaluates how a market should resolve "
+            "POST /v1/markets/resolution — $50.00 USDC": (
+                "AI-powered oracle-grade resolution assessment. HYDRA evaluates how a market should resolve "
                 "based on regulatory data. For UMA asserters: determines whether to post a $750 bond. "
                 "Premium pricing reflects the bond risk mitigation value."
             ),
-            "POST /v1/oracle/uma — $0.50 USDC": (
+            "POST /v1/oracle/uma — $10.00 USDC": (
                 "UMA Optimistic Oracle formatted assertion data with complete evidence chain. "
                 "Ready to submit to OptimisticOracleV2 on Polygon."
             ),
-            "POST /v1/oracle/chainlink — $0.50 USDC": (
+            "POST /v1/oracle/chainlink — $10.00 USDC": (
                 "Chainlink external adapter formatted response for on-chain delivery. "
                 "Compatible with Chainlink Any API and Direct Request model."
             ),
+        },
+        "subscription_discounts": {
+            "info": "Save 10-30% on every call with a subscription tier. API keys via /system/subscriptions/tiers",
+            "standard": "$99/mo — 500 calls, 10% discount",
+            "professional": "$499/mo — 5,000 calls, 20% discount",
+            "enterprise": "Custom — unlimited calls, 30% discount",
+            "how_to_use": "Include X-API-Key header with your subscription key to get discounted pricing",
         },
         "payment": {
             "protocol": "x402",
@@ -434,10 +441,10 @@ async def get_prediction_pricing(request: Request) -> JSONResponse:
 @prediction_router.post(
     "/v1/markets/signals",
     tags=["Prediction Markets — Paid"],
-    summary="Regulatory Trading Signals — All Markets ($0.25 USDC)",
+    summary="Regulatory Trading Signals — All Markets ($15.00 USDC)",
     description=(
-        "**$0.25 USDC via x402.** "
-        "Full HYDRA regulatory intelligence signals for all matching prediction markets. "
+        "**$15.00 USDC via x402.** "
+        "Full HYDRA AI-powered regulatory intelligence signals for all matching prediction markets. "
         "This is the core product for prediction market trading bots — call this before "
         "every significant trade to get HYDRA's regulatory analysis, confidence score, "
         "and directional signal. "
@@ -454,7 +461,7 @@ async def get_market_signals(
     """
     Returns regulatory intelligence signals for all active prediction markets matching filters.
 
-    Payment: $0.25 USDC via X-Payment-Proof header.
+    Payment: $15.00 USDC via X-Payment-Proof header.
     """
     logger.info(
         "Prediction signals request: platform=%s category=%s",
@@ -509,9 +516,9 @@ async def get_market_signals(
 @prediction_router.post(
     "/v1/markets/signal/{market_id}",
     tags=["Prediction Markets — Paid"],
-    summary="Deep Signal — Single Market ($0.10 USDC)",
+    summary="Deep Signal — Single Market ($5.00 USDC)",
     description=(
-        "**$0.10 USDC via x402.** "
+        "**$5.00 USDC via x402.** "
         "Deep regulatory intelligence signal for one specific market. "
         "Pass a Polymarket condition_id (0x...) or Kalshi ticker (e.g., KXFED-25APR30). "
         "Returns full analysis: regulatory context, historical precedent, upcoming key dates, "
@@ -529,7 +536,7 @@ async def get_single_market_signal(
     Deep signal for a single specific prediction market.
 
     market_id: Polymarket condition_id OR Kalshi ticker
-    Payment: $0.10 USDC via X-Payment-Proof header.
+    Payment: $5.00 USDC via X-Payment-Proof header.
     """
     logger.info("Single market signal: market_id=%s", market_id)
 
@@ -668,9 +675,9 @@ async def get_single_market_signal(
 @prediction_router.post(
     "/v1/markets/events",
     tags=["Prediction Markets — Paid"],
-    summary="Regulatory Event Feed — Matched to Markets ($0.15 USDC)",
+    summary="Regulatory Event Feed — Matched to Markets ($1.50 USDC)",
     description=(
-        "**$0.15 USDC via x402.** "
+        "**$1.50 USDC via x402.** "
         "Real-time regulatory event feed from SEC EDGAR, CFTC, FinCEN, OCC, CFPB — "
         "each event pre-matched to which active prediction markets it affects. "
         "Ideal for bots that want to react to breaking regulatory events. "
@@ -686,7 +693,7 @@ async def get_regulatory_events(
     """
     Regulatory event feed with prediction market matching.
 
-    Payment: $0.15 USDC via X-Payment-Proof header.
+    Payment: $1.50 USDC via X-Payment-Proof header.
     """
     logger.info(
         "Regulatory events request: since_hours=%d agencies=%s",
@@ -758,9 +765,9 @@ async def get_regulatory_events(
 @prediction_router.post(
     "/v1/markets/resolution",
     tags=["Prediction Markets — Paid"],
-    summary="Oracle Resolution Assessment ($1.00 USDC)",
+    summary="Oracle Resolution Assessment ($50.00 USDC)",
     description=(
-        "**$1.00 USDC via x402.** "
+        "**$50.00 USDC via x402.** "
         "HYDRA's assessment of how a prediction market should resolve based on regulatory data. "
         "This is the premium product for oracle asserters and market creators. "
         "Before posting a $750 USDC.e bond to UMA's Optimistic Oracle, verify with HYDRA ($1.00). "
@@ -778,7 +785,7 @@ async def get_market_resolution(
     Assess how a prediction market should resolve.
 
     Premium endpoint — designed for UMA bond asserters and Kalshi market creators.
-    Payment: $1.00 USDC via X-Payment-Proof header.
+    Payment: $50.00 USDC via X-Payment-Proof header.
     """
     logger.info(
         "Resolution assessment: question_length=%d market_id=%s",
@@ -854,9 +861,9 @@ async def get_market_resolution(
 @prediction_router.post(
     "/v1/oracle/uma",
     tags=["Prediction Markets — Oracle"],
-    summary="UMA Optimistic Oracle Formatted Data ($0.50 USDC)",
+    summary="UMA Optimistic Oracle Formatted Data ($10.00 USDC)",
     description=(
-        "**$0.50 USDC via x402.** "
+        "**$10.00 USDC via x402.** "
         "Formats HYDRA regulatory data as UMA Optimistic Oracle (OOv2) assertion data. "
         "Provides the complete ancillary data, proposed price, bond currency details, "
         "and evidence chain required to submit a resolution proposal to UMA. "
@@ -872,7 +879,7 @@ async def get_uma_oracle_data(
     """
     Format HYDRA data for UMA Optimistic Oracle submission.
 
-    Payment: $0.50 USDC via X-Payment-Proof header.
+    Payment: $10.00 USDC via X-Payment-Proof header.
     """
     logger.info("UMA oracle request: claim_length=%d", len(request_body.assertion_claim))
 
@@ -928,9 +935,9 @@ async def get_uma_oracle_data(
 @prediction_router.post(
     "/v1/oracle/chainlink",
     tags=["Prediction Markets — Oracle"],
-    summary="Chainlink External Adapter Response ($0.50 USDC)",
+    summary="Chainlink External Adapter Response ($10.00 USDC)",
     description=(
-        "**$0.50 USDC via x402.** "
+        "**$10.00 USDC via x402.** "
         "Returns HYDRA regulatory data in Chainlink External Adapter format. "
         "Chainlink node operators configure HYDRA as an external adapter; "
         "this endpoint handles their data requests and returns on-chain-ready responses. "
@@ -947,7 +954,7 @@ async def get_chainlink_oracle_data(
     Chainlink External Adapter formatted response.
 
     Designed for Chainlink node operators who have configured HYDRA as an external adapter.
-    Payment: $0.50 USDC via X-Payment-Proof header.
+    Payment: $10.00 USDC via X-Payment-Proof header.
     """
     logger.info("Chainlink oracle request: data_request=%s", request_body.data_request[:80])
 
@@ -1032,9 +1039,9 @@ async def get_chainlink_oracle_data(
 @prediction_router.get(
     "/v1/markets/feed",
     tags=["Prediction Markets — Paid"],
-    summary="Micro Event Feed — High Frequency Bot Polling ($0.05 USDC)",
+    summary="Micro Event Feed — High Frequency Bot Polling ($0.25 USDC)",
     description=(
-        "**$0.05 USDC via x402.** "
+        "**$0.25 USDC via x402.** "
         "Minimal payload, fast response — designed to be called every few minutes by trading bots. "
         "Returns the latest 10 regulatory events from the last hour, "
         "each pre-matched to active prediction markets. "
@@ -1051,7 +1058,7 @@ async def get_micro_feed(request: Request) -> JSONResponse:
     Returns only: event titles, agencies, timestamps, urgency levels,
     and which markets they affect. Payload is intentionally minimal.
 
-    Payment: $0.05 USDC via X-Payment-Proof header.
+    Payment: $0.25 USDC via X-Payment-Proof header.
     """
     logger.info("Micro feed request")
 
@@ -1118,7 +1125,7 @@ async def get_micro_feed(request: Request) -> JSONResponse:
 
 
 # ─────────────────────────────────────────────────────────────
-# PAID: Alpha Report — Premium ($2.00 USDC)
+# PAID: Alpha Report — Premium ($30.00 USDC)
 # ─────────────────────────────────────────────────────────────
 
 
@@ -1144,9 +1151,9 @@ class AlphaRequest(BaseModel):
 @prediction_router.post(
     "/v1/markets/alpha",
     tags=["Prediction Markets — Paid"],
-    summary="Full Alpha Report — Premium ($2.00 USDC)",
+    summary="Full Alpha Report — Premium ($30.00 USDC)",
     description=(
-        "**$2.00 USDC via x402.** "
+        "**$30.00 USDC via x402.** "
         "The highest-value prediction market endpoint. "
         "Given a specific market, position (yes/no), and position size, "
         "HYDRA returns a complete alpha report: "
@@ -1165,7 +1172,7 @@ async def get_market_alpha(
     """
     Full alpha report for a specific prediction market position.
 
-    Payment: $2.00 USDC via X-Payment-Proof header.
+    Payment: $30.00 USDC via X-Payment-Proof header.
     """
     logger.info(
         "Alpha report request: market_id=%s position=%s size_usdc=%.2f",

@@ -115,6 +115,36 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
 
         required_amount = pricing["amount_base_units"]
 
+        # ── Apply subscription discount if X-API-Key provided ──
+        api_key_header = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
+        discount_pct = 0
+        if api_key_header:
+            try:
+                from src.runtime.subscriptions import SubscriptionManager
+                sm = getattr(request.app.state, "subscription_manager", None)
+                if sm is None:
+                    sm = SubscriptionManager()
+                api_key_record = sm.validate_key(api_key_header)
+                if api_key_record is not None:
+                    from src.runtime.subscriptions import TIER_CONFIG
+                    discount_pct = TIER_CONFIG[api_key_record.tier]["price_discount_pct"]
+                    if discount_pct > 0:
+                        required_amount = int(required_amount * (100 - discount_pct) / 100)
+                        logger.info(
+                            "Subscription discount applied: tier=%s discount=%d%% new_amount=%d",
+                            api_key_record.tier.value, discount_pct, required_amount,
+                        )
+                    # Record usage
+                    if not sm.record_usage(api_key_header):
+                        return self._error_response(
+                            429,
+                            "Monthly API call quota exceeded for your subscription tier. "
+                            "Upgrade at /system/subscriptions/tiers or wait for monthly reset.",
+                            path, pricing,
+                        )
+            except Exception as sub_exc:
+                logger.warning("Subscription check failed (proceeding at full price): %s", sub_exc)
+
         # ── Check for payment proof header ───────────────────
         proof_header = request.headers.get("X-Payment-Proof") or request.headers.get("x-payment-proof")
 
