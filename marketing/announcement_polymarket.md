@@ -1,94 +1,121 @@
-# Polymarket Bot Community Announcement
+# Polymarket Community Announcements
 
-## Post to: Polymarket Discord, Telegram, Twitter/X
+## Post to: Polymarket Discord, Telegram, Twitter/X, Reddit r/Polymarket
 
----
-
-### Short Version (Twitter/X)
-
-Launched HYDRA — regulatory intelligence API for prediction market bots.
-
-Real-time SEC/CFTC/FinCEN feeds + AI-powered signal scoring for Polymarket & Kalshi markets.
-
-Pay-per-use in USDC on Base. $0.25/call for feeds, $5-50 for deep signals.
-
-Free discovery: GET /v1/markets/discovery
-
-API docs: [YOUR_URL]/docs
+Replace `HYDRA_URL` with your Render deployment URL before posting.
 
 ---
 
-### Medium Version (Discord/Telegram)
+### Twitter/X (Short — reply to "Polymarket bot" threads)
 
-**HYDRA Arm 3 — Regulatory Intelligence API for Trading Bots**
+Built an API that tells your Polymarket bot WHY markets are moving — not just that they moved.
 
-If you're running a bot on Polymarket or Kalshi, you know regulatory events move markets. SEC enforcement actions, FOMC decisions, CFTC rulings — these drive 6-7 figure volume swings.
+HYDRA monitors SEC, CFTC, Fed, FinCEN in real-time. AI (Claude) scores each regulatory event against your specific markets.
 
-HYDRA gives your bot an edge:
+Pay-per-call in USDC on Base. No API key needed to start.
 
-**What it does:**
-- Real-time regulatory feeds from SEC, CFTC, FinCEN, OCC, CFPB
-- AI-powered signal scoring (Claude) matched to your specific markets
-- Pre-FOMC signals with rate probability modeling
-- Resolution verdicts formatted for UMA oracle assertions
+Free: HYDRA_URL/v1/markets/discovery
+Docs: HYDRA_URL/docs
+
+Subscription tiers: 10-30% off every call.
+
+---
+
+### Discord / Telegram (Medium)
+
+**HYDRA — AI Regulatory Intelligence API for Prediction Market Bots**
+
+If you're botting Polymarket, you already know: regulatory events are the #1 price mover. SEC enforcement, FOMC rate decisions, crypto legislation votes — these drive 6-7 figure volume swings.
+
+The problem: by the time you see the price move, you're late. HYDRA lets your bot see the *cause* before the market fully prices it in.
+
+**What your bot gets:**
+- Real-time regulatory feeds from SEC, CFTC, FinCEN, OCC, CFPB, Fed
+- AI-powered signal scoring (Claude) — not keyword matching, actual analysis
+- Pre-FOMC signals with rate probability modeling + live NY Fed data
+- Resolution verdicts formatted for UMA Optimistic Oracle assertions ($750 bond decisions)
 - Live Polymarket + Kalshi market data with regulatory overlay
 
-**How it works:**
-- x402 protocol — pay per API call in USDC on Base
-- No API key needed for free endpoints
-- $0.25/call for feeds, $5-50 for deep analysis
-- Instant payment verification on-chain
+**Pricing (USDC on Base, x402 protocol):**
+| Endpoint | Price | Use Case |
+|----------|-------|----------|
+| Market feed | $0.25 | Poll every 5 min — catch breaking events |
+| Event feed | $1.50 | Classified events matched to your markets |
+| Single signal | $5.00 | Deep AI analysis on one specific market |
+| Bulk signals | $15.00 | Full signal suite across all markets |
+| Alpha report | $30.00 | Edge calc, Kelly sizing, entry price |
+| Resolution | $50.00 | Oracle-grade verdict — worth it vs $750 UMA bond |
 
-**Free endpoints (try now):**
+**Save 10-30% with subscriptions:**
+- Standard: $99/mo — 500 calls, 10% off every call
+- Professional: $499/mo — 5,000 calls, 20% off
+- Enterprise: Custom — unlimited, 30% off
+
+**Try free right now:**
 ```
-GET /v1/markets/discovery   — see what markets HYDRA covers
-GET /v1/markets/pricing     — check all endpoint costs
-GET /docs                   — full API documentation
+GET HYDRA_URL/v1/markets/discovery   — see all 200+ markets HYDRA covers
+GET HYDRA_URL/v1/markets/pricing     — check every endpoint cost
+GET HYDRA_URL/docs                   — full interactive API docs
 ```
 
-**Bot integration example:**
+**Bot integration (Python):**
 ```python
 import httpx
 
-# 1. Discover markets (free)
-markets = httpx.get("https://YOUR_URL/v1/markets/discovery").json()
+# 1. Discover what HYDRA covers (free)
+markets = httpx.get("HYDRA_URL/v1/markets/discovery").json()
 
-# 2. Get signal (paid — send USDC first, then include tx hash)
-signal = httpx.post(
-    "https://YOUR_URL/v1/markets/signal/MARKET_ID",
+# 2. Poll for breaking regulatory events ($0.25/call)
+feed = httpx.get(
+    "HYDRA_URL/v1/markets/feed",
     headers={"X-Payment-Proof": "0x_YOUR_TX_HASH"}
 ).json()
 
-# 3. Trade based on signal
-if signal["signal_direction"] == "BULLISH_YES":
-    # execute trade...
+# 3. Deep signal on a specific market ($5.00)
+signal = httpx.post(
+    "HYDRA_URL/v1/markets/signal/YOUR_CONDITION_ID",
+    headers={"X-Payment-Proof": "0x_YOUR_TX_HASH"}
+).json()
+
+# 4. Trade based on AI analysis
+if signal["signal_direction"] == "BULLISH_YES" and signal["confidence"] > 70:
+    # your bot executes the trade
+    pass
 ```
 
-API: [YOUR_URL]/docs
+Docs: HYDRA_URL/docs
 
 ---
 
-### Long Version (Blog Post / Medium)
+### Reddit r/Polymarket (Long)
 
-**Why Your Prediction Market Bot Needs Regulatory Intelligence**
+**Title: Built a regulatory intelligence API for Polymarket bots — AI-powered signal scoring, pay-per-call in USDC**
 
-The #1 driver of prediction market outcomes is regulatory action. When the SEC announces enforcement against a crypto exchange, every related market moves. When the Fed holds rates, KXFED series resolve. When Congress votes on stablecoin legislation, dozens of Polymarket contracts swing.
+I built HYDRA because my Polymarket bot kept getting front-run on regulatory events. SEC announces enforcement against an exchange, and by the time my bot detects the price move, the edge is gone.
 
-Most bots react to price movement. HYDRA lets your bot react to the *cause* of price movement — the regulatory event itself — before the market fully prices it in.
+**The core insight:** prediction market prices are *driven* by regulatory events. If your bot can see the SEC press release, FOMC decision, or congressional vote *before* the market fully prices it in, you have an edge.
 
-**The Edge:**
-- SEC press releases hit HYDRA's feed within minutes of publication
-- HYDRA's AI (Claude) scores each event's impact on specific prediction markets
-- Your bot gets a directional signal before the crowd
-- On FOMC days, HYDRA classifies the decision and generates oracle-ready verdicts
+**What HYDRA does:**
+- Monitors SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Fed RSS feeds in real-time
+- Uses Claude (Anthropic's AI) to analyze each event's impact on specific Polymarket/Kalshi markets
+- Generates directional signals: BULLISH_YES, BULLISH_NO, NEUTRAL with confidence scores
+- For UMA asserters: generates oracle-grade resolution verdicts so you know whether to post a $750 bond
 
-**The Economics:**
-- $0.25/call for the event feed (poll every 5 minutes = $72/month)
-- $5/call for deep market signals (10/day = $1,500/month)
-- If your bot trades $10K/month on regulatory markets, a 1% edge = $100/month profit
-- HYDRA's intelligence costs less than the edge it provides
+**How payment works:**
+- x402 protocol — you send USDC on Base to the API's wallet, then include the tx hash in your request header
+- No signup, no API key needed for free endpoints
+- Pay per call: $0.25 for event feeds, $5-50 for deep AI analysis
+- Subscription discounts: $99/mo for 10% off, $499/mo for 20% off every call
 
-**Try it free:**
-- Discovery endpoint: `GET /v1/markets/discovery`
-- Pricing: `GET /v1/markets/pricing`
-- Full docs: `/docs`
+**Economics for a typical bot:**
+- Poll the feed every 5 min: $0.25 × 288/day = $72/month
+- Deep signal before every major trade (10/day): $5 × 10 × 30 = $1,500/month
+- Professional sub ($499/mo) saves 20%: $1,500 × 0.8 = $1,200 + $499 = $1,699 vs $1,572 in savings
+- If you trade $50K/month on regulatory markets, a 1% edge = $500/month profit from feed alone
+
+**Try it:**
+- Discovery: `GET HYDRA_URL/v1/markets/discovery`
+- Pricing: `GET HYDRA_URL/v1/markets/pricing`
+- Full docs: `HYDRA_URL/docs`
+
+Open to feedback. The AI analysis is the differentiator — it's not just keyword matching, it's Claude analyzing the actual regulatory text and scoring probability shifts.
