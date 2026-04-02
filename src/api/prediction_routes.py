@@ -12,24 +12,24 @@ Architecture:
 All paid endpoints are protected by X402PaymentMiddleware (payment verified
 before these handlers are called). USDC on Base, chain ID 8453.
 
-Pricing:
+Pricing (live prices — see config/settings.py PRICING dict):
   GET  /v1/markets/discovery  → FREE (discovery hook)
   GET  /v1/markets/pricing    → FREE
-  POST /v1/markets/signals    → $0.25 USDC  (bulk signals — core bot product)
-  POST /v1/markets/signal/{market_id} → $0.10 USDC (single market deep dive)
-  POST /v1/markets/events     → $0.15 USDC  (event feed matched to markets)
-  POST /v1/markets/resolution → $1.00 USDC  (oracle-grade resolution assessment)
-  POST /v1/oracle/uma         → $0.50 USDC  (UMA OO formatted assertion data)
-  POST /v1/oracle/chainlink   → $0.50 USDC  (Chainlink external adapter format)
-  GET  /v1/markets/feed       → $0.05 USDC  (high-frequency micro feed for bots)
+  POST /v1/markets/signals    → $15.00 USDC (bulk signals — core bot product)
+  POST /v1/markets/signal/{market_id} → $5.00 USDC (single market deep dive)
+  POST /v1/markets/events     → $1.50 USDC  (event feed matched to markets)
+  POST /v1/markets/resolution → $50.00 USDC (oracle-grade resolution assessment)
+  POST /v1/oracle/uma         → $10.00 USDC (UMA OO formatted assertion data)
+  POST /v1/oracle/chainlink   → $10.00 USDC (Chainlink external adapter format)
+  GET  /v1/markets/feed       → $0.25 USDC  (high-frequency micro feed for bots)
 
 Bot Usage Pattern:
   1. GET /v1/markets/discovery  (free — see what HYDRA covers)
   2. GET /v1/markets/pricing    (free — check costs)
-  3. GET /v1/markets/feed       every 5 min ($0.05 each — find actionable events)
-  4. POST /v1/markets/signals   before every major trade ($0.25 — full signal suite)
-  5. POST /v1/markets/signal/{id} for deep dives on specific markets ($0.10 each)
-  6. POST /v1/markets/resolution before bonding on UMA ($1.00 — worth it to avoid losing $750)
+  3. GET /v1/markets/feed       every 5 min ($0.25 each — find actionable events)
+  4. POST /v1/markets/signals   before every major trade ($15.00 — full signal suite)
+  5. POST /v1/markets/signal/{id} for deep dives on specific markets ($5.00 each)
+  6. POST /v1/markets/resolution before bonding on UMA ($50.00 — worth it to avoid losing $750)
 
 Market Coverage:
   Polymarket: ~110 active regulation markets, ~103 CFTC markets
@@ -416,11 +416,11 @@ async def get_prediction_pricing(request: Request) -> JSONResponse:
         "chain_id": settings.CHAIN_ID,
         "bot_usage_guide": {
             "step_1": "GET /v1/markets/discovery (free) — discover all markets HYDRA covers",
-            "step_2": "GET /v1/markets/pricing (free) — check costs",
-            "step_3_polling": "GET /v1/markets/feed every 5 min ($0.05) — catch breaking regulatory events",
-            "step_4_pre_trade": "POST /v1/markets/signals ($0.25) — full intelligence before major trades",
-            "step_5_deep_dive": "POST /v1/markets/signal/{id} ($0.10) — drill into specific market",
-            "step_6_oracle": "POST /v1/markets/resolution ($1.00) before UMA bond posting — asymmetric value vs $750 bond",
+            "step_2": "GET /v1/markets/pricing (free) — check current costs",
+            "step_3_polling": "GET /v1/markets/feed every 5 min ($0.25) — catch breaking regulatory events",
+            "step_4_pre_trade": "POST /v1/markets/signals ($15.00) — full intelligence before major trades",
+            "step_5_deep_dive": "POST /v1/markets/signal/{id} ($5.00) — drill into specific market",
+            "step_6_oracle": "POST /v1/markets/resolution ($50.00) before UMA bond posting — asymmetric value vs $750 bond",
         },
         "generated_at": datetime.now(timezone.utc).isoformat(),
     })

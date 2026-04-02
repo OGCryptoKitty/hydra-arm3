@@ -734,3 +734,100 @@ async def system_shutdown(
             "timestamp":         datetime.now(timezone.utc).isoformat(),
         },
     )
+
+
+# ─────────────────────────────────────────────────────────────
+# Subscription Management Endpoints
+# ─────────────────────────────────────────────────────────────
+
+
+class CreateKeyRequest(BaseModel):
+    tier: str = "free"
+    label: str = ""
+
+
+@system_router.get(
+    "/subscriptions/tiers",
+    summary="View subscription tier pricing",
+    description="Returns all available subscription tiers, pricing, and call limits.",
+)
+async def get_subscription_tiers(
+    request: Request,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """List all subscription tiers and pricing."""
+    from src.runtime.subscriptions import SubscriptionManager
+    sm = SubscriptionManager()
+    return JSONResponse(content={
+        "tiers": sm.get_tier_pricing(),
+        "note": "Enterprise tier requires custom pricing agreement.",
+    })
+
+
+@system_router.post(
+    "/subscriptions/keys",
+    summary="Create a new API key",
+    description=(
+        "Generate a new API key for a subscription tier. "
+        "The raw key is returned ONCE — store it securely. "
+        "Keys are stored as SHA-256 hashes only."
+    ),
+)
+async def create_api_key(
+    request: Request,
+    body: CreateKeyRequest,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Create a new API key. Returns the raw key only once."""
+    from src.runtime.subscriptions import SubscriptionManager, SubscriptionTier
+    sm = SubscriptionManager()
+    try:
+        tier = SubscriptionTier(body.tier)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid tier '{body.tier}'. Valid: free, standard, professional, enterprise",
+        )
+    raw_key = sm.create_key(tier=tier, label=body.label)
+    return JSONResponse(
+        status_code=201,
+        content={
+            "api_key": raw_key,
+            "tier": tier.value,
+            "label": body.label,
+            "warning": "Store this key securely — it will NOT be shown again.",
+        },
+    )
+
+
+@system_router.get(
+    "/subscriptions/keys",
+    summary="List all API keys",
+    description="Returns all registered API keys (hashed, never raw) with usage stats.",
+)
+async def list_api_keys(
+    request: Request,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """List all API keys with usage statistics."""
+    from src.runtime.subscriptions import SubscriptionManager
+    sm = SubscriptionManager()
+    return JSONResponse(content={"keys": sm.list_keys()})
+
+
+@system_router.post(
+    "/subscriptions/keys/deactivate",
+    summary="Deactivate an API key",
+    description="Deactivate an API key by its hash prefix (first 12 characters from the keys list).",
+)
+async def deactivate_api_key(
+    request: Request,
+    key_hash_prefix: str = Query(..., min_length=8, description="First 12 chars of key hash"),
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Deactivate an API key."""
+    from src.runtime.subscriptions import SubscriptionManager
+    sm = SubscriptionManager()
+    if sm.deactivate_key(key_hash_prefix):
+        return JSONResponse(content={"status": "deactivated", "key_hash_prefix": key_hash_prefix})
+    raise HTTPException(status_code=404, detail=f"No active key found with prefix '{key_hash_prefix}'.")
