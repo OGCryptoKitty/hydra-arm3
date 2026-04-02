@@ -11,11 +11,20 @@ Law 3  COMPLIANCE  — Maintain required regulatory filings (calendar deadlines)
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("hydra.constitution")
+
+
+@dataclass
+class ValidationResult:
+    """Result of a constitutional validation check."""
+    approved: bool
+    reason: str = ""
+    checks: Dict[str, Any] = field(default_factory=dict)
 
 # ---------------------------------------------------------------------------
 # Known sanctioned addresses
@@ -237,12 +246,20 @@ class ConstitutionCheck:
     # Master validator
     # ------------------------------------------------------------------
 
+    def check_legality(self, address: str, amount: float) -> Tuple[bool, str]:
+        """
+        Check legality of a transfer to the given address.
+
+        Wrapper around check_ofac for compatibility with set_receiving_wallet().
+        """
+        return self.check_ofac(address)
+
     def validate_remittance(
         self,
         to_address: str,
-        amount: Decimal,
-        current_balance: Decimal,
-    ) -> Tuple[bool, List[str]]:
+        amount: float | Decimal,
+        current_balance: float | Decimal,
+    ) -> ValidationResult:
         """
         Run all three constitutional checks before an outbound remittance.
 
@@ -250,29 +267,36 @@ class ConstitutionCheck:
         ----------
         to_address : str
             Destination Ethereum address.
-        amount : Decimal
+        amount : float | Decimal
             USDC amount to remit.
-        current_balance : Decimal
+        current_balance : float | Decimal
             Current wallet balance in USDC.
 
         Returns
         -------
-        (approved, reasons) : (bool, list[str])
-            approved=True only when ALL laws pass.
-            reasons contains pass/fail messages from each law.
+        ValidationResult
+            .approved=True only when ALL laws pass.
+            .reason contains combined pass/fail messages.
+            .checks contains individual check results.
         """
+        amount = Decimal(str(amount))
+        current_balance = Decimal(str(current_balance))
+
         reasons: List[str] = []
+        checks: Dict[str, Any] = {}
         approved = True
 
         # Law 1 — LEGALITY
         ofac_ok, ofac_reason = self.check_ofac(to_address)
         reasons.append(f"[Law 1 LEGALITY] {ofac_reason}")
+        checks["legality"] = {"passed": ofac_ok, "detail": ofac_reason}
         if not ofac_ok:
             approved = False
 
         # Law 2 — SOLVENCY
         solvency_ok, solvency_reason = self.check_solvency(current_balance, amount)
         reasons.append(f"[Law 2 SOLVENCY] {solvency_reason}")
+        checks["solvency"] = {"passed": solvency_ok, "detail": solvency_reason}
         if not solvency_ok:
             approved = False
 
@@ -290,6 +314,9 @@ class ConstitutionCheck:
                 logger.warning(msg)
         else:
             reasons.append("[Law 3 COMPLIANCE] No urgent filing deadlines.")
+        checks["compliance"] = {"passed": True, "urgent_items": len(urgent_items)}
+
+        combined_reason = "; ".join(reasons)
 
         if approved:
             logger.info(
@@ -300,7 +327,11 @@ class ConstitutionCheck:
                 "Remittance BLOCKED: %s USDC → %s | Reasons: %s",
                 amount,
                 to_address,
-                "; ".join(reasons),
+                combined_reason,
             )
 
-        return approved, reasons
+        return ValidationResult(
+            approved=approved,
+            reason=combined_reason,
+            checks=checks,
+        )

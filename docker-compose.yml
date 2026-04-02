@@ -11,10 +11,13 @@ services:
     ports:
       - "8402:8402"
     environment:
-      # Wallet Configuration
-      - WALLET_ADDRESS=${WALLET_ADDRESS:-0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141}
+      # Wallet Configuration (set via .env file or override here)
+      - WALLET_ADDRESS=${WALLET_ADDRESS}
+      - WALLET_PRIVATE_KEY=${WALLET_PRIVATE_KEY}
       - BASE_RPC_URL=${BASE_RPC_URL:-https://mainnet.base.org}
       - USDC_CONTRACT_ADDRESS=${USDC_CONTRACT_ADDRESS:-0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913}
+      # State directory
+      - HYDRA_STATE_DIR=/app/data
       # App Settings
       - DEBUG=${DEBUG:-false}
       - HOST=0.0.0.0
@@ -25,8 +28,8 @@ services:
     env_file:
       - .env
     volumes:
-      # Optional: mount .env file for local development overrides
-      - ./.env:/app/.env:ro
+      # Persistent data volume for state, transactions, remittance config
+      - hydra-data:/app/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8402/health')"]
       interval: 30s
@@ -50,9 +53,11 @@ services:
     ports:
       - "8402:8402"
     environment:
-      - WALLET_ADDRESS=${WALLET_ADDRESS:-0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141}
+      - WALLET_ADDRESS=${WALLET_ADDRESS}
+      - WALLET_PRIVATE_KEY=${WALLET_PRIVATE_KEY}
       - BASE_RPC_URL=${BASE_RPC_URL:-https://mainnet.base.org}
       - USDC_CONTRACT_ADDRESS=${USDC_CONTRACT_ADDRESS:-0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913}
+      - HYDRA_STATE_DIR=/app/data
       - DEBUG=true
       - HOST=0.0.0.0
       - PORT=8402
@@ -60,9 +65,14 @@ services:
       - PAYMENT_CACHE_TTL=300
     volumes:
       - .:/app
+      - hydra-data:/app/data
     working_dir: /app
     command: >
-      sh -c "pip install -r requirements.txt && 
+      sh -c "pip install -r requirements.txt &&
              uvicorn src.main:app --host 0.0.0.0 --port 8402 --reload --log-level debug"
     profiles:
       - dev
+
+volumes:
+  hydra-data:
+    driver: local

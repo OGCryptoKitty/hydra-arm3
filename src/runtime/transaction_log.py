@@ -34,18 +34,39 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from decimal import Decimal
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("hydra.transaction_log")
 
 # ---------------------------------------------------------------------------
+# Enums
+# ---------------------------------------------------------------------------
+
+
+class TxDirection(str, Enum):
+    """Transaction direction."""
+    INBOUND = "inbound"
+    OUTBOUND = "outbound"
+
+
+class TxCategory(str, Enum):
+    """Transaction category."""
+    X402_REVENUE = "x402-revenue"
+    MEMBER_DISTRIBUTION = "member-distribution"
+    OPERATING_EXPENSE = "operating-expense"
+
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-LOG_FILE: Path = Path("/home/user/workspace/hydra-bootstrap/transactions.jsonl")
+STATE_DIR: Path = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data")))
+LOG_FILE: Path = STATE_DIR / "transactions.jsonl"
 
 INBOUND_CATEGORIES = frozenset({"x402-revenue"})
 OUTBOUND_CATEGORIES = frozenset({"member-distribution", "operating-expense"})
@@ -274,6 +295,100 @@ class TransactionLog:
     # ------------------------------------------------------------------
     # Tax summary
     # ------------------------------------------------------------------
+
+    def get_entries(
+        self,
+        direction: Optional[TxDirection] = None,
+        category: Optional[TxCategory] = None,
+        year: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Alias for get_transactions with enum-typed filters.
+        Used by system_routes.
+        """
+        dir_str = direction.value if direction else None
+        cat_str = category.value if category else None
+        return self.get_transactions(year=year, direction=dir_str, category=cat_str)
+
+    def get_full_summary(self) -> Dict[str, Any]:
+        """
+        Compute an all-time financial summary.
+
+        Returns
+        -------
+        dict
+            Keys: total_revenue_usdc, total_distributions_usdc,
+            total_expenses_usdc, transaction_count
+        """
+        records = self.get_transactions()
+        total_revenue = Decimal("0")
+        total_distributions = Decimal("0")
+        total_expenses = Decimal("0")
+
+        for record in records:
+            try:
+                amount = Decimal(record["amount_usdc"])
+            except (KeyError, ValueError):
+                continue
+
+            direction = record.get("direction")
+            category = record.get("category")
+
+            if direction == "inbound":
+                total_revenue += amount
+            elif direction == "outbound":
+                if category == "member-distribution":
+                    total_distributions += amount
+                elif category == "operating-expense":
+                    total_expenses += amount
+
+        return {
+            "total_revenue_usdc": str(total_revenue.quantize(Decimal("0.01"))),
+            "total_distributions_usdc": str(total_distributions.quantize(Decimal("0.01"))),
+            "total_expenses_usdc": str(total_expenses.quantize(Decimal("0.01"))),
+            "transaction_count": len(records),
+        }
+
+    def log(
+        self,
+        tx_hash: str,
+        direction: TxDirection,
+        category: TxCategory,
+        amount_usdc: float,
+        counterparty_address: str,
+        note: str = "",
+        timestamp: Optional[str] = None,
+    ) -> None:
+        """
+        Generic log method used by RemittanceManager.
+
+        Parameters
+        ----------
+        tx_hash : str
+        direction : TxDirection
+        category : TxCategory
+        amount_usdc : float
+        counterparty_address : str
+        note : str
+        timestamp : str, optional
+        """
+        record = {
+            "timestamp": timestamp or datetime.now(timezone.utc).isoformat(),
+            "tx_hash": tx_hash,
+            "direction": direction.value if isinstance(direction, TxDirection) else direction,
+            "category": category.value if isinstance(category, TxCategory) else category,
+            "amount_usdc": str(Decimal(str(amount_usdc)).quantize(Decimal("0.000001"))),
+            "counterparty_address": counterparty_address,
+            "note": note,
+        }
+        self._append(record)
+        logger.info(
+            "LOG %s | %s USDC | category=%s | tx=%s",
+            record["direction"].upper(),
+            record["amount_usdc"],
+            record["category"],
+            tx_hash,
+        )
 
     def generate_tax_summary(self, year: int) -> Dict[str, Any]:
         """

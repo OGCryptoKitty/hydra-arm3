@@ -161,3 +161,10 @@ ERC20_TRANSFER_TOPIC: str = (
 PAYMENT_NETWORK: str = "base"
 PAYMENT_TOKEN: str = "USDC"
 CHAIN_ID: int = 8453  # Base mainnet
+
+# ─────────────────────────────────────────────────────────────
+# State / Data Directory
+# ─────────────────────────────────────────────────────────────
+
+# Directory for persistent state (state.json, transactions.jsonl, remittance-config.json)
+HYDRA_STATE_DIR: str = os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data"))

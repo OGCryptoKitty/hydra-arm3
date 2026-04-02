@@ -40,7 +40,7 @@ from src.api.routes import router
 from src.api.prediction_routes import prediction_router
 from src.api.system_routes import system_router
 from src.api.fed_routes import fed_router
-from src.runtime.automaton import HydraAutomaton
+from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
 from src.runtime.remittance import RemittanceManager
@@ -127,25 +127,35 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.remittance_manager = None
 
     # ── Start HydraAutomaton heartbeat as background asyncio task ──
-    try:
-        # Load private key from wallet.json for automaton
-        import json, os
-        pk = os.getenv("WALLET_PRIVATE_KEY", "")
-        if not pk:
+    import json, os
+    pk = os.getenv("WALLET_PRIVATE_KEY", "")
+    if not pk:
+        # Try loading from wallet.json in state directory
+        from src.runtime.remittance import BOOTSTRAP_DIR
+        wallet_json = BOOTSTRAP_DIR / "wallet.json"
+        if wallet_json.exists():
             try:
-                wf = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "hydra-bootstrap", "wallet.json")
-                with open(wf) as f:
+                with open(wallet_json) as f:
                     pk = json.load(f).get("private_key", "")
             except Exception:
-                pk = "0x" + "00" * 32  # placeholder — automaton runs in read-only mode
+                pass
+        if not pk:
+            logger.warning(
+                "WALLET_PRIVATE_KEY not set. Automaton runs in READ-ONLY mode. "
+                "Remittance transfers will not be possible until a private key is configured."
+            )
+
+    try:
         automaton = HydraAutomaton(
             wallet_address=settings.WALLET_ADDRESS,
             private_key=pk,
             base_rpc_url=settings.BASE_RPC_URL,
         )
+        set_automaton(automaton)
         heartbeat_task = asyncio.create_task(
             automaton.run(), name="hydra-automaton-heartbeat"
         )
+        automaton._task = heartbeat_task
         app.state.automaton = automaton
         logger.info("HydraAutomaton heartbeat task started.")
     except Exception as exc:

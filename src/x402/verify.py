@@ -13,21 +13,15 @@ Flow:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
-
 from web3 import Web3
-from web3.exceptions import TransactionNotFound
+from web3.exceptions import ContractLogicError, TransactionNotFound
 
 from config.settings import (
     BASE_RPC_URL,
-    ERC20_TRANSFER_TOPIC,
     USDC_CONTRACT_ADDRESS,
     WALLET_ADDRESS,
 )
 from src.models.schemas import PaymentVerificationResult
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -182,12 +176,19 @@ def verify_usdc_payment(
             ),
         )
 
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unexpected error during payment verification: %s", exc)
+    except (ConnectionError, TimeoutError, ContractLogicError, ValueError, OSError) as exc:
+        logger.exception("Payment verification error: %s", exc)
         return PaymentVerificationResult(
             verified=False,
             tx_hash=tx_hash,
             error=f"Verification error: {exc}",
+        )
+    except Exception as exc:
+        logger.exception("Unexpected error during payment verification: %s", exc)
+        return PaymentVerificationResult(
+            verified=False,
+            tx_hash=tx_hash,
+            error="Verification failed due to an unexpected error. Please retry.",
         )
 
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from decimal import Decimal
 from enum import IntEnum
 from pathlib import Path
@@ -22,7 +23,8 @@ logger = logging.getLogger("hydra.lifecycle")
 # Constants
 # ---------------------------------------------------------------------------
 
-STATE_FILE: Path = Path("/home/user/workspace/hydra-bootstrap/state.json")
+STATE_DIR: Path = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data")))
+STATE_FILE: Path = STATE_DIR / "state.json"
 
 FORMATION_THRESHOLD: Decimal = Decimal("3000")  # VIABLE tier minimum for forming
 
@@ -217,7 +219,7 @@ class LifecycleManager:
         """
         balance_str = f"${balance:.2f}" if balance is not None else "unknown"
 
-        instructions: Dict[Phase, str] = {
+        instructions: dict[Phase, str] = {
             Phase.BOOT: (
                 "Server running. Awaiting first x402 revenue. "
                 "Share API endpoint to generate traffic."
@@ -239,10 +241,61 @@ class LifecycleManager:
                 "Awaiting receiving wallet address for profit remittance."
             ),
             Phase.REMITTING: (
-                "Fully operational. Auto-remitting at $5,000 USDC increments "
-                "to receiving wallet. Next remittance triggers when balance "
-                "exceeds $5,000."
+                "Fully operational. Remittance prompts at every $1,000 USDC "
+                "to your configured receiving wallet. Execute transfer via "
+                "POST /system/remittance/execute when prompted."
             ),
         }
 
         return instructions.get(self._phase, "Unknown phase.")
+
+    # ------------------------------------------------------------------
+    # State introspection
+    # ------------------------------------------------------------------
+
+    def get_state(self) -> Dict[str, Any]:
+        """Return a serialisable snapshot of the lifecycle state."""
+        data: Dict[str, Any] = {
+            "phase": self._phase.value,
+            "phase_label": self._phase.name,
+            "entity_formed": self._phase >= Phase.OPERATING,
+            "ein_obtained": self._phase >= Phase.OPERATING,
+            "csp_engaged": self._phase >= Phase.OPERATING,
+        }
+        # Load timestamps from state.json if available
+        if STATE_FILE.exists():
+            try:
+                with STATE_FILE.open("r", encoding="utf-8") as fh:
+                    persisted = json.load(fh)
+                data["formation_started_at"] = persisted.get("formation_started_at")
+                data["operating_since"] = persisted.get("operating_since")
+                data["remitting_since"] = persisted.get("remitting_since")
+            except (json.JSONDecodeError, OSError):
+                pass
+        return data
+
+    def on_receiving_wallet_set(self) -> Optional[Phase]:
+        """Advance to REMITTING when a receiving wallet is configured (if in OPERATING)."""
+        if self._phase == Phase.OPERATING:
+            self.advance_phase(Phase.REMITTING)
+            return Phase.REMITTING
+        return None
+
+    def add_note(self, note: str) -> None:
+        """Persist an informational note to state.json."""
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        data: Dict[str, Any] = {}
+        if STATE_FILE.exists():
+            try:
+                with STATE_FILE.open("r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+            except (json.JSONDecodeError, OSError):
+                pass
+        notes = data.get("notes", [])
+        notes.append(note)
+        data["notes"] = notes[-50:]  # Keep last 50 notes
+        try:
+            with STATE_FILE.open("w", encoding="utf-8") as fh:
+                json.dump(data, fh, indent=2)
+        except OSError as exc:
+            logger.error("Failed to add note: %s", exc)

@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ─────────────────────────────────────────────────────────────
 
-BOOTSTRAP_DIR = Path(os.getenv("HYDRA_BOOTSTRAP_DIR", "/home/user/workspace/hydra-bootstrap"))
+BOOTSTRAP_DIR = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data")))
 WALLET_JSON       = BOOTSTRAP_DIR / "wallet.json"
 REMITTANCE_CONFIG = BOOTSTRAP_DIR / "remittance-config.json"
 REMITTANCE_LOG    = BOOTSTRAP_DIR / "remittance-log.jsonl"
@@ -65,14 +65,15 @@ USDC_CONTRACT_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 USDC_DECIMALS         = 6
 
 # Module-level constants (also used by system_routes for display)
-REMITTANCE_TRIGGER_USD    = 5000   # Balance threshold to trigger remittance (USDC, 6 decimals)
-OPERATING_RESERVE_USD     = 500    # Always retain at least this much
-MINIMUM_REMIT_BALANCE_USD = 600    # Minimum balance before any remittance
+# Remittance triggers at $1,000 USDC — owner is prompted to execute transfer
+REMITTANCE_TRIGGER_USD    = 1000   # Balance threshold to trigger remittance prompt
+OPERATING_RESERVE_USD     = 100    # Always retain at least this much
+MINIMUM_REMIT_BALANCE_USD = 150    # Minimum balance before any remittance
 
 # Decimal versions for precision arithmetic
-REMITTANCE_THRESHOLD  = Decimal("5000")
-OPERATING_RESERVE     = Decimal("500")
-MIN_REMITTANCE_BALANCE = Decimal("600")
+REMITTANCE_THRESHOLD  = Decimal("1000")
+OPERATING_RESERVE     = Decimal("100")
+MIN_REMITTANCE_BALANCE = Decimal("150")
 
 # ERC-20 ABI — minimal: balanceOf + transfer
 ERC20_ABI = [
@@ -150,9 +151,9 @@ class RemittanceManager:
     """
 
     # ── Class-level constants ─────────────────────────────────
-    REMITTANCE_THRESHOLD  = Decimal("5000")   # USDC — trigger threshold
-    OPERATING_RESERVE     = Decimal("500")    # USDC — always retained
-    MIN_REMITTANCE_BALANCE = Decimal("600")   # USDC — minimum to execute any remittance
+    REMITTANCE_THRESHOLD  = Decimal("1000")   # USDC — trigger threshold ($1,000)
+    OPERATING_RESERVE     = Decimal("100")    # USDC — always retained
+    MIN_REMITTANCE_BALANCE = Decimal("150")   # USDC — minimum to execute any remittance
 
     def __init__(
         self,
@@ -283,34 +284,33 @@ class RemittanceManager:
 
         return (
             "═══════════════════════════════════════════════════════════\n"
-            " HYDRA REMITTANCE — WALLET ADDRESS REQUIRED\n"
+            " HYDRA REMITTANCE — TRANSFER READY ($1,000 THRESHOLD)\n"
             "═══════════════════════════════════════════════════════════\n"
             "\n"
             f" Treasury balance: ${balance:,.2f} USDC\n"
-            f" Remittable amount: ${remittable:,.2f} USDC (${remittable:,.2f} USD equivalent)\n"
-            " Operating reserve retained: $500.00 USDC\n"
+            f" Remittable amount: ${remittable:,.2f} USDC\n"
+            f" Operating reserve retained: ${self.OPERATING_RESERVE:,.2f} USDC\n"
             "\n"
-            " To receive this distribution, provide an EVM-compatible\n"
-            " wallet address (Ethereum, Base, Polygon, Arbitrum).\n"
+            " Balance has reached the $1,000 USDC transfer threshold.\n"
             "\n"
-            " MetaMask, Coinbase Wallet, Rainbow, or any EVM wallet.\n"
+            " ► ACTION REQUIRED: Provide your wallet address to receive\n"
+            "   this distribution via POST /system/wallet\n"
             "\n"
-            " ► Provide receiving wallet address to POST /system/wallet\n"
+            " ► Then execute transfer via POST /system/remittance/execute\n"
+            "\n"
+            " Supported wallets: MetaMask, Coinbase Wallet, Rainbow,\n"
+            " or any EVM-compatible wallet (Ethereum, Base, Polygon).\n"
             "\n"
             " PRIVACY:\n"
             " • Direct USDC transfer on Base L2 — no memo, no metadata\n"
-            " • Receiving address stored in local encrypted config only\n"
+            " • Receiving address stored in local config only\n"
             " • Never transmitted to any third party\n"
-            " • Never included in any regulatory filing\n"
-            " • Never associated with any natural person identity\n"
             " • Entity records show \"distribution to member\" only\n"
-            " • Member identified as LLC (wallet address), not person\n"
             "\n"
             " COMPLIANCE:\n"
             " • OFAC sanctions screening before each transfer\n"
             " • Transaction logged for entity tax records (Form 5472)\n"
-            " • No CTR filing (USDC transfer, not currency transaction)\n"
-            " • Operating Agreement Section 4.1 (20%+ net profit dist.)\n"
+            " • Constitution checks enforced on every transfer\n"
             "\n"
             "═══════════════════════════════════════════════════════════"
         )
