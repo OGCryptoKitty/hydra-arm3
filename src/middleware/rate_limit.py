@@ -49,13 +49,30 @@ def _classify_path(path: str) -> str:
 
 
 def _get_client_ip(request: Request) -> str:
-    """Extract client IP, respecting X-Forwarded-For behind a proxy."""
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    if request.client:
-        return request.client.host
-    return "unknown"
+    """
+    Extract client IP safely.
+    Only trusts X-Forwarded-For when the direct connection is from a known proxy
+    (e.g., Render's load balancer at 10.x.x.x). Otherwise uses the socket IP
+    to prevent rate-limit bypass via header spoofing.
+    """
+    import ipaddress
+
+    direct_ip = request.client.host if request.client else "unknown"
+
+    # Only trust X-Forwarded-For from private IPs (reverse proxies / load balancers)
+    try:
+        ip_obj = ipaddress.ip_address(direct_ip)
+        is_trusted_proxy = ip_obj.is_private or ip_obj.is_loopback
+    except ValueError:
+        is_trusted_proxy = False
+
+    if is_trusted_proxy:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            # Rightmost non-proxy IP is the most trustworthy when behind a single LB
+            return forwarded.split(",")[0].strip()
+
+    return direct_ip
 
 
 def _is_rate_limited(ip: str, tier: str) -> bool:

@@ -106,7 +106,8 @@ def require_system_auth(request: Request) -> None:
             detail="System auth token could not be derived (wallet private key not configured).",
         )
 
-    if provided_token != expected_token:
+    import hmac as _hmac
+    if not _hmac.compare_digest(provided_token, expected_token):
         raise HTTPException(
             status_code=403,
             detail="Invalid system authorization token.",
@@ -137,7 +138,8 @@ def require_bearer_token_only(request: Request) -> None:
             detail="System auth token could not be derived (wallet private key not configured).",
         )
 
-    if provided_token != expected_token:
+    import hmac as _hmac
+    if not _hmac.compare_digest(provided_token, expected_token):
         raise HTTPException(
             status_code=403,
             detail="Invalid system authorization token.",

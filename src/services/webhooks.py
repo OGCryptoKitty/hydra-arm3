@@ -110,6 +110,42 @@ class WebhookManager:
         except OSError as exc:
             logger.error("Failed to save webhooks: %s", exc)
 
+    @staticmethod
+    def _validate_webhook_url(url: str) -> None:
+        """
+        Validate webhook URL to prevent SSRF attacks.
+        Rejects private/internal IPs, localhost, and non-HTTPS URLs.
+        """
+        import ipaddress
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+
+        # Must be HTTPS
+        if parsed.scheme != "https":
+            raise ValueError(f"Webhook URL must use HTTPS (got {parsed.scheme}://)")
+
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("Webhook URL has no hostname")
+
+        # Block obvious internal hostnames
+        _blocked = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]", "metadata.google.internal"}
+        if hostname.lower() in _blocked:
+            raise ValueError(f"Webhook URL cannot target internal host: {hostname}")
+
+        # Resolve and block private/reserved IPs (best-effort — DNS failure is not fatal
+        # since delivery will simply fail later if the host is unreachable)
+        import socket
+        try:
+            resolved = socket.getaddrinfo(hostname, parsed.port or 443, proto=socket.IPPROTO_TCP)
+            for _, _, _, _, sockaddr in resolved:
+                ip = ipaddress.ip_address(sockaddr[0])
+                if ip.is_private or ip.is_reserved or ip.is_loopback or ip.is_link_local:
+                    raise ValueError(f"Webhook URL resolves to non-public IP: {ip}")
+        except socket.gaierror:
+            logger.warning("Cannot resolve webhook hostname %s — will allow registration", hostname)
+
     def register(
         self,
         url: str,
@@ -118,6 +154,7 @@ class WebhookManager:
         label: str = "",
     ) -> WebhookSubscription:
         """Register a new webhook subscription."""
+        self._validate_webhook_url(url)
         sub = WebhookSubscription(
             url=url,
             events=events,
