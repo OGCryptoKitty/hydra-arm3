@@ -298,12 +298,18 @@ def generate_market_signal_llm(
 ) -> Optional[dict[str, Any]]:
     """Use Claude to generate a market-specific trading signal."""
     safe_context = _sanitize_input(regulatory_context)
+    safe_question = _sanitize_input(str(market_data.get('question', 'Unknown')), max_length=500)
+    safe_price = _sanitize_input(str(market_data.get('yes_price', 'N/A')), max_length=50)
+    safe_volume = _sanitize_input(str(market_data.get('volume', 'N/A')), max_length=50)
+    safe_platform = _sanitize_input(str(market_data.get('platform', 'Unknown')), max_length=50)
     prompt = f"""Generate a trading signal for this prediction market:
 
-Market: {market_data.get('question', 'Unknown')}
-Current price (YES): {market_data.get('yes_price', 'N/A')}
-Volume: {market_data.get('volume', 'N/A')}
-Platform: {market_data.get('platform', 'Unknown')}
+<market_data>
+Market: {safe_question}
+Current price (YES): {safe_price}
+Volume: {safe_volume}
+Platform: {safe_platform}
+</market_data>
 
 <regulatory_context>
 {safe_context}
@@ -364,24 +370,29 @@ def _call_llm_json(
 
 
 def _format_dict(d: dict[str, Any]) -> str:
-    """Format a dict for prompt inclusion."""
+    """Format a dict for prompt inclusion, sanitizing all values."""
     lines = []
     for k, v in d.items():
+        sk = _sanitize_input(str(k), max_length=200)
         if isinstance(v, dict):
-            lines.append(f"  {k}:")
+            lines.append(f"  {sk}:")
             for k2, v2 in v.items():
-                lines.append(f"    {k2}: {v2}")
+                sk2 = _sanitize_input(str(k2), max_length=200)
+                sv2 = _sanitize_input(str(v2), max_length=500)
+                lines.append(f"    {sk2}: {sv2}")
         else:
-            lines.append(f"  {k}: {v}")
+            sv = _sanitize_input(str(v), max_length=500)
+            lines.append(f"  {sk}: {sv}")
     return "\n".join(lines)
 
 
 def _format_list(items: list) -> str:
-    """Format a list for prompt inclusion."""
+    """Format a list for prompt inclusion, sanitizing all values."""
     lines = []
     for i, item in enumerate(items, 1):
         if isinstance(item, dict):
-            lines.append(f"  {i}. {item}")
+            sanitized = {_sanitize_input(str(k), 200): _sanitize_input(str(v), 500) for k, v in item.items()}
+            lines.append(f"  {i}. {sanitized}")
         else:
-            lines.append(f"  {i}. {item}")
+            lines.append(f"  {i}. {_sanitize_input(str(item), max_length=500)}")
     return "\n".join(lines) if lines else "  (none available)"

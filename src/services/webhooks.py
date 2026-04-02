@@ -211,6 +211,16 @@ class WebhookManager:
                     "User-Agent": "HYDRA-Arm3-Webhook/1.0",
                 }
 
+                # Re-validate URL at delivery time to prevent DNS rebinding attacks
+                try:
+                    self._validate_webhook_url(sub.url)
+                except ValueError as url_err:
+                    logger.warning("Webhook URL failed re-validation at delivery: %s — %s", sub.url, url_err)
+                    sub.failure_count += 1
+                    if sub.failure_count >= 10:
+                        sub.active = False
+                    continue
+
                 success = False
                 for attempt in range(_MAX_RETRIES):
                     try:

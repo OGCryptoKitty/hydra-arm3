@@ -131,9 +131,16 @@ async def fed_signal(
     )
 
     try:
+        # Refresh engine with live data before generating signal
+        try:
+            live_status = await _engine.refresh_from_live_data()
+            logger.info("Live data refresh: %s", live_status)
+        except Exception as live_exc:
+            logger.debug("Live data refresh skipped: %s", live_exc)
+
         signal = _engine.generate_pre_fomc_signal()
 
-        # ── Enrich with live data if available ──
+        # ── Also attach raw live data for transparency ──
         try:
             from src.services.live_data import fetch_fed_funds_rate, fetch_latest_fed_statement
             live_rate = await fetch_fed_funds_rate()
@@ -209,6 +216,11 @@ async def fed_decision(
     )
 
     try:
+        try:
+            await _engine.refresh_from_live_data()
+        except Exception:
+            pass
+
         is_fomc_day = _engine.is_fomc_day()
         decision_data = _engine.get_latest_decision()
         probs = _engine.calculate_rate_probabilities()
@@ -324,6 +336,12 @@ async def fed_resolution(
     )
 
     try:
+        # Refresh engine with live data before generating verdict
+        try:
+            await _engine.refresh_from_live_data()
+        except Exception:
+            pass
+
         verdict_data = _engine.generate_resolution_verdict(
             market_question=request_body.market_question
         )
