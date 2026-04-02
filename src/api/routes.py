@@ -49,15 +49,43 @@ router = APIRouter()
 
 @router.get("/", tags=["System"])
 async def root():
-    """Root endpoint — landing page."""
+    """Root endpoint — API landing page for bot discovery."""
+    import os
     return {
         "name": "HYDRA Arm 3 — Regulatory Intelligence SaaS",
         "status": "operational",
-        "docs": "/docs",
-        "pricing": "/pricing",
-        "payment_protocol": "x402",
-        "payment_token": "USDC on Base (Chain 8453)",
-        "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
+        "tagline": "AI-powered regulatory compliance analysis and prediction market signals. Pay-per-use in USDC.",
+        "capabilities": {
+            "regulatory_analysis": "Claude AI-powered risk scoring, compliance gap analysis, jurisdiction comparison",
+            "prediction_market_signals": "Real-time Polymarket + Kalshi signals with regulatory probability scoring",
+            "fed_intelligence": "Pre-FOMC signals, live rate data, resolution verdicts for oracle assertion",
+            "regulatory_feed": "Real-time SEC, CFTC, FinCEN, OCC, CFPB regulatory announcements",
+        },
+        "pricing_range": "$0.25 — $50.00 USDC per call",
+        "payment_protocol": "x402 (HTTP 402 Payment Required)",
+        "payment_token": "USDC on Base L2 (Chain ID 8453)",
+        "wallet": settings.WALLET_ADDRESS,
+        "ai_powered": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "endpoints": {
+            "docs": "/docs",
+            "pricing": "/pricing",
+            "health": "/health",
+            "metrics": "/metrics",
+        },
+        "quick_start": {
+            "step_1": "GET /pricing — see all endpoints and costs",
+            "step_2": "POST /v1/regulatory/scan — returns 402 with payment instructions",
+            "step_3": "Send USDC to wallet address on Base",
+            "step_4": "Retry with X-Payment-Proof: <tx_hash> header",
+        },
+        "free_endpoints": [
+            "GET /health",
+            "GET /pricing",
+            "GET /metrics",
+            "GET /docs",
+            "GET /v1/markets/discovery",
+            "GET /v1/markets/pricing",
+        ],
     }
 
 @router.get("/health", response_model=HealthResponse, tags=["System"])

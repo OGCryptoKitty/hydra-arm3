@@ -1,24 +1,29 @@
 services:
   - type: web
-    name: hydra-api
-    runtime: python
+    name: hydra-arm3
+    runtime: docker
     plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 2
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     envVars:
+      # ── Required: Set these in Render Dashboard → Environment ──
       - key: WALLET_ADDRESS
         sync: false
       - key: WALLET_PRIVATE_KEY
         sync: false
+      # ── LLM: Enables Claude-powered analysis (huge quality upgrade) ──
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # ── RPC: Default is free public endpoint. Upgrade for production. ──
       - key: BASE_RPC_URL
         value: https://mainnet.base.org
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      # ── System ──
       - key: HYDRA_STATE_DIR
         value: /app/data
-      - key: PYTHONPATH
-        value: /opt/render/project/src
+      - key: ENFORCE_HTTPS
+        value: "true"
+      - key: PORT
+        value: "8402"
     disk:
       name: hydra-data
       mountPath: /app/data

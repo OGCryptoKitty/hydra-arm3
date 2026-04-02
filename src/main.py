@@ -88,6 +88,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Wallet  : %s", settings.WALLET_ADDRESS)
     logger.info("RPC URL : %s", settings.BASE_RPC_URL)
     logger.info("Port    : %d", settings.PORT)
+
+    # ── Startup validation ──
+    llm_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if llm_key:
+        logger.info("LLM     : ENABLED (Claude AI-powered analysis)")
+    else:
+        logger.warning("LLM     : DISABLED — Set ANTHROPIC_API_KEY for AI-powered analysis")
+
+    if settings.BASE_RPC_URL == "https://mainnet.base.org":
+        logger.warning("RPC     : Using PUBLIC endpoint (rate-limited). Set BASE_RPC_URL to a private RPC for production.")
+
+    pk = os.getenv("WALLET_PRIVATE_KEY", "")
+    if not pk:
+        logger.warning("WALLET  : No private key — remittance transfers disabled")
+
     logger.info("=" * 60)
 
     # ── Initialise runtime managers and attach to app.state ──
