@@ -15,11 +15,10 @@ Receiving wallet: 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141
 Autonomous runtime:
   - HydraAutomaton heartbeat: starts as a background asyncio task on startup
   - Survival tiers: CRITICAL / MINIMAL / VIABLE / FUNDED / SURPLUS
-  - Auto-remittance: triggers at $5,000 USDC surplus
+  - Auto-remittance: prompts owner at $1,000 USDC threshold
   - System endpoints: /system/* (localhost or bearer token protected)
-
-This file is the COMPLETE replacement for src/main.py.
-Copy to src/main.py to apply.
+  - Rate limiting: 60/min free, 30/min paid, 10/min system per IP
+  - Request ID tracking: X-Request-ID header on all responses
 """
 
 from __future__ import annotations
@@ -45,6 +44,8 @@ from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
 from src.runtime.remittance import RemittanceManager
 from src.runtime.transaction_log import TransactionLog
+from src.middleware.rate_limit import RateLimitMiddleware
+from src.middleware.request_id import RequestIDMiddleware
 from src.x402.middleware import X402PaymentMiddleware
 
 # ─────────────────────────────────────────────────────────────
@@ -277,6 +278,12 @@ app.add_middleware(
 # 2. x402 Payment Middleware — intercepts paid endpoints
 app.add_middleware(X402PaymentMiddleware)
 
+# 3. Rate Limiting — per-IP request throttling
+app.add_middleware(RateLimitMiddleware)
+
+# 4. Request ID — traceability for every request
+app.add_middleware(RequestIDMiddleware)
+
 
 # ─────────────────────────────────────────────────────────────
 # Routers
@@ -339,6 +346,53 @@ async def health_check(request: Request) -> JSONResponse:
 
 
 # ─────────────────────────────────────────────────────────────
+# Metrics endpoint — operational monitoring
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/metrics", tags=["System"], include_in_schema=True)
+async def metrics(request: Request) -> JSONResponse:
+    """
+    Operational metrics for monitoring dashboards.
+    Returns uptime, transaction counts, balance, and endpoint pricing summary.
+    No payment required.
+    """
+    import time as _time
+    from src.runtime.transaction_log import TransactionLog
+
+    uptime_seconds = 0.0
+    balance_usdc = "0.00"
+    automaton_phase = "UNKNOWN"
+    try:
+        automaton = getattr(request.app.state, "automaton", None)
+        if automaton:
+            status = automaton.get_status()
+            uptime_seconds = status.get("uptime_seconds", 0)
+            balance_usdc = status.get("balance_usdc", "0")
+            automaton_phase = status.get("phase", "UNKNOWN")
+    except Exception:
+        pass
+
+    tx_summary = {}
+    try:
+        tl = TransactionLog()
+        tx_summary = tl.get_full_summary()
+    except Exception:
+        pass
+
+    return JSONResponse(content={
+        "uptime_seconds": uptime_seconds,
+        "phase": automaton_phase,
+        "balance_usdc": balance_usdc,
+        "total_revenue_usdc": tx_summary.get("total_revenue_usdc", "0"),
+        "total_distributions_usdc": tx_summary.get("total_distributions_usdc", "0"),
+        "transaction_count": tx_summary.get("transaction_count", 0),
+        "remittance_threshold_usdc": "1000",
+        "endpoint_count": len(settings.PRICING),
+        "version": settings.APP_VERSION,
+    })
+
+
+# ─────────────────────────────────────────────────────────────
 # Global Exception Handlers
 # ─────────────────────────────────────────────────────────────
 
@@ -398,14 +452,15 @@ async def validation_error_handler(request: Request, exc: Exception) -> JSONResp
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Return structured 500 Internal Server Error and log the traceback."""
-    logger.exception("Unhandled internal server error: %s", exc)
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error":   "Internal Server Error",
-            "message": "An unexpected error occurred. Please try again.",
-        },
-    )
+    request_id = getattr(request.state, "request_id", None) if hasattr(request, "state") else None
+    logger.exception("Unhandled internal server error [%s]: %s", request_id, exc)
+    content: dict = {
+        "error":   "Internal Server Error",
+        "message": "An unexpected error occurred. Please try again.",
+    }
+    if request_id:
+        content["request_id"] = request_id
+    return JSONResponse(status_code=500, content=content)
 
 
 # ─────────────────────────────────────────────────────────────

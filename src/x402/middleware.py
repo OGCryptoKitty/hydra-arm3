@@ -99,7 +99,14 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # ── Determine pricing for this endpoint ──────────────
+        # Exact match first, then prefix match for path-parameter endpoints
+        # (e.g. /v1/markets/signal/{market_id} → /v1/markets/signal)
         pricing = PRICING.get(path)
+        if pricing is None:
+            for pricing_path, pricing_info in PRICING.items():
+                if path.startswith(pricing_path + "/") or path == pricing_path:
+                    pricing = pricing_info
+                    break
         if pricing is None:
             # Unknown paid path — pass through (let route handler return 404)
             return await call_next(request)
