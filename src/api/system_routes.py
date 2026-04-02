@@ -155,6 +155,11 @@ class SetWalletRequest(BaseModel):
     address: str
 
 
+class RemittanceExecuteRequest(BaseModel):
+    """Request body for POST /system/remittance/execute."""
+    confirm_address: str = ""  # Must match configured receiving wallet to proceed
+
+
 # ─────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────
@@ -338,11 +343,13 @@ async def remittance_status(
 )
 async def execute_remittance(
     request: Request,
+    body: RemittanceExecuteRequest,
     _auth: None = Depends(require_system_auth),
 ) -> JSONResponse:
     """
     Manually trigger a USDC remittance.
 
+    Requires confirm_address matching the configured receiving wallet.
     Checks that a receiving wallet is configured, then calls
     RemittanceManager.execute_remittance(). Returns the RemittanceResult as JSON.
     """
@@ -354,6 +361,40 @@ async def execute_remittance(
             detail=(
                 "No receiving wallet configured. "
                 "POST /system/wallet with an address first."
+            ),
+        )
+
+    # Require explicit wallet address confirmation to prevent accidental transfers
+    if not body.confirm_address:
+        balance = _get_usdc_balance(rm)
+        remittable = rm.calculate_remittable_amount(balance)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "action_required": "confirm",
+                "message": (
+                    "Remittance requires explicit confirmation. Resend with "
+                    "'confirm_address' matching the receiving wallet address."
+                ),
+                "receiving_wallet": rm.receiving_wallet,
+                "treasury_balance_usdc": str(balance),
+                "remittable_amount_usdc": str(remittable),
+                "operating_reserve_usdc": str(rm.OPERATING_RESERVE),
+            },
+        )
+
+    from web3 import Web3
+    try:
+        confirmed = Web3.to_checksum_address(body.confirm_address)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid confirm_address format.")
+
+    if confirmed != rm.receiving_wallet:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"confirm_address does not match configured receiving wallet. "
+                f"Expected: {rm.receiving_wallet}"
             ),
         )
 
