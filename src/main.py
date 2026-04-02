@@ -44,6 +44,7 @@ from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
 from src.runtime.remittance import RemittanceManager
 from src.runtime.transaction_log import TransactionLog
+from src.middleware.https_redirect import HTTPSRedirectMiddleware
 from src.middleware.rate_limit import RateLimitMiddleware
 from src.middleware.request_id import RequestIDMiddleware
 from src.x402.middleware import X402PaymentMiddleware
@@ -243,7 +244,7 @@ app = FastAPI(
 # 1. CORS — must be first (outermost) middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=[
@@ -283,6 +284,9 @@ app.add_middleware(RateLimitMiddleware)
 
 # 4. Request ID — traceability for every request
 app.add_middleware(RequestIDMiddleware)
+
+# 5. HTTPS Redirect — enforce HTTPS in production (set ENFORCE_HTTPS=true)
+app.add_middleware(HTTPSRedirectMiddleware)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -399,26 +403,28 @@ async def metrics(request: Request) -> JSONResponse:
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
     """Return structured 404 with available endpoint list."""
+    endpoint_list = [
+        "GET  /health",
+        "GET  /pricing",
+        "GET  /metrics",
+    ]
+    for path, info in settings.PRICING.items():
+        endpoint_list.append(f"POST {path:<35s} (${info['amount_usdc']} USDC)")
+    endpoint_list.extend([
+        "--- System (localhost/bearer token) ---",
+        "POST /system/wallet",
+        "GET  /system/remittance/status",
+        "POST /system/remittance/execute",
+        "GET  /system/transactions",
+        "GET  /system/status",
+        "POST /system/shutdown",
+    ])
     return JSONResponse(
         status_code=404,
         content={
             "error":   "Not Found",
             "message": f"Endpoint {request.url.path} does not exist.",
-            "available_endpoints": [
-                "GET  /health",
-                "GET  /pricing",
-                "POST /v1/regulatory/scan         ($1.00 USDC)",
-                "POST /v1/regulatory/changes      ($0.50 USDC)",
-                "POST /v1/regulatory/jurisdiction ($2.00 USDC)",
-                "POST /v1/regulatory/query        ($0.50 USDC)",
-                "--- System (localhost/bearer token) ---",
-                "POST /system/wallet",
-                "GET  /system/remittance/status",
-                "POST /system/remittance/execute",
-                "GET  /system/transactions",
-                "GET  /system/status",
-                "POST /system/shutdown",
-            ],
+            "available_endpoints": endpoint_list,
             "docs": "/docs",
         },
     )

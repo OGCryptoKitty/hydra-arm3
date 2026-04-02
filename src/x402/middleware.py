@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from decimal import Decimal
 from typing import Callable
 
 from cachetools import TTLCache
@@ -47,6 +48,7 @@ from config.settings import (
     PAYMENT_NETWORK,
     PAYMENT_TOKEN,
     PRICING,
+    USDC_DECIMALS,
     WALLET_ADDRESS,
     CHAIN_ID,
 )
@@ -155,6 +157,23 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         _mark_tx_used(tx_hash)
         logger.info("Payment verified and consumed: tx=%s path=%s", tx_hash, path)
 
+        # ── Log revenue to transaction log ────────────────────
+        try:
+            from src.runtime.transaction_log import TransactionLog, TxDirection, TxCategory
+            tl = getattr(request.app.state, "transaction_log", None)
+            if tl is None:
+                tl = TransactionLog()
+            amount_usdc = Decimal(str(result.amount_received_base_units)) / Decimal(10 ** USDC_DECIMALS)
+            tl.log_inbound(
+                tx_hash=tx_hash,
+                amount_usdc=amount_usdc,
+                from_address=result.from_address if hasattr(result, "from_address") else "unknown",
+                category="x402-revenue",
+                note=f"x402 payment for {path}",
+            )
+        except Exception as log_exc:
+            logger.warning("Failed to log revenue for tx=%s: %s", tx_hash, log_exc)
+
         # ── Execute the actual request handler ────────────────
         response = await call_next(request)
 
@@ -162,6 +181,14 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         response.headers["X-Payment-Verified"] = "true"
         response.headers["X-Payment-Tx"] = tx_hash
         response.headers["X-Payment-Amount-Received"] = str(result.amount_received_base_units)
+
+        # ── Track payment failures (payment consumed but endpoint errored) ──
+        if response.status_code >= 500:
+            logger.error(
+                "PAYMENT CONSUMED BUT ENDPOINT FAILED: tx=%s path=%s status=%d — "
+                "customer paid %s USDC but received a server error",
+                tx_hash, path, response.status_code, pricing["amount_usdc"],
+            )
 
         return response
 

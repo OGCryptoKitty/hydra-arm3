@@ -45,6 +45,11 @@ PORT: int = int(os.getenv("PORT", "8402"))
 
 DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
+# CORS allowed origins (comma-separated). Use "*" for public API (default).
+CORS_ALLOWED_ORIGINS: list[str] = os.getenv(
+    "CORS_ALLOWED_ORIGINS", "*"
+).split(",") if os.getenv("CORS_ALLOWED_ORIGINS") else ["*"]
+
 # ─────────────────────────────────────────────────────────────
 # Pricing Tiers (in USDC, human-readable)
 # These are converted to base units (6 decimals) at verification time.
