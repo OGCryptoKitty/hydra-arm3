@@ -831,3 +831,77 @@ async def deactivate_api_key(
     if sm.deactivate_key(key_hash_prefix):
         return JSONResponse(content={"status": "deactivated", "key_hash_prefix": key_hash_prefix})
     raise HTTPException(status_code=404, detail=f"No active key found with prefix '{key_hash_prefix}'.")
+
+
+# ─────────────────────────────────────────────────────────────
+# Webhook Management Endpoints
+# ─────────────────────────────────────────────────────────────
+
+
+class RegisterWebhookRequest(BaseModel):
+    url: str
+    events: list[str] = ["regulatory_change", "fed_signal", "market_alert", "remittance_ready"]
+    label: str = ""
+
+
+@system_router.post(
+    "/webhooks",
+    summary="Register a webhook endpoint",
+    description=(
+        "Register a URL to receive event notifications. "
+        "Events: regulatory_change, fed_signal, market_alert, remittance_ready. "
+        "Deliveries include HMAC-SHA256 signature for verification."
+    ),
+)
+async def register_webhook(
+    request: Request,
+    body: RegisterWebhookRequest,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Register a webhook for event notifications."""
+    from src.services.webhooks import WebhookManager
+    wm = WebhookManager()
+    sub = wm.register(
+        url=body.url,
+        events=body.events,
+        api_key_hash="system",  # System-level webhooks use system auth
+        label=body.label,
+    )
+    return JSONResponse(
+        status_code=201,
+        content={
+            "status": "registered",
+            "webhook": sub.to_dict(),
+        },
+    )
+
+
+@system_router.get(
+    "/webhooks",
+    summary="List webhook subscriptions",
+)
+async def list_webhooks(
+    request: Request,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """List all registered webhook subscriptions."""
+    from src.services.webhooks import WebhookManager
+    wm = WebhookManager()
+    return JSONResponse(content={"webhooks": wm.list_subscriptions()})
+
+
+@system_router.post(
+    "/webhooks/deactivate",
+    summary="Deactivate a webhook",
+)
+async def deactivate_webhook(
+    request: Request,
+    url: str = Query(..., description="Webhook URL to deactivate"),
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Deactivate a webhook subscription."""
+    from src.services.webhooks import WebhookManager
+    wm = WebhookManager()
+    if wm.deactivate(url):
+        return JSONResponse(content={"status": "deactivated", "url": url})
+    raise HTTPException(status_code=404, detail=f"No active webhook found for '{url}'.")

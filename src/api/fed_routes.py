@@ -133,6 +133,23 @@ async def fed_signal(
     try:
         signal = _engine.generate_pre_fomc_signal()
 
+        # ── Enrich with live data if available ──
+        try:
+            from src.services.live_data import fetch_fed_funds_rate, fetch_latest_fed_statement
+            live_rate = await fetch_fed_funds_rate()
+            live_statement = await fetch_latest_fed_statement()
+            if live_rate:
+                signal["live_fed_funds_rate"] = live_rate
+            if live_statement:
+                signal["latest_fed_statement"] = {
+                    "title": live_statement.get("title", ""),
+                    "published": live_statement.get("published", ""),
+                    "link": live_statement.get("link", ""),
+                    "is_live": True,
+                }
+        except Exception as live_exc:
+            logger.debug("Live data enrichment skipped: %s", live_exc)
+
         # Optionally strip verbose fields if caller doesn't want them
         if not request_body.include_speech_analysis:
             signal.pop("fed_speech_analysis", None)

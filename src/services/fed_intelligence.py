@@ -361,10 +361,56 @@ class FedIntelligenceEngine:
     def generate_pre_fomc_signal(self) -> dict[str, Any]:
         """
         Generate a complete pre-FOMC intelligence signal.
-        Combines all model components into a single trader-facing payload.
+        Uses Claude LLM if available for enhanced analysis, otherwise
+        falls back to rule-based model.
         """
         next_fomc = self.get_next_fomc()
         probs = self.calculate_rate_probabilities()
+
+        # ── Try LLM-enhanced signal ──
+        try:
+            from src.services.llm import analyze_fed_signal_llm, is_llm_available
+            if is_llm_available():
+                llm_result = analyze_fed_signal_llm(
+                    current_rate=self._rate_range,
+                    economic_data={ind["name"]: ind["value"] for ind in self._indicators},
+                    recent_speeches=[
+                        {"speaker": s["speaker"], "theme": s["theme"]}
+                        for s in self._speech_analysis
+                    ],
+                    next_meeting=next_fomc.get("announcement_date", "unknown"),
+                )
+                if llm_result is not None:
+                    logger.info("Using LLM-enhanced Fed signal analysis")
+                    llm_probs = llm_result.get("rate_probabilities", {})
+                    return {
+                        "fed_funds_rate_current": self._rate_range,
+                        "next_fomc_date": next_fomc["announcement_date"],
+                        "days_until_fomc": next_fomc["days_until_fomc"],
+                        "hydra_rate_probability": {
+                            "hold": llm_probs.get("hold", probs["hold"]),
+                            "cut_25": llm_probs.get("cut_25bp", probs["cut_25"]),
+                            "cut_50": llm_probs.get("cut_50bp", probs["cut_50"]),
+                            "hike_25": llm_probs.get("hike_25bp", probs.get("hike_25", 0.03)),
+                        },
+                        "key_indicators": self._indicators,
+                        "fed_speech_analysis": self._speech_analysis,
+                        "dot_plot_implied_rate": f"{self._dot_plot['median_2026_year_end']}% (median 2026 year-end)",
+                        "hydra_signal": llm_result.get("signal_direction", "HOLD"),
+                        "confidence": round(llm_result.get("confidence", 0.75) * 100),
+                        "key_factors": llm_result.get("key_factors", []),
+                        "risk_factors": llm_result.get("risk_factors", []),
+                        "reasoning": llm_result.get("analysis", ""),
+                        "market_impact_assessment": llm_result.get("market_impact_assessment", ""),
+                        "analysis_engine": "claude-llm",
+                        "source_urls": [
+                            "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+                            "https://www.bls.gov/cpi/",
+                            "https://www.bea.gov/data/personal-consumption-expenditures-price-index",
+                        ],
+                    }
+        except Exception as exc:
+            logger.warning("LLM Fed signal failed, falling back to rule-based: %s", exc)
 
         # Determine signal direction from probabilities
         max_outcome = max(probs, key=probs.get)  # type: ignore[arg-type]
@@ -514,14 +560,30 @@ class FedIntelligenceEngine:
     def generate_resolution_verdict(self, market_question: str) -> dict[str, Any]:
         """
         Produce a full resolution verdict for a FOMC prediction market.
-
-        Formats output for UMA Optimistic Oracle, Kalshi KXFED series,
-        and Polymarket FOMC markets.
+        Uses Claude LLM for enhanced reasoning if available.
 
         Args:
             market_question: Natural-language market question to resolve,
                 e.g. "Will the Fed hold rates at the May 2026 FOMC meeting?"
         """
+        # ── Try LLM-enhanced resolution ──
+        try:
+            from src.services.llm import generate_resolution_verdict_llm, is_llm_available
+            if is_llm_available():
+                evidence = {
+                    "last_fomc_decision": self._last_decision,
+                    "current_rate": self._rate_range,
+                    "economic_indicators": {ind["name"]: ind["value"] for ind in self._indicators},
+                    "rate_probabilities": self.calculate_rate_probabilities(),
+                }
+                llm_verdict = generate_resolution_verdict_llm(market_question, evidence)
+                if llm_verdict is not None:
+                    logger.info("Using LLM-enhanced resolution verdict")
+                    # Merge LLM reasoning into standard output structure below
+                    self._llm_verdict_cache = llm_verdict
+        except Exception as exc:
+            logger.warning("LLM resolution failed, using rule-based: %s", exc)
+
         decision = self.get_latest_decision()
         probs = self.calculate_rate_probabilities()
         outcome = decision["decision"]

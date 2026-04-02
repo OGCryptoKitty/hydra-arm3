@@ -25,12 +25,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -392,8 +393,24 @@ async def metrics(request: Request) -> JSONResponse:
         "transaction_count": tx_summary.get("transaction_count", 0),
         "remittance_threshold_usdc": "1000",
         "endpoint_count": len(settings.PRICING),
+        "llm_enabled": bool(os.getenv("ANTHROPIC_API_KEY")),
         "version": settings.APP_VERSION,
     })
+
+
+@app.get("/metrics/prometheus", tags=["System"], include_in_schema=True)
+async def prometheus_metrics(request: Request) -> Response:
+    """
+    Prometheus-compatible metrics endpoint.
+    Scrape this with Prometheus, Grafana Agent, or DataDog.
+    """
+    from starlette.responses import PlainTextResponse
+    from src.middleware.monitoring import get_metrics_collector
+    collector = get_metrics_collector()
+    return PlainTextResponse(
+        content=collector.to_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 # ─────────────────────────────────────────────────────────────
