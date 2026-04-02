@@ -746,6 +746,7 @@ async def system_shutdown(
 class CreateKeyRequest(BaseModel):
     tier: str = "free"
     label: str = ""
+    payment_proof: str = ""  # Tx hash for paid tier activation
 
 
 @system_router.get(
@@ -790,6 +791,19 @@ async def create_api_key(
             status_code=400,
             detail=f"Invalid tier '{body.tier}'. Valid: free, standard, professional, enterprise",
         )
+    # Restrict paid tier creation — requires manual payment verification
+    if tier in (SubscriptionTier.STANDARD, SubscriptionTier.PROFESSIONAL, SubscriptionTier.ENTERPRISE):
+        # Require explicit payment proof for paid tiers
+        payment_proof = getattr(body, "payment_proof", None)
+        if not payment_proof:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"{tier.value.upper()} tier requires payment verification. "
+                    f"Include 'payment_proof' (tx hash) in the request body, or create a FREE key first."
+                ),
+            )
+
     raw_key = sm.create_key(tier=tier, label=body.label)
     return JSONResponse(
         status_code=201,

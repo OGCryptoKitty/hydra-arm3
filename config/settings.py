@@ -147,8 +147,9 @@ PRICING: dict[str, dict] = {
 # How long to cache RSS feed results (seconds)
 FEED_CACHE_TTL: int = int(os.getenv("FEED_CACHE_TTL", "3600"))  # 1 hour
 
-# How long to cache payment verifications (seconds); long enough to prevent replay
-PAYMENT_CACHE_TTL: int = int(os.getenv("PAYMENT_CACHE_TTL", "86400"))  # 24 hours
+# How long to cache payment verifications (seconds); prevents replay attacks.
+# Shorter TTL reduces risk from chain reorgs invalidating cached verifications.
+PAYMENT_CACHE_TTL: int = int(os.getenv("PAYMENT_CACHE_TTL", "3600"))  # 1 hour
 
 # ─────────────────────────────────────────────────────────────
 # EVM Constants

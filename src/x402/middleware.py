@@ -202,7 +202,11 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
                 note=f"x402 payment for {path}",
             )
         except Exception as log_exc:
-            logger.warning("Failed to log revenue for tx=%s: %s", tx_hash, log_exc)
+            logger.error(
+                "CRITICAL: Failed to log revenue for tx=%s path=%s: %s — "
+                "payment verified on-chain but not recorded in transaction log",
+                tx_hash, path, log_exc,
+            )
 
         # ── Execute the actual request handler ────────────────
         response = await call_next(request)
@@ -216,9 +220,25 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         if response.status_code >= 500:
             logger.error(
                 "PAYMENT CONSUMED BUT ENDPOINT FAILED: tx=%s path=%s status=%d — "
-                "customer paid %s USDC but received a server error",
+                "customer paid %s USDC but received a server error — REFUND CANDIDATE",
                 tx_hash, path, response.status_code, pricing["amount_usdc"],
             )
+            # Log as refund candidate in transaction log
+            try:
+                from src.runtime.transaction_log import TransactionLog
+                tl = getattr(request.app.state, "transaction_log", None)
+                if tl is None:
+                    tl = TransactionLog()
+                amount_usdc = Decimal(str(pricing["amount_base_units"])) / Decimal(10 ** USDC_DECIMALS)
+                tl.log_inbound(
+                    tx_hash=f"REFUND-{tx_hash}",
+                    amount_usdc=amount_usdc,
+                    from_address="system",
+                    category="refund-candidate",
+                    note=f"Endpoint {path} returned {response.status_code} after payment consumed",
+                )
+            except Exception:
+                pass  # Best-effort — the error log above is the critical record
 
         return response
 
