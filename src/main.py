@@ -33,7 +33,8 @@ from typing import AsyncIterator
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 import config.settings as settings
 from src.api.routes import router
@@ -283,6 +284,43 @@ app.include_router(fed_router)
 
 # System management endpoints (prefix="" — routes already carry /system/ prefix)
 app.include_router(system_router, prefix="")
+
+
+# ─────────────────────────────────────────────────────────────
+# Static files and landing page
+# ─────────────────────────────────────────────────────────────
+
+import os as _os
+
+# Serve .well-known directory for x402 service discovery
+_static_dir = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "static")
+_well_known_dir = _os.path.join(_static_dir, ".well-known")
+if _os.path.exists(_well_known_dir):
+    app.mount("/.well-known", StaticFiles(directory=_well_known_dir), name="well-known")
+    logger.info("Mounted .well-known directory from %s", _well_known_dir)
+else:
+    logger.warning(".well-known directory not found at %s — x402 discovery manifest unavailable", _well_known_dir)
+
+
+# Serve landing page at root (overrides the JSON root in routes.py)
+@app.get("/", response_class=FileResponse, include_in_schema=False, tags=["System"])
+async def landing_page() -> FileResponse:
+    """Serve the HYDRA HTML landing page at the root URL."""
+    _index_path = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "index.html")
+    if _os.path.exists(_index_path):
+        return FileResponse(_index_path, media_type="text/html")
+    # Fallback to JSON if index.html is missing
+    from fastapi.responses import JSONResponse as _JSONResponse
+    return _JSONResponse(content={
+        "name": "HYDRA Regulatory Intelligence",
+        "status": "operational",
+        "docs": "/docs",
+        "pricing": "/pricing",
+        "discovery": "/.well-known/x402.json",
+        "payment_protocol": "x402",
+        "payment_token": "USDC on Base (Chain 8453)",
+        "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141",
+    })
 
 
 # ─────────────────────────────────────────────────────────────

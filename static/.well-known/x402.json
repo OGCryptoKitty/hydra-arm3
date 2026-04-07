@@ -1,0 +1,33 @@
+{
+  "name": "HYDRA Regulatory Intelligence",
+  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Polymarket/Kalshi signal generation. Oracle resolution data for UMA and Chainlink.",
+  "url": "https://hydra-api-nlnj.onrender.com",
+  "payment": {
+    "network": "base",
+    "chain_id": 8453,
+    "token": "USDC",
+    "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
+  },
+  "endpoints": [
+    {"path": "/v1/markets", "method": "GET", "price": "free", "description": "Active regulatory prediction markets across Polymarket and Kalshi"},
+    {"path": "/v1/markets/feed", "method": "GET", "price": "0.10", "description": "Micro regulatory event feed matched to prediction markets"},
+    {"path": "/v1/markets/events", "method": "POST", "price": "0.50", "description": "Classified regulatory events from SEC, CFTC, Fed, FinCEN"},
+    {"path": "/v1/markets/signal/{market_id}", "method": "POST", "price": "2.00", "description": "Scored regulatory signal for one prediction market"},
+    {"path": "/v1/markets/signals", "method": "POST", "price": "5.00", "description": "Bulk scored signals for all regulatory prediction markets"},
+    {"path": "/v1/markets/alpha", "method": "POST", "price": "10.00", "description": "Premium alpha report with edge analysis, Kelly sizing, trade verdict"},
+    {"path": "/v1/fed/signal", "method": "POST", "price": "5.00", "description": "Pre-FOMC signal with rate probabilities and Fed speech analysis"},
+    {"path": "/v1/fed/decision", "method": "POST", "price": "25.00", "description": "Real-time FOMC decision classification within 30 seconds of release"},
+    {"path": "/v1/fed/resolution", "method": "POST", "price": "50.00", "description": "FOMC resolution verdict for UMA/Kalshi/Polymarket oracle submission"},
+    {"path": "/v1/oracle/uma", "method": "POST", "price": "5.00", "description": "UMA Optimistic Oracle assertion data with evidence chain"},
+    {"path": "/v1/oracle/chainlink", "method": "POST", "price": "5.00", "description": "Chainlink External Adapter response format"},
+    {"path": "/v1/markets/resolution", "method": "POST", "price": "25.00", "description": "Professional resolution verdict for prediction market settlement"},
+    {"path": "/v1/regulatory/scan", "method": "POST", "price": "2.00", "description": "Full regulatory risk scan against all applicable frameworks"},
+    {"path": "/v1/regulatory/changes", "method": "POST", "price": "1.00", "description": "Recent regulatory changes classified by agency and impact"},
+    {"path": "/v1/regulatory/jurisdiction", "method": "POST", "price": "3.00", "description": "Jurisdiction comparison with compliance cost modeling"},
+    {"path": "/v1/regulatory/query", "method": "POST", "price": "1.00", "description": "Regulatory Q&A with statutory citations"}
+  ],
+  "docs": "https://hydra-api-nlnj.onrender.com/docs",
+  "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
+  "tags": ["regulatory", "prediction-markets", "polymarket", "kalshi", "fed", "sec", "cftc", "oracle", "uma", "chainlink", "compliance", "x402"]
+}

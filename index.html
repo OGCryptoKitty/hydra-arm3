@@ -1,12 +1,1070 @@
 <!DOCTYPE html>
-<html>
-<head><title>HYDRA Regulatory Intelligence API</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HYDRA — Regulatory Intelligence API for Prediction Markets</title>
+  <meta name="description" content="HYDRA is a regulatory intelligence API delivering real-time SEC, CFTC, Fed, and FinCEN signals for Polymarket and Kalshi prediction markets. Pay-per-use with USDC via x402 on Base. Oracle resolution data for UMA and Chainlink.">
+  <meta name="keywords" content="regulatory intelligence API, prediction market data, Polymarket signals, Kalshi data, x402 payments, FOMC oracle, SEC monitoring, CFTC signals, UMA oracle, Chainlink adapter, DeFi regulatory data">
+  <meta property="og:title" content="HYDRA — Regulatory Intelligence API for Prediction Markets">
+  <meta property="og:description" content="Real-time SEC, CFTC, Fed, and FinCEN monitoring for Polymarket and Kalshi. Pay-per-use with USDC on Base via x402.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://hydra-api-nlnj.onrender.com">
+  <meta name="robots" content="index, follow">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0b0d;
+      --surface:   #111318;
+      --surface2:  #181b22;
+      --border:    #232836;
+      --accent:    #4f8ef7;
+      --accent2:   #7c5cf6;
+      --green:     #22c55e;
+      --yellow:    #f59e0b;
+      --red:       #ef4444;
+      --text:      #e8eaf0;
+      --muted:     #8892a4;
+      --mono:      'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    section { padding: 80px 0; }
+    section + section { border-top: 1px solid var(--border); }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 11, 13, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
+
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .nav-brand {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      font-family: var(--mono);
+    }
+
+    .nav-brand span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      text-align: center;
+    }
+
+    .btn:hover { opacity: 0.88; text-decoration: none; transform: translateY(-1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost { border: 1px solid var(--border); color: var(--text); background: transparent; }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(79, 142, 247, 0.1);
+      border: 1px solid rgba(79, 142, 247, 0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 28px;
+      font-family: var(--mono);
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 62px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .hl { color: var(--accent); }
+
+    .hero-sub {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto 36px;
+      line-height: 1.55;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-meta {
+      margin-top: 48px;
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .meta-value {
+      font-size: 13px;
+      font-family: var(--mono);
+      color: var(--text);
+    }
+
+    .meta-value.green { color: var(--green); }
+    .meta-value.accent { color: var(--accent); }
+
+    /* ── Section headings ── */
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: clamp(24px, 4vw, 38px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+
+    .section-desc {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    /* ── How It Works ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 48px;
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      position: relative;
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(79, 142, 247, 0.12);
+      border: 1px solid rgba(79, 142, 247, 0.35);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      font-family: var(--mono);
+    }
+
+    .step h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .step code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: var(--accent);
+    }
+
+    /* ── Pricing table ── */
+    .pricing-intro {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .pricing-group {
+      margin-bottom: 40px;
+    }
+
+    .pricing-group-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pricing-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .pricing-table th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pricing-table td {
+      padding: 13px 14px;
+      border-bottom: 1px solid rgba(35, 40, 54, 0.6);
+      vertical-align: top;
+    }
+
+    .pricing-table tr:last-child td { border-bottom: none; }
+
+    .pricing-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .endpoint-path {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .method-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+      margin-right: 8px;
+    }
+
+    .method-get { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+    .method-post { background: rgba(79, 142, 247, 0.15); color: var(--accent); }
+
+    .price-tag {
+      font-family: var(--mono);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .price-free { color: var(--green); }
+    .price-low { color: var(--accent); }
+    .price-mid { color: var(--yellow); }
+    .price-high { color: #f97316; }
+    .price-premium { color: var(--red); }
+
+    .desc-text {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .free-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-left: 8px;
+    }
+
+    /* ── Feature grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── Code block ── */
+    .code-block {
+      background: #0d0f14;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    .code-block .comment { color: #4a5568; }
+    .code-block .keyword { color: var(--accent2); }
+    .code-block .string { color: var(--green); }
+    .code-block .number { color: var(--yellow); }
+    .code-block .key { color: var(--accent); }
+
+    /* ── Two-col layout ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── CTA strip ── */
+    .cta-strip {
+      background: linear-gradient(135deg, rgba(79, 142, 247, 0.08) 0%, rgba(124, 92, 246, 0.08) 100%);
+      border: 1px solid rgba(79, 142, 247, 0.2);
+      border-radius: 20px;
+      padding: 52px 40px;
+      text-align: center;
+    }
+
+    .cta-strip h2 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    .cta-strip p {
+      color: var(--muted);
+      font-size: 16px;
+      margin-bottom: 28px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .footer-brand {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .footer-brand span { color: var(--accent); }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover { color: var(--text); text-decoration: none; }
+
+    .footer-wallet {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .footer-wallet strong { color: var(--accent); }
+
+    /* ── Oracle section ── */
+    .oracle-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .oracle-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    .oracle-card .oracle-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .oracle-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      font-family: var(--mono);
+    }
+
+    .uma-logo { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .chainlink-logo { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+
+    .oracle-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .oracle-card p { font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
+
+    .endpoint-ref {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--muted);
+    }
+
+    .endpoint-ref .path { color: var(--accent); }
+    .endpoint-ref .price-tag { color: var(--yellow); font-size: 13px; }
+
+    /* ── Highlight rows ── */
+    .free-row td { background: rgba(34, 197, 94, 0.03); }
+
+    /* ── Responsive nav ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero { padding: 60px 0 50px; }
+      section { padding: 56px 0; }
+      .cta-strip { padding: 36px 24px; }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
 <body>
-<h1>HYDRA Arm 3 — Regulatory Intelligence SaaS</h1>
-<p>API Documentation: <a href="/docs">/docs</a></p>
-<p>Pricing: <a href="/pricing">/pricing</a></p>
-<p>Health: <a href="/health">/health</a></p>
-<p>Payment: x402 protocol • USDC on Base (Chain 8453)</p>
-<p>Wallet: 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141</p>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="container">
+    <span class="nav-brand">HYDR<span>A</span></span>
+    <ul class="nav-links">
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#bots">Trading Bots</a></li>
+      <li><a href="#oracle">Oracles</a></li>
+      <li><a href="/docs">API Docs</a></li>
+    </ul>
+    <a href="/docs" class="btn btn-primary">API Docs</a>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">Live on Base · x402 · Pay-per-use</div>
+    <h1>
+      Regulatory Intelligence<br>
+      for <span class="hl">Prediction Markets</span>
+    </h1>
+    <p class="hero-sub">
+      Real-time SEC, CFTC, Fed, and FinCEN monitoring translated into
+      actionable signals for Polymarket and Kalshi. Oracle-ready resolution
+      verdicts for UMA and Chainlink. Pay per call with USDC on Base.
+    </p>
+    <div class="hero-actions">
+      <a href="/docs" class="btn btn-primary">Explore the API</a>
+      <a href="#pricing" class="btn btn-ghost">View Pricing</a>
+    </div>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <span class="meta-label">Payment</span>
+        <span class="meta-value accent">USDC on Base via x402</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Chain</span>
+        <span class="meta-value">Base (8453)</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Status</span>
+        <span class="meta-value green">Operational</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Wallet</span>
+        <span class="meta-value">0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ── -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-label">Protocol</div>
+    <h2 class="section-title">How x402 Payments Work</h2>
+    <p class="section-desc">
+      HYDRA uses the x402 HTTP payment protocol — a standard for machine-readable micropayments.
+      No subscriptions. No API keys. No friction.
+    </p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Call the Endpoint</h3>
+        <p>
+          Make a standard HTTP request to any paid endpoint — for example,
+          <code>POST /v1/markets/alpha</code>. No credentials required for the initial call.
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Receive Payment Details</h3>
+        <p>
+          The API responds with HTTP <code>402 Payment Required</code> and headers specifying
+          the exact USDC amount, wallet address, and Base chain ID.
+          Your bot or client reads these automatically.
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Pay and Resend</h3>
+        <p>
+          Send the specified USDC to <code>0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141</code>
+          on Base. Include the transaction hash in the <code>X-Payment-Proof</code> header
+          and resend your request — you get the full response instantly.
+        </p>
+      </div>
+    </div>
+
+    <div class="code-block" style="margin-top: 40px;">
+<span class="comment"># Step 1: call the endpoint</span>
+<span class="keyword">curl</span> -X POST https://hydra-api-nlnj.onrender.com/v1/markets/alpha
+
+<span class="comment"># → 402 Payment Required</span>
+<span class="comment"># X-Payment-Amount: 10.00</span>
+<span class="comment"># X-Payment-Address: 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141</span>
+<span class="comment"># X-Payment-Network: base</span>
+<span class="comment"># X-Payment-Chain-Id: 8453</span>
+
+<span class="comment"># Step 3: pay USDC on Base, then resend with proof</span>
+<span class="keyword">curl</span> -X POST https://hydra-api-nlnj.onrender.com/v1/markets/alpha \
+     -H <span class="string">"X-Payment-Proof: 0xYOUR_TX_HASH"</span> \
+     -H <span class="string">"Content-Type: application/json"</span> \
+     -d <span class="string">'{"context": "FOMC decision in 48h, SEC crypto enforcement expected"}'</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ── -->
+<section id="pricing">
+  <div class="container">
+    <div class="pricing-intro">
+      <div>
+        <div class="section-label">Pricing</div>
+        <h2 class="section-title">Pay Only for What You Use</h2>
+        <p class="section-desc">
+          Every endpoint is priced per call in USDC. Start free — the
+          <code style="font-family: var(--mono); font-size: 13px; color: var(--green);">/v1/markets</code>
+          endpoint requires no payment.
+        </p>
+      </div>
+      <div style="text-align: right; flex-shrink: 0;">
+        <div class="meta-label" style="text-align: right; margin-bottom: 6px;">Token</div>
+        <div style="font-family: var(--mono); font-size: 14px; margin-bottom: 16px;">USDC on Base (8453)</div>
+        <a href="/pricing" class="btn btn-ghost" style="font-size: 13px;">Machine-readable JSON</a>
+      </div>
+    </div>
+
+    <!-- Free endpoints -->
+    <div class="pricing-group">
+      <div class="pricing-group-title">Free Endpoints — Start Here</div>
+      <table class="pricing-table">
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Price</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="free-row">
+            <td><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/markets</span></td>
+            <td><span class="price-tag price-free">FREE</span></td>
+            <td><span class="desc-text">Active regulatory prediction markets across Polymarket and Kalshi</span></td>
+          </tr>
+          <tr class="free-row">
+            <td><span class="method-badge method-get">GET</span><span class="endpoint-path">/health</span></td>
+            <td><span class="price-tag price-free">FREE</span></td>
+            <td><span class="desc-text">API health, version, and network status</span></td>
+          </tr>
+          <tr class="free-row">
+            <td><span class="method-badge method-get">GET</span><span class="endpoint-path">/pricing</span></td>
+            <td><span class="price-tag price-free">FREE</span></td>
+            <td><span class="desc-text">Machine-readable pricing JSON for all endpoints</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Micro tier -->
+    <div class="pricing-group">
+      <div class="pricing-group-title">Micro Tier — $0.10 – $1.00</div>
+      <table class="pricing-table">
+        <thead>
+          <tr><th>Endpoint</th><th>Price</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method-badge method-get">GET</span><span class="endpoint-path">/v1/markets/feed</span></td>
+            <td><span class="price-tag price-low">$0.10</span></td>
+            <td><span class="desc-text">Micro regulatory event feed matched to prediction markets</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/markets/events</span></td>
+            <td><span class="price-tag price-low">$0.50</span></td>
+            <td><span class="desc-text">Classified regulatory events from SEC, CFTC, Fed, FinCEN</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/regulatory/changes</span></td>
+            <td><span class="price-tag price-low">$1.00</span></td>
+            <td><span class="desc-text">Recent regulatory changes classified by agency and impact</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/regulatory/query</span></td>
+            <td><span class="price-tag price-low">$1.00</span></td>
+            <td><span class="desc-text">Regulatory Q&amp;A with statutory citations</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Standard tier -->
+    <div class="pricing-group">
+      <div class="pricing-group-title">Standard Tier — $2.00 – $5.00</div>
+      <table class="pricing-table">
+        <thead>
+          <tr><th>Endpoint</th><th>Price</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/markets/signal/{market_id}</span></td>
+            <td><span class="price-tag price-mid">$2.00</span></td>
+            <td><span class="desc-text">Scored regulatory signal for one prediction market</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/regulatory/scan</span></td>
+            <td><span class="price-tag price-mid">$2.00</span></td>
+            <td><span class="desc-text">Full regulatory risk scan against all applicable frameworks</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/regulatory/jurisdiction</span></td>
+            <td><span class="price-tag price-mid">$3.00</span></td>
+            <td><span class="desc-text">Jurisdiction comparison with compliance cost modeling</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/markets/signals</span></td>
+            <td><span class="price-tag price-mid">$5.00</span></td>
+            <td><span class="desc-text">Bulk scored signals for all regulatory prediction markets</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/oracle/uma</span></td>
+            <td><span class="price-tag price-mid">$5.00</span></td>
+            <td><span class="desc-text">UMA Optimistic Oracle assertion data with evidence chain</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/oracle/chainlink</span></td>
+            <td><span class="price-tag price-mid">$5.00</span></td>
+            <td><span class="desc-text">Chainlink External Adapter response format</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/fed/signal</span></td>
+            <td><span class="price-tag price-mid">$5.00</span></td>
+            <td><span class="desc-text">Pre-FOMC signal with rate probabilities and Fed speech analysis</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Premium tier -->
+    <div class="pricing-group">
+      <div class="pricing-group-title">Premium Tier — $10.00 – $50.00</div>
+      <table class="pricing-table">
+        <thead>
+          <tr><th>Endpoint</th><th>Price</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/markets/alpha</span></td>
+            <td><span class="price-tag price-high">$10.00</span></td>
+            <td><span class="desc-text">Premium alpha report with edge analysis, Kelly sizing, trade verdict</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/markets/resolution</span></td>
+            <td><span class="price-tag price-high">$25.00</span></td>
+            <td><span class="desc-text">Professional resolution verdict for prediction market settlement</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/fed/decision</span></td>
+            <td><span class="price-tag price-high">$25.00</span></td>
+            <td><span class="desc-text">Real-time FOMC decision classification within 30 seconds of release</span></td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-post">POST</span><span class="endpoint-path">/v1/fed/resolution</span></td>
+            <td><span class="price-tag price-premium">$50.00</span></td>
+            <td><span class="desc-text">FOMC resolution verdict for UMA/Kalshi/Polymarket oracle submission</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── Trading Bots ── -->
+<section id="bots">
+  <div class="container">
+    <div class="two-col">
+      <div>
+        <div class="section-label">Automation</div>
+        <h2 class="section-title">Built for Trading Bots</h2>
+        <p class="section-desc" style="margin-bottom: 20px;">
+          HYDRA is designed as infrastructure for automated prediction market
+          strategies — not a dashboard you log into. Every response is
+          structured JSON optimized for programmatic consumption.
+        </p>
+        <p class="section-desc" style="margin-bottom: 28px;">
+          The x402 protocol lets your bot discover pricing, pay, and receive
+          data in a single automated loop — no human in the loop, no API key
+          rotation, no subscription management.
+        </p>
+        <a href="/docs" class="btn btn-primary">Read the API Docs</a>
+      </div>
+      <div>
+        <div class="feature-card" style="margin-bottom: 16px;">
+          <h3 style="font-size: 15px; margin-bottom: 8px;">Discovery via /.well-known/x402.json</h3>
+          <p>AI agents and bots can discover all endpoints, prices, and payment details automatically. No manual configuration — just point your agent at the service URL.</p>
+        </div>
+        <div class="feature-card" style="margin-bottom: 16px;">
+          <h3 style="font-size: 15px; margin-bottom: 8px;">Structured Signal Output</h3>
+          <p>Every signal includes a numeric score, directional bias, confidence interval, and a plain-language rationale — ready to feed directly into your position-sizing logic.</p>
+        </div>
+        <div class="feature-card">
+          <h3 style="font-size: 15px; margin-bottom: 8px;">Kelly-Sized Alpha Reports</h3>
+          <p>The <code style="font-family: var(--mono); font-size: 12px; color: var(--accent);">/v1/markets/alpha</code> endpoint delivers edge estimates with Kelly Criterion sizing recommendations — not just raw data.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-grid" style="margin-top: 48px;">
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <h3>Live Feed Monitoring</h3>
+        <p>Continuous ingestion from SEC press releases, CFTC enforcement, FinCEN notices, and Fed speeches. Events are classified by impact and matched to open prediction markets.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Market-Specific Signals</h3>
+        <p>Each Polymarket or Kalshi market gets a tailored regulatory signal — not a generic news feed. The signal reflects the specific question the market is resolving.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>FOMC Speed Advantage</h3>
+        <p>The Fed decision endpoint classifies FOMC statements within 30 seconds of release — before most markets reprice. Critical edge for rate-sensitive prediction markets.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💳</div>
+        <h3>Atomic Payments</h3>
+        <p>x402 payments settle on Base in ~2 seconds. Your bot can call, pay, and receive a signal before most traditional APIs have finished authenticating.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔎</div>
+        <h3>SEC Enforcement Alerts</h3>
+        <p>SEC litigation releases and proposed rules are monitored for market-moving events — crypto enforcement actions, securities rulemaking, and whistleblower settlements.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Bulk Signal Batching</h3>
+        <p>The <code style="font-family: var(--mono); font-size: 12px; color: var(--accent);">/v1/markets/signals</code> endpoint scores all active regulatory markets in a single $5.00 call — more efficient than per-market requests at scale.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Oracle Section ── -->
+<section id="oracle">
+  <div class="container">
+    <div class="section-label">Oracle Integration</div>
+    <h2 class="section-title">Resolution-as-a-Service</h2>
+    <p class="section-desc">
+      HYDRA generates oracle-ready resolution verdicts for on-chain prediction markets.
+      Structured outputs for UMA Optimistic Oracle and Chainlink External Adapters —
+      with a full evidence chain for dispute resolution.
+    </p>
+
+    <div class="oracle-cards">
+      <div class="oracle-card">
+        <div class="oracle-header">
+          <div class="oracle-logo uma-logo">UMA</div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px;">UMA Optimistic Oracle</div>
+            <div style="font-size: 12px; color: var(--muted);">Assertion data + evidence chain</div>
+          </div>
+        </div>
+        <p>
+          Submit regulatory resolution assertions to UMA's Optimistic Oracle with
+          full evidence chains. HYDRA formats the assertion, supporting citations,
+          and confidence score in the exact structure required for UMA assertion
+          submission — reducing dispute risk.
+        </p>
+        <div class="endpoint-ref">
+          <span class="path">POST /v1/oracle/uma</span>
+          &nbsp;&nbsp;
+          <span class="price-tag">$5.00 USDC</span>
+        </div>
+        <div class="endpoint-ref" style="margin-top: 8px;">
+          <span class="path">POST /v1/fed/resolution</span>
+          &nbsp;&nbsp;
+          <span class="price-tag">$50.00 USDC</span>
+          <span style="color: var(--muted); font-size: 11px; margin-left: 8px;">FOMC-specific</span>
+        </div>
+      </div>
+
+      <div class="oracle-card">
+        <div class="oracle-header">
+          <div class="oracle-logo chainlink-logo">CL</div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px;">Chainlink External Adapter</div>
+            <div style="font-size: 12px; color: var(--muted);">Drop-in adapter response format</div>
+          </div>
+        </div>
+        <p>
+          HYDRA's Chainlink endpoint returns data in the standard External Adapter
+          JSON format — compatible with any Chainlink node that supports external
+          adapters. Point your job spec at HYDRA and resolve regulatory markets
+          on-chain without custom parsing.
+        </p>
+        <div class="endpoint-ref">
+          <span class="path">POST /v1/oracle/chainlink</span>
+          &nbsp;&nbsp;
+          <span class="price-tag">$5.00 USDC</span>
+        </div>
+      </div>
+
+      <div class="oracle-card">
+        <div class="oracle-header">
+          <div class="oracle-logo" style="background: rgba(245, 158, 11, 0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3);">⚖️</div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px;">Market Resolution Verdicts</div>
+            <div style="font-size: 12px; color: var(--muted);">Polymarket · Kalshi · UMA</div>
+          </div>
+        </div>
+        <p>
+          Professional resolution verdicts for any regulatory prediction market —
+          with statutory citations, agency source links, and a structured
+          YES/NO/AMBIGUOUS verdict. Usable for Polymarket resolution submissions,
+          Kalshi settlement disputes, and UMA liveness challenges.
+        </p>
+        <div class="endpoint-ref">
+          <span class="path">POST /v1/markets/resolution</span>
+          &nbsp;&nbsp;
+          <span class="price-tag">$25.00 USDC</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section>
+  <div class="container">
+    <div class="cta-strip">
+      <h2>Start with a Free API Call</h2>
+      <p>
+        No account required. Fetch active regulatory prediction markets — zero cost.
+        Pay only when you need signals, alpha, or oracle data.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="/docs" class="btn btn-primary">Open API Docs</a>
+        <a href="/.well-known/x402.json" class="btn btn-ghost">x402 Discovery JSON</a>
+      </div>
+      <div style="margin-top: 28px; font-family: var(--mono); font-size: 12px; color: var(--muted);">
+        <span style="margin-right: 24px;">GET /v1/markets — free forever</span>
+        <span style="margin-right: 24px;">Network: Base (8453)</span>
+        <span>Token: USDC</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">HYDR<span>A</span></div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Regulatory Intelligence API</div>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/docs">API Docs</a></li>
+        <li><a href="/pricing">Pricing JSON</a></li>
+        <li><a href="/.well-known/x402.json">x402 Manifest</a></li>
+        <li><a href="/health">Health</a></li>
+      </ul>
+      <div class="footer-wallet">
+        <div>Payment wallet</div>
+        <div><strong>0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141</strong></div>
+        <div style="margin-top: 4px;">USDC · Base · Chain 8453</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
