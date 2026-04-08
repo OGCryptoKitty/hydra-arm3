@@ -32,6 +32,7 @@ Replay prevention:
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import time
@@ -183,6 +184,39 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         return response
 
     @staticmethod
+    def _build_x402_payment_required_header(path: str, pricing: dict) -> str:
+        """
+        Build the standard x402 PAYMENT-REQUIRED header value.
+
+        This is a base64-encoded JSON object following the x402 protocol spec
+        (coinbase/x402). Including this header makes HYDRA discoverable by:
+          - x402 Bazaar (Coinbase AI agent discovery)
+          - x402scan.com (open x402 registry)
+          - x402-index (autonomous x402 crawler)
+          - Any x402-compliant client or AI agent
+        """
+        payment_requirements = {
+            "x402Version": 1,
+            "scheme": "exact",
+            "network": f"eip155:{CHAIN_ID}",
+            "maxAmountRequired": str(pricing["amount_base_units"]),
+            "resource": path,
+            "description": pricing["description"],
+            "mimeType": "application/json",
+            "payTo": WALLET_ADDRESS,
+            "maxTimeoutSeconds": 900,
+            "asset": USDC_CONTRACT_ADDRESS,
+            "extra": {
+                "name": "HYDRA Regulatory Intelligence",
+                "pricing_usdc": str(pricing["amount_usdc"]),
+                "accepts": ["X-Payment-Proof"],
+            },
+        }
+        return base64.b64encode(
+            json.dumps(payment_requirements, separators=(",", ":")).encode()
+        ).decode()
+
+    @staticmethod
     def _payment_required_response(path: str, pricing: dict) -> JSONResponse:
         """Return a standards-compliant 402 Payment Required response."""
         body = {
@@ -227,7 +261,14 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
             },
         }
 
+        # Standard x402 protocol header (base64-encoded JSON) — enables
+        # discovery by x402 Bazaar, x402scan, and x402-index crawlers
+        x402_header = X402PaymentMiddleware._build_x402_payment_required_header(path, pricing)
+
         headers = {
+            # ── Standard x402 protocol header ────────────────────
+            "PAYMENT-REQUIRED": x402_header,
+            # ── HYDRA custom headers (backward compatibility) ────
             "X-Payment-Required": "true",
             "X-Payment-Amount": str(pricing["amount_base_units"]),
             "X-Payment-Address": WALLET_ADDRESS,
@@ -237,6 +278,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
             "X-Payment-Endpoint": path,
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Expose-Headers": (
+                "PAYMENT-REQUIRED, "
                 "X-Payment-Required, X-Payment-Amount, X-Payment-Address, "
                 "X-Payment-Network, X-Payment-Token, X-Payment-Chain-Id, "
                 "X-Payment-Endpoint, X-Payment-Verified, X-Payment-Tx"
