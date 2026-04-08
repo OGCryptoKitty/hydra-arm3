@@ -1,0 +1,33 @@
+name: API Directory Submission
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - '.github/workflows/api-directory-submit.yml'
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log API discovery channels
+        run: |
+          echo "============================================"
+          echo "HYDRA API Discovery Channels"
+          echo "============================================"
+          echo ""
+          echo "Auto-discovery (built into HYDRA):"
+          echo "  /.well-known/ai-plugin.json  — AI agent discovery"
+          echo "  /.well-known/x402.json       — x402 payment protocol"
+          echo "  /apis.json                   — APIs.io directory"
+          echo "  /robots.txt                  — Search engine crawler"
+          echo "  /sitemap.xml                 — Sitemap"
+          echo "  /openapi.json                — OpenAPI spec"
+          echo ""
+          echo "GitHub discovery:"
+          echo "  Topics: prediction-markets, polymarket, x402, usdc, fomc"
+          echo "  Description: set by repo-setup.yml workflow"
+          echo ""
+          echo "API spec URL: https://hydra-api-nlnj.onrender.com/openapi.json"

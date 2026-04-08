@@ -1,0 +1,39 @@
+{
+  "name": "HYDRA Regulatory Intelligence API",
+  "description": "AI-powered regulatory intelligence for prediction market traders. FOMC signals, SEC enforcement, and regulatory event feeds. Pay-per-use in USDC on Base L2.",
+  "url": "https://hydra-api-nlnj.onrender.com",
+  "image": "https://hydra-api-nlnj.onrender.com/favicon.ico",
+  "created": "2026-04-01",
+  "modified": "2026-04-08",
+  "specificationVersion": "0.14",
+  "apis": [
+    {
+      "name": "HYDRA Regulatory Intelligence",
+      "description": "Real-time regulatory analysis, FOMC decision signals, and prediction market intelligence across Polymarket, Kalshi, UMA, and Chainlink.",
+      "humanURL": "https://hydra-api-nlnj.onrender.com/docs",
+      "baseURL": "https://hydra-api-nlnj.onrender.com",
+      "properties": [
+        {
+          "type": "X-OpenAPI",
+          "url": "https://hydra-api-nlnj.onrender.com/openapi.json"
+        },
+        {
+          "type": "X-Pricing",
+          "url": "https://hydra-api-nlnj.onrender.com/pricing"
+        }
+      ],
+      "contact": [
+        {
+          "FN": "HYDRA API",
+          "url": "https://hydra-api-nlnj.onrender.com"
+        }
+      ]
+    }
+  ],
+  "maintainers": [
+    {
+      "FN": "HYDRA Systems",
+      "url": "https://github.com/OGCryptoKitty/hydra-arm3"
+    }
+  ]
+}
