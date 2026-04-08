@@ -231,10 +231,75 @@ class FedIntelligenceEngine:
         self._rate_low = _CURRENT_RATE_LOW
         self._rate_high = _CURRENT_RATE_HIGH
         self._rate_range = _CURRENT_RATE_RANGE
-        self._indicators = _ECONOMIC_INDICATORS
-        self._speech_analysis = _FED_SPEECH_ANALYSIS
-        self._dot_plot = _DOT_PLOT
-        self._last_decision = _LAST_DECISION
+        self._indicators = list(_ECONOMIC_INDICATORS)  # copy to avoid mutating module-level
+        self._speech_analysis = dict(_FED_SPEECH_ANALYSIS)
+        self._dot_plot = dict(_DOT_PLOT)
+        self._last_decision = dict(_LAST_DECISION)
+        self._live_data_loaded = False
+
+    async def refresh_from_live_data(self) -> dict[str, bool]:
+        """
+        Attempt to replace hardcoded values with live data from public APIs.
+        Returns dict of which sources were successfully refreshed.
+        """
+        if self._live_data_loaded:
+            return {"already_loaded": True}
+
+        from src.services.live_data import fetch_fed_funds_rate, fetch_treasury_yields, fetch_latest_fed_statement
+        import asyncio
+
+        results = await asyncio.gather(
+            fetch_fed_funds_rate(),
+            fetch_treasury_yields(),
+            fetch_latest_fed_statement(),
+            return_exceptions=True,
+        )
+
+        refreshed = {}
+
+        # Live Fed funds rate
+        ffr = results[0] if not isinstance(results[0], Exception) else None
+        if ffr and ffr.get("target_rate_from") is not None:
+            try:
+                self._rate_low = float(ffr["target_rate_from"])
+                self._rate_high = float(ffr["target_rate_to"])
+                self._rate_range = f"{self._rate_low:.2f}-{self._rate_high:.2f}%"
+                refreshed["fed_funds_rate"] = True
+                logger.info("Live Fed funds rate loaded: %s", self._rate_range)
+            except (ValueError, TypeError):
+                refreshed["fed_funds_rate"] = False
+        else:
+            refreshed["fed_funds_rate"] = False
+
+        # Live Treasury yields → update 10Y indicator
+        yields = results[1] if not isinstance(results[1], Exception) else None
+        if yields and yields.get("yields"):
+            y = yields["yields"]
+            ten_year = y.get("10 Yr") or y.get("10 YR") or y.get("10Yr")
+            if ten_year is not None:
+                for ind in self._indicators:
+                    if ind["indicator"] == "10Y Treasury Yield":
+                        ind["value"] = f"{float(ten_year):.2f}%"
+                        ind["period"] = yields.get("date", ind["period"])
+                        refreshed["treasury_10y"] = True
+                        break
+                else:
+                    refreshed["treasury_10y"] = False
+            else:
+                refreshed["treasury_10y"] = False
+        else:
+            refreshed["treasury_10y"] = False
+
+        # Live Fed statement
+        stmt = results[2] if not isinstance(results[2], Exception) else None
+        if stmt and stmt.get("title"):
+            refreshed["fed_statement"] = True
+            logger.info("Live Fed statement available: %s", stmt["title"][:80])
+        else:
+            refreshed["fed_statement"] = False
+
+        self._live_data_loaded = True
+        return refreshed
 
     # ── Date helpers ──────────────────────────────────────────
 
@@ -361,10 +426,56 @@ class FedIntelligenceEngine:
     def generate_pre_fomc_signal(self) -> dict[str, Any]:
         """
         Generate a complete pre-FOMC intelligence signal.
-        Combines all model components into a single trader-facing payload.
+        Uses Claude LLM if available for enhanced analysis, otherwise
+        falls back to rule-based model.
         """
         next_fomc = self.get_next_fomc()
         probs = self.calculate_rate_probabilities()
+
+        # ── Try LLM-enhanced signal ──
+        try:
+            from src.services.llm import analyze_fed_signal_llm, is_llm_available
+            if is_llm_available():
+                llm_result = analyze_fed_signal_llm(
+                    current_rate=self._rate_range,
+                    economic_data={ind["indicator"]: ind["value"] for ind in self._indicators},
+                    recent_speeches=[
+                        {"speaker": s["speaker"], "key_message": s["key_message"], "tone": s["tone"]}
+                        for s in self._speech_analysis.get("recent_speeches", [])
+                    ],
+                    next_meeting=next_fomc.get("announcement_date", "unknown"),
+                )
+                if llm_result is not None:
+                    logger.info("Using LLM-enhanced Fed signal analysis")
+                    llm_probs = llm_result.get("rate_probabilities", {})
+                    return {
+                        "fed_funds_rate_current": self._rate_range,
+                        "next_fomc_date": next_fomc["announcement_date"],
+                        "days_until_fomc": next_fomc["days_until_fomc"],
+                        "hydra_rate_probability": {
+                            "hold": llm_probs.get("hold", probs["hold"]),
+                            "cut_25": llm_probs.get("cut_25bp", probs["cut_25"]),
+                            "cut_50": llm_probs.get("cut_50bp", probs["cut_50"]),
+                            "hike_25": llm_probs.get("hike_25bp", probs.get("hike_25", 0.03)),
+                        },
+                        "key_indicators": self._indicators,
+                        "fed_speech_analysis": self._speech_analysis,
+                        "dot_plot_implied_rate": f"{self._dot_plot['median_2026_year_end']}% (median 2026 year-end)",
+                        "hydra_signal": llm_result.get("signal_direction", "HOLD"),
+                        "confidence": round(llm_result.get("confidence", 0.75) * 100),
+                        "key_factors": llm_result.get("key_factors", []),
+                        "risk_factors": llm_result.get("risk_factors", []),
+                        "reasoning": llm_result.get("analysis", ""),
+                        "market_impact_assessment": llm_result.get("market_impact_assessment", ""),
+                        "analysis_engine": "claude-llm",
+                        "source_urls": [
+                            "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+                            "https://www.bls.gov/cpi/",
+                            "https://www.bea.gov/data/personal-consumption-expenditures-price-index",
+                        ],
+                    }
+        except Exception as exc:
+            logger.warning("LLM Fed signal failed, falling back to rule-based: %s", exc)
 
         # Determine signal direction from probabilities
         max_outcome = max(probs, key=probs.get)  # type: ignore[arg-type]
@@ -514,14 +625,29 @@ class FedIntelligenceEngine:
     def generate_resolution_verdict(self, market_question: str) -> dict[str, Any]:
         """
         Produce a full resolution verdict for a FOMC prediction market.
-
-        Formats output for UMA Optimistic Oracle, Kalshi KXFED series,
-        and Polymarket FOMC markets.
+        Uses Claude LLM for enhanced reasoning if available.
 
         Args:
             market_question: Natural-language market question to resolve,
                 e.g. "Will the Fed hold rates at the May 2026 FOMC meeting?"
         """
+        # ── Try LLM-enhanced resolution ──
+        try:
+            from src.services.llm import generate_resolution_verdict_llm, is_llm_available
+            if is_llm_available():
+                evidence = {
+                    "last_fomc_decision": self._last_decision,
+                    "current_rate": self._rate_range,
+                    "economic_indicators": {ind["indicator"]: ind["value"] for ind in self._indicators},
+                    "rate_probabilities": self.calculate_rate_probabilities(),
+                }
+                llm_verdict = generate_resolution_verdict_llm(market_question, evidence)
+                if llm_verdict is not None:
+                    logger.info("Using LLM-enhanced resolution verdict")
+                    self._llm_verdict_cache = llm_verdict
+        except Exception as exc:
+            logger.warning("LLM resolution failed, using rule-based: %s", exc)
+
         decision = self.get_latest_decision()
         probs = self.calculate_rate_probabilities()
         outcome = decision["decision"]
@@ -552,6 +678,15 @@ class FedIntelligenceEngine:
             },
         ]
 
+        # Merge LLM analysis if available
+        llm_cache = getattr(self, "_llm_verdict_cache", None)
+        llm_reasoning = ""
+        if llm_cache is not None:
+            confidence = max(confidence, round(llm_cache.get("confidence", 0) * 100))
+            llm_reasoning = llm_cache.get("analysis", "")
+            if llm_cache.get("verdict"):
+                outcome = llm_cache["verdict"]
+
         return {
             "market_question": market_question,
             "resolution_verdict": {
@@ -563,6 +698,8 @@ class FedIntelligenceEngine:
                     f"The Federal Reserve {outcome.lower()}d rates at {decision['meeting_dates']}. "
                     f"{decision['statement_summary']}"
                 ),
+                **({"llm_reasoning": llm_reasoning} if llm_reasoning else {}),
+                "analysis_engine": "claude-llm" if llm_cache else "rule-based",
             },
             "uma_assertion_data": {
                 "ancillary_data": (

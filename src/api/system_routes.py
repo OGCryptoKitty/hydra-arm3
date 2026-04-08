@@ -36,7 +36,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-BOOTSTRAP_DIR = Path(os.getenv("HYDRA_BOOTSTRAP_DIR", "/home/user/workspace/hydra-bootstrap"))
+BOOTSTRAP_DIR = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data")))
 WALLET_JSON   = BOOTSTRAP_DIR / "wallet.json"
 
 system_router = APIRouter(prefix="/system", tags=["System Management"])
@@ -106,7 +106,8 @@ def require_system_auth(request: Request) -> None:
             detail="System auth token could not be derived (wallet private key not configured).",
         )
 
-    if provided_token != expected_token:
+    import hmac as _hmac
+    if not _hmac.compare_digest(provided_token, expected_token):
         raise HTTPException(
             status_code=403,
             detail="Invalid system authorization token.",
@@ -137,7 +138,8 @@ def require_bearer_token_only(request: Request) -> None:
             detail="System auth token could not be derived (wallet private key not configured).",
         )
 
-    if provided_token != expected_token:
+    import hmac as _hmac
+    if not _hmac.compare_digest(provided_token, expected_token):
         raise HTTPException(
             status_code=403,
             detail="Invalid system authorization token.",
@@ -151,6 +153,11 @@ def require_bearer_token_only(request: Request) -> None:
 class SetWalletRequest(BaseModel):
     """Request body for POST /system/wallet."""
     address: str
+
+
+class RemittanceExecuteRequest(BaseModel):
+    """Request body for POST /system/remittance/execute."""
+    confirm_address: str = ""  # Must match configured receiving wallet to proceed
 
 
 # ─────────────────────────────────────────────────────────────
@@ -336,11 +343,13 @@ async def remittance_status(
 )
 async def execute_remittance(
     request: Request,
+    body: RemittanceExecuteRequest,
     _auth: None = Depends(require_system_auth),
 ) -> JSONResponse:
     """
     Manually trigger a USDC remittance.
 
+    Requires confirm_address matching the configured receiving wallet.
     Checks that a receiving wallet is configured, then calls
     RemittanceManager.execute_remittance(). Returns the RemittanceResult as JSON.
     """
@@ -352,6 +361,40 @@ async def execute_remittance(
             detail=(
                 "No receiving wallet configured. "
                 "POST /system/wallet with an address first."
+            ),
+        )
+
+    # Require explicit wallet address confirmation to prevent accidental transfers
+    if not body.confirm_address:
+        balance = _get_usdc_balance(rm)
+        remittable = rm.calculate_remittable_amount(balance)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "action_required": "confirm",
+                "message": (
+                    "Remittance requires explicit confirmation. Resend with "
+                    "'confirm_address' matching the receiving wallet address."
+                ),
+                "receiving_wallet": rm.receiving_wallet,
+                "treasury_balance_usdc": str(balance),
+                "remittable_amount_usdc": str(remittable),
+                "operating_reserve_usdc": str(rm.OPERATING_RESERVE),
+            },
+        )
+
+    from web3 import Web3
+    try:
+        confirmed = Web3.to_checksum_address(body.confirm_address)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid confirm_address format.")
+
+    if confirmed != rm.receiving_wallet:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"confirm_address does not match configured receiving wallet. "
+                f"Expected: {rm.receiving_wallet}"
             ),
         )
 
@@ -734,3 +777,188 @@ async def system_shutdown(
             "timestamp":         datetime.now(timezone.utc).isoformat(),
         },
     )
+
+
+# ─────────────────────────────────────────────────────────────
+# Subscription Management Endpoints
+# ─────────────────────────────────────────────────────────────
+
+
+class CreateKeyRequest(BaseModel):
+    tier: str = "free"
+    label: str = ""
+    payment_proof: str = ""  # Tx hash for paid tier activation
+
+
+@system_router.get(
+    "/subscriptions/tiers",
+    summary="View subscription tier pricing",
+    description="Returns all available subscription tiers, pricing, and call limits.",
+)
+async def get_subscription_tiers(
+    request: Request,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """List all subscription tiers and pricing."""
+    from src.runtime.subscriptions import SubscriptionManager
+    sm = SubscriptionManager()
+    return JSONResponse(content={
+        "tiers": sm.get_tier_pricing(),
+        "note": "Enterprise tier requires custom pricing agreement.",
+    })
+
+
+@system_router.post(
+    "/subscriptions/keys",
+    summary="Create a new API key",
+    description=(
+        "Generate a new API key for a subscription tier. "
+        "The raw key is returned ONCE — store it securely. "
+        "Keys are stored as SHA-256 hashes only."
+    ),
+)
+async def create_api_key(
+    request: Request,
+    body: CreateKeyRequest,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Create a new API key. Returns the raw key only once."""
+    from src.runtime.subscriptions import SubscriptionManager, SubscriptionTier
+    sm = SubscriptionManager()
+    try:
+        tier = SubscriptionTier(body.tier)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid tier '{body.tier}'. Valid: free, standard, professional, enterprise",
+        )
+    # Restrict paid tier creation — requires manual payment verification
+    if tier in (SubscriptionTier.STANDARD, SubscriptionTier.PROFESSIONAL, SubscriptionTier.ENTERPRISE):
+        # Require explicit payment proof for paid tiers
+        payment_proof = getattr(body, "payment_proof", None)
+        if not payment_proof:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"{tier.value.upper()} tier requires payment verification. "
+                    f"Include 'payment_proof' (tx hash) in the request body, or create a FREE key first."
+                ),
+            )
+
+    raw_key = sm.create_key(tier=tier, label=body.label)
+    return JSONResponse(
+        status_code=201,
+        content={
+            "api_key": raw_key,
+            "tier": tier.value,
+            "label": body.label,
+            "warning": "Store this key securely — it will NOT be shown again.",
+        },
+    )
+
+
+@system_router.get(
+    "/subscriptions/keys",
+    summary="List all API keys",
+    description="Returns all registered API keys (hashed, never raw) with usage stats.",
+)
+async def list_api_keys(
+    request: Request,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """List all API keys with usage statistics."""
+    from src.runtime.subscriptions import SubscriptionManager
+    sm = SubscriptionManager()
+    return JSONResponse(content={"keys": sm.list_keys()})
+
+
+@system_router.post(
+    "/subscriptions/keys/deactivate",
+    summary="Deactivate an API key",
+    description="Deactivate an API key by its hash prefix (first 12 characters from the keys list).",
+)
+async def deactivate_api_key(
+    request: Request,
+    key_hash_prefix: str = Query(..., min_length=8, description="First 12 chars of key hash"),
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Deactivate an API key."""
+    from src.runtime.subscriptions import SubscriptionManager
+    sm = SubscriptionManager()
+    if sm.deactivate_key(key_hash_prefix):
+        return JSONResponse(content={"status": "deactivated", "key_hash_prefix": key_hash_prefix})
+    raise HTTPException(status_code=404, detail=f"No active key found with prefix '{key_hash_prefix}'.")
+
+
+# ─────────────────────────────────────────────────────────────
+# Webhook Management Endpoints
+# ─────────────────────────────────────────────────────────────
+
+
+class RegisterWebhookRequest(BaseModel):
+    url: str
+    events: list[str] = ["regulatory_change", "fed_signal", "market_alert", "remittance_ready"]
+    label: str = ""
+
+
+@system_router.post(
+    "/webhooks",
+    summary="Register a webhook endpoint",
+    description=(
+        "Register a URL to receive event notifications. "
+        "Events: regulatory_change, fed_signal, market_alert, remittance_ready. "
+        "Deliveries include HMAC-SHA256 signature for verification."
+    ),
+)
+async def register_webhook(
+    request: Request,
+    body: RegisterWebhookRequest,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Register a webhook for event notifications."""
+    from src.services.webhooks import WebhookManager
+    wm = WebhookManager()
+    sub = wm.register(
+        url=body.url,
+        events=body.events,
+        api_key_hash="system",  # System-level webhooks use system auth
+        label=body.label,
+    )
+    return JSONResponse(
+        status_code=201,
+        content={
+            "status": "registered",
+            "webhook": sub.to_dict(),
+        },
+    )
+
+
+@system_router.get(
+    "/webhooks",
+    summary="List webhook subscriptions",
+)
+async def list_webhooks(
+    request: Request,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """List all registered webhook subscriptions."""
+    from src.services.webhooks import WebhookManager
+    wm = WebhookManager()
+    return JSONResponse(content={"webhooks": wm.list_subscriptions()})
+
+
+@system_router.post(
+    "/webhooks/deactivate",
+    summary="Deactivate a webhook",
+)
+async def deactivate_webhook(
+    request: Request,
+    url: str = Query(..., description="Webhook URL to deactivate"),
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Deactivate a webhook subscription."""
+    from src.services.webhooks import WebhookManager
+    wm = WebhookManager()
+    if wm.deactivate(url):
+        return JSONResponse(content={"status": "deactivated", "url": url})
+    raise HTTPException(status_code=404, detail=f"No active webhook found for '{url}'.")

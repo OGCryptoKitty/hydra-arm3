@@ -1,0 +1,96 @@
+name: HYDRA CI
+
+on:
+  push:
+    branches: [main, "claude/*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest==8.3.3
+
+      - name: Run tests
+        env:
+          HYDRA_STATE_DIR: /tmp/hydra-test
+          WALLET_ADDRESS: "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
+          BASE_RPC_URL: "https://mainnet.base.org"
+        run: |
+          python -m pytest tests/ -v --tb=short --junitxml=test-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Check imports
+        env:
+          HYDRA_STATE_DIR: /tmp/hydra-test
+        run: |
+          python -c "from src.runtime.constitution import ConstitutionCheck, ValidationResult; print('constitution OK')"
+          python -c "from src.runtime.lifecycle import LifecycleManager, Phase; print('lifecycle OK')"
+          python -c "from src.runtime.transaction_log import TransactionLog, TxDirection, TxCategory; print('transaction_log OK')"
+          python -c "from src.runtime.automaton import HydraAutomaton, get_automaton; print('automaton OK')"
+          python -c "from src.x402.verify import verify_usdc_payment, is_valid_tx_hash; print('verify OK')"
+          python -c "from src.models.schemas import PaymentVerificationResult; print('schemas OK')"
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t hydra-arm3:test .
+
+      - name: Verify Docker health check
+        run: |
+          docker run -d --name hydra-test \
+            -e WALLET_ADDRESS=0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141 \
+            -e BASE_RPC_URL=https://mainnet.base.org \
+            -e HYDRA_STATE_DIR=/app/data \
+            -p 8402:8402 \
+            hydra-arm3:test
+          sleep 10
+          curl -sf http://localhost:8402/health || (docker logs hydra-test && exit 1)
+          docker stop hydra-test

@@ -1256,7 +1256,40 @@ def analyze_regulatory_risk(
 ) -> RegulatoryScenResponse:
     """
     Analyze regulatory risk for a business description.
+    Uses Claude LLM if ANTHROPIC_API_KEY is configured, otherwise falls back
+    to rule-based keyword matching.
     """
+    # ── Try LLM-powered analysis first ──
+    try:
+        from src.services.llm import analyze_regulatory_risk_llm, is_llm_available
+        if is_llm_available():
+            llm_result = analyze_regulatory_risk_llm(business_description, jurisdiction)
+            if llm_result is not None:
+                logger.info("Using LLM-powered regulatory analysis for: %s...", business_description[:60])
+                regs = []
+                for r in llm_result.get("applicable_regulations", []):
+                    regs.append(ApplicableRegulation(
+                        name=r.get("name", "Unknown"),
+                        citation=r.get("citation", "N/A"),
+                        regulator=r.get("regulator", "N/A"),
+                        relevance=r.get("relevance", ""),
+                        risk_level=RiskLevel(r.get("risk_level", "MEDIUM").upper()) if r.get("risk_level", "").upper() in [e.value for e in RiskLevel] else RiskLevel.MEDIUM,
+                        description=r.get("description", ""),
+                        recommended_actions=r.get("recommended_actions", []),
+                    ))
+                return RegulatoryScenResponse(
+                    business_description=business_description,
+                    jurisdiction=jurisdiction,
+                    overall_risk_score=llm_result.get("overall_risk_score", 50),
+                    overall_risk_level=RiskLevel(llm_result.get("overall_risk_level", "MEDIUM").upper()) if llm_result.get("overall_risk_level", "").upper() in [e.value for e in RiskLevel] else RiskLevel.MEDIUM,
+                    applicable_regulations=regs or [],
+                    key_compliance_gaps=llm_result.get("key_compliance_gaps", []),
+                    priority_actions=llm_result.get("priority_actions", []),
+                )
+    except Exception as exc:
+        logger.warning("LLM regulatory analysis failed, falling back to rule-based: %s", exc)
+
+    # ── Fallback: rule-based keyword matching ──
     regulations, raw_score = _score_business(business_description)
 
     # Jurisdiction-based adjustments
@@ -1405,8 +1438,28 @@ def compare_jurisdictions(
 
 def answer_regulatory_query(question: str) -> RegulatoryQueryResponse:
     """
-    Answer a regulatory question using the structured knowledge base.
+    Answer a regulatory question.
+    Uses Claude LLM if available, otherwise falls back to keyword-matched knowledge base.
     """
+    # ── Try LLM-powered Q&A first ──
+    try:
+        from src.services.llm import answer_regulatory_query_llm, is_llm_available
+        if is_llm_available():
+            llm_result = answer_regulatory_query_llm(question)
+            if llm_result is not None:
+                logger.info("Using LLM-powered Q&A for: %s...", question[:60])
+                return RegulatoryQueryResponse(
+                    question=question,
+                    answer=llm_result.get("answer", ""),
+                    confidence=llm_result.get("confidence", 0.7),
+                    relevant_regulations=llm_result.get("relevant_statutes", []),
+                    relevant_agencies=llm_result.get("relevant_agencies", []),
+                    follow_up_questions=[],
+                )
+    except Exception as exc:
+        logger.warning("LLM Q&A failed, falling back to rule-based: %s", exc)
+
+    # ── Fallback: keyword-matched knowledge base ──
     normalized_q = _normalize_text(question)
 
     best_match: dict | None = None

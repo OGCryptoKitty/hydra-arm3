@@ -45,6 +45,11 @@ PORT: int = int(os.getenv("PORT", "8402"))
 
 DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
+# CORS allowed origins (comma-separated). Use "*" for public API (default).
+CORS_ALLOWED_ORIGINS: list[str] = os.getenv(
+    "CORS_ALLOWED_ORIGINS", "*"
+).split(",") if os.getenv("CORS_ALLOWED_ORIGINS") else ["*"]
+
 # ─────────────────────────────────────────────────────────────
 # Pricing Tiers (in USDC, human-readable)
 # These are converted to base units (6 decimals) at verification time.
@@ -74,31 +79,31 @@ PRICING: dict[str, dict] = {
     },
     # ── Prediction Market Signals (Layer 1-2: Collection + Classification) ──
     "/v1/markets/feed": {
-        "amount_usdc": Decimal("0.10"),
+        "amount_usdc": Decimal("0.25"),
         "description": "Micro regulatory event feed — last 10 events matched to prediction markets. High-frequency bot polling.",
-        "amount_base_units": 100_000,
+        "amount_base_units": 250_000,
     },
     "/v1/markets/events": {
-        "amount_usdc": Decimal("0.50"),
+        "amount_usdc": Decimal("1.50"),
         "description": "Classified regulatory event feed — SEC, CFTC, Fed, FinCEN events tagged by type, agency, and affected prediction markets",
-        "amount_base_units": 500_000,
+        "amount_base_units": 1_500_000,
     },
     # ── Prediction Market Signals (Layer 3: Scoring) ──
     "/v1/markets/signal": {
-        "amount_usdc": Decimal("2.00"),
+        "amount_usdc": Decimal("5.00"),
         "description": "Scored market signal — HYDRA regulatory probability, expected price impact, risk factors for one prediction market",
-        "amount_base_units": 2_000_000,
+        "amount_base_units": 5_000_000,
     },
     "/v1/markets/signals": {
-        "amount_usdc": Decimal("5.00"),
+        "amount_usdc": Decimal("15.00"),
         "description": "Bulk scored signals — all active regulatory prediction markets with HYDRA probability, impact scoring, and signal direction",
-        "amount_base_units": 5_000_000,
+        "amount_base_units": 15_000_000,
     },
     # ── Prediction Market Signals (Layer 4: Recommendation) ──
     "/v1/markets/alpha": {
-        "amount_usdc": Decimal("10.00"),
+        "amount_usdc": Decimal("30.00"),
         "description": "Premium alpha report — regulatory probability, edge vs market price, Kelly sizing, entry price, historical analogues, resolution timeline, trade verdict",
-        "amount_base_units": 10_000_000,
+        "amount_base_units": 30_000_000,
     },
     # ── Fed Decision Package (highest-value recurring category) ──
     "/v1/fed/signal": {
@@ -118,20 +123,20 @@ PRICING: dict[str, dict] = {
     },
     # ── Oracle Integration ──
     "/v1/oracle/uma": {
-        "amount_usdc": Decimal("5.00"),
+        "amount_usdc": Decimal("10.00"),
         "description": "UMA Optimistic Oracle assertion data — evidence chain, proposed price, bond parameters for regulatory market resolution",
-        "amount_base_units": 5_000_000,
+        "amount_base_units": 10_000_000,
     },
     "/v1/oracle/chainlink": {
-        "amount_usdc": Decimal("5.00"),
+        "amount_usdc": Decimal("10.00"),
         "description": "Chainlink External Adapter response — regulatory data formatted for on-chain delivery via Any API Direct Request",
-        "amount_base_units": 5_000_000,
+        "amount_base_units": 10_000_000,
     },
     # ── Resolution-as-a-Service ──
     "/v1/markets/resolution": {
-        "amount_usdc": Decimal("25.00"),
+        "amount_usdc": Decimal("50.00"),
         "description": "Professional resolution verdict — HYDRA's authoritative assessment of how a prediction market should resolve, with evidence chain and confidence score",
-        "amount_base_units": 25_000_000,
+        "amount_base_units": 50_000_000,
     },
 }
 
@@ -142,8 +147,9 @@ PRICING: dict[str, dict] = {
 # How long to cache RSS feed results (seconds)
 FEED_CACHE_TTL: int = int(os.getenv("FEED_CACHE_TTL", "3600"))  # 1 hour
 
-# How long to cache payment verifications (seconds); long enough to prevent replay
-PAYMENT_CACHE_TTL: int = int(os.getenv("PAYMENT_CACHE_TTL", "86400"))  # 24 hours
+# How long to cache payment verifications (seconds); prevents replay attacks.
+# Shorter TTL reduces risk from chain reorgs invalidating cached verifications.
+PAYMENT_CACHE_TTL: int = int(os.getenv("PAYMENT_CACHE_TTL", "3600"))  # 1 hour
 
 # ─────────────────────────────────────────────────────────────
 # EVM Constants
@@ -161,3 +167,10 @@ ERC20_TRANSFER_TOPIC: str = (
 PAYMENT_NETWORK: str = "base"
 PAYMENT_TOKEN: str = "USDC"
 CHAIN_ID: int = 8453  # Base mainnet
+
+# ─────────────────────────────────────────────────────────────
+# State / Data Directory
+# ─────────────────────────────────────────────────────────────
+
+# Directory for persistent state (state.json, transactions.jsonl, remittance-config.json)
+HYDRA_STATE_DIR: str = os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data"))

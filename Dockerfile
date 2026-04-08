@@ -43,10 +43,14 @@ COPY config/ ./config/
 COPY src/ ./src/
 COPY .env.example .env.example
 
+# Create persistent data directory
+RUN mkdir -p /app/data && chown hydra:hydra /app/data
+
 # Ensure Python can find the app root
 ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV HYDRA_STATE_DIR=/app/data
 
 # Port 8402 — HTTP 402 reference
 EXPOSE 8402
@@ -58,5 +62,5 @@ USER hydra
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8402/health')" || exit 1
 
-# Start server
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8402", "--workers", "1", "--log-level", "info"]
+# Start server with 2 workers for production
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8402", "--workers", "2", "--log-level", "info"]

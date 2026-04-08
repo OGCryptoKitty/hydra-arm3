@@ -13,21 +13,15 @@ Flow:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
-
 from web3 import Web3
-from web3.exceptions import TransactionNotFound
+from web3.exceptions import ContractLogicError, TransactionNotFound
 
 from config.settings import (
     BASE_RPC_URL,
-    ERC20_TRANSFER_TOPIC,
     USDC_CONTRACT_ADDRESS,
     WALLET_ADDRESS,
 )
 from src.models.schemas import PaymentVerificationResult
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +48,29 @@ _USDC_CHECKSUMMED: str = Web3.to_checksum_address(USDC_CONTRACT_ADDRESS)
 
 
 def _get_web3() -> Web3:
-    """Return a Web3 instance connected to Base mainnet."""
-    w3 = Web3(Web3.HTTPProvider(BASE_RPC_URL, request_kwargs={"timeout": 30}))
+    """Return a Web3 instance connected to Base mainnet with retry-friendly timeout."""
+    w3 = Web3(Web3.HTTPProvider(
+        BASE_RPC_URL,
+        request_kwargs={"timeout": 30},
+    ))
     return w3
+
+
+def _get_web3_with_retry() -> Web3:
+    """
+    Return a Web3 instance, retrying connection up to 3 times.
+    Falls back to the standard provider on all attempts.
+    """
+    from src.utils.retry import retry_sync
+
+    @retry_sync(max_retries=2, base_delay=1.0, exceptions=(ConnectionError, TimeoutError, OSError))
+    def _connect() -> Web3:
+        w3 = _get_web3()
+        if not w3.is_connected():
+            raise ConnectionError(f"Cannot connect to Base RPC: {BASE_RPC_URL}")
+        return w3
+
+    return _connect()
 
 
 def verify_usdc_payment(
@@ -85,7 +99,10 @@ def verify_usdc_payment(
         tx_hash = "0x" + tx_hash
 
     try:
-        w3 = _get_web3()
+        try:
+            w3 = _get_web3_with_retry()
+        except (ConnectionError, TimeoutError):
+            w3 = _get_web3()  # Fallback without retry
 
         if not w3.is_connected():
             logger.error("Cannot connect to Base RPC: %s", BASE_RPC_URL)
@@ -182,12 +199,19 @@ def verify_usdc_payment(
             ),
         )
 
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unexpected error during payment verification: %s", exc)
+    except (ConnectionError, TimeoutError, ContractLogicError, ValueError, OSError) as exc:
+        logger.exception("Payment verification error: %s", exc)
         return PaymentVerificationResult(
             verified=False,
             tx_hash=tx_hash,
             error=f"Verification error: {exc}",
+        )
+    except Exception as exc:
+        logger.exception("Unexpected error during payment verification: %s", exc)
+        return PaymentVerificationResult(
+            verified=False,
+            tx_hash=tx_hash,
+            error="Verification failed due to an unexpected error. Please retry.",
         )
 
 

@@ -15,23 +15,23 @@ Receiving wallet: 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141
 Autonomous runtime:
   - HydraAutomaton heartbeat: starts as a background asyncio task on startup
   - Survival tiers: CRITICAL / MINIMAL / VIABLE / FUNDED / SURPLUS
-  - Auto-remittance: triggers at $5,000 USDC surplus
+  - Auto-remittance: prompts owner at $1,000 USDC threshold
   - System endpoints: /system/* (localhost or bearer token protected)
-
-This file is the COMPLETE replacement for src/main.py.
-Copy to src/main.py to apply.
+  - Rate limiting: 60/min free, 30/min paid, 10/min system per IP
+  - Request ID tracking: X-Request-ID header on all responses
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 
@@ -40,11 +40,14 @@ from src.api.routes import router
 from src.api.prediction_routes import prediction_router
 from src.api.system_routes import system_router
 from src.api.fed_routes import fed_router
-from src.runtime.automaton import HydraAutomaton
+from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
 from src.runtime.remittance import RemittanceManager
 from src.runtime.transaction_log import TransactionLog
+from src.middleware.https_redirect import HTTPSRedirectMiddleware
+from src.middleware.rate_limit import RateLimitMiddleware
+from src.middleware.request_id import RequestIDMiddleware
 from src.x402.middleware import X402PaymentMiddleware
 
 # ─────────────────────────────────────────────────────────────
@@ -85,6 +88,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Wallet  : %s", settings.WALLET_ADDRESS)
     logger.info("RPC URL : %s", settings.BASE_RPC_URL)
     logger.info("Port    : %d", settings.PORT)
+
+    # ── Startup validation ──
+    llm_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if llm_key:
+        logger.info("LLM     : ENABLED (Claude AI-powered analysis)")
+    else:
+        logger.warning("LLM     : DISABLED — Set ANTHROPIC_API_KEY for AI-powered analysis")
+
+    if settings.BASE_RPC_URL == "https://mainnet.base.org":
+        logger.warning("RPC     : Using PUBLIC endpoint (rate-limited). Set BASE_RPC_URL to a private RPC for production.")
+
+    pk = os.getenv("WALLET_PRIVATE_KEY", "")
+    if not pk:
+        logger.warning("WALLET  : No private key — remittance transfers disabled")
+
     logger.info("=" * 60)
 
     # ── Initialise runtime managers and attach to app.state ──
@@ -127,25 +145,35 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.remittance_manager = None
 
     # ── Start HydraAutomaton heartbeat as background asyncio task ──
-    try:
-        # Load private key from wallet.json for automaton
-        import json, os
-        pk = os.getenv("WALLET_PRIVATE_KEY", "")
-        if not pk:
+    import json, os
+    pk = os.getenv("WALLET_PRIVATE_KEY", "")
+    if not pk:
+        # Try loading from wallet.json in state directory
+        from src.runtime.remittance import BOOTSTRAP_DIR
+        wallet_json = BOOTSTRAP_DIR / "wallet.json"
+        if wallet_json.exists():
             try:
-                wf = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "hydra-bootstrap", "wallet.json")
-                with open(wf) as f:
+                with open(wallet_json) as f:
                     pk = json.load(f).get("private_key", "")
             except Exception:
-                pk = "0x" + "00" * 32  # placeholder — automaton runs in read-only mode
+                pass
+        if not pk:
+            logger.warning(
+                "WALLET_PRIVATE_KEY not set. Automaton runs in READ-ONLY mode. "
+                "Remittance transfers will not be possible until a private key is configured."
+            )
+
+    try:
         automaton = HydraAutomaton(
             wallet_address=settings.WALLET_ADDRESS,
             private_key=pk,
             base_rpc_url=settings.BASE_RPC_URL,
         )
+        set_automaton(automaton)
         heartbeat_task = asyncio.create_task(
             automaton.run(), name="hydra-automaton-heartbeat"
         )
+        automaton._task = heartbeat_task
         app.state.automaton = automaton
         logger.info("HydraAutomaton heartbeat task started.")
     except Exception as exc:
@@ -232,7 +260,7 @@ app = FastAPI(
 # 1. CORS — must be first (outermost) middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=[
@@ -266,6 +294,15 @@ app.add_middleware(
 
 # 2. x402 Payment Middleware — intercepts paid endpoints
 app.add_middleware(X402PaymentMiddleware)
+
+# 3. Rate Limiting — per-IP request throttling
+app.add_middleware(RateLimitMiddleware)
+
+# 4. Request ID — traceability for every request
+app.add_middleware(RequestIDMiddleware)
+
+# 5. HTTPS Redirect — enforce HTTPS in production (set ENFORCE_HTTPS=true)
+app.add_middleware(HTTPSRedirectMiddleware)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -384,32 +421,97 @@ async def health_check(request: Request) -> JSONResponse:
 
 
 # ─────────────────────────────────────────────────────────────
+# Metrics endpoint — operational monitoring
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/metrics", tags=["System"], include_in_schema=True)
+async def metrics(request: Request) -> JSONResponse:
+    """
+    Operational metrics for monitoring dashboards.
+    Returns uptime, transaction counts, balance, and endpoint pricing summary.
+    No payment required.
+    """
+    import time as _time
+    from src.runtime.transaction_log import TransactionLog
+
+    uptime_seconds = 0.0
+    balance_usdc = "0.00"
+    automaton_phase = "UNKNOWN"
+    try:
+        automaton = getattr(request.app.state, "automaton", None)
+        if automaton:
+            status = automaton.get_status()
+            uptime_seconds = status.get("uptime_seconds", 0)
+            balance_usdc = status.get("balance_usdc", "0")
+            automaton_phase = status.get("phase", "UNKNOWN")
+    except Exception:
+        pass
+
+    tx_summary = {}
+    try:
+        tl = TransactionLog()
+        tx_summary = tl.get_full_summary()
+    except Exception:
+        pass
+
+    return JSONResponse(content={
+        "uptime_seconds": uptime_seconds,
+        "phase": automaton_phase,
+        "balance_usdc": balance_usdc,
+        "total_revenue_usdc": tx_summary.get("total_revenue_usdc", "0"),
+        "total_distributions_usdc": tx_summary.get("total_distributions_usdc", "0"),
+        "transaction_count": tx_summary.get("transaction_count", 0),
+        "remittance_threshold_usdc": "1000",
+        "endpoint_count": len(settings.PRICING),
+        "llm_enabled": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "version": settings.APP_VERSION,
+    })
+
+
+@app.get("/metrics/prometheus", tags=["System"], include_in_schema=True)
+async def prometheus_metrics(request: Request) -> Response:
+    """
+    Prometheus-compatible metrics endpoint.
+    Scrape this with Prometheus, Grafana Agent, or DataDog.
+    """
+    from starlette.responses import PlainTextResponse
+    from src.middleware.monitoring import get_metrics_collector
+    collector = get_metrics_collector()
+    return PlainTextResponse(
+        content=collector.to_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
+
+
+# ─────────────────────────────────────────────────────────────
 # Global Exception Handlers
 # ─────────────────────────────────────────────────────────────
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
     """Return structured 404 with available endpoint list."""
+    endpoint_list = [
+        "GET  /health",
+        "GET  /pricing",
+        "GET  /metrics",
+    ]
+    for path, info in settings.PRICING.items():
+        endpoint_list.append(f"POST {path:<35s} (${info['amount_usdc']} USDC)")
+    endpoint_list.extend([
+        "--- System (localhost/bearer token) ---",
+        "POST /system/wallet",
+        "GET  /system/remittance/status",
+        "POST /system/remittance/execute",
+        "GET  /system/transactions",
+        "GET  /system/status",
+        "POST /system/shutdown",
+    ])
     return JSONResponse(
         status_code=404,
         content={
             "error":   "Not Found",
             "message": f"Endpoint {request.url.path} does not exist.",
-            "available_endpoints": [
-                "GET  /health",
-                "GET  /pricing",
-                "POST /v1/regulatory/scan         ($1.00 USDC)",
-                "POST /v1/regulatory/changes      ($0.50 USDC)",
-                "POST /v1/regulatory/jurisdiction ($2.00 USDC)",
-                "POST /v1/regulatory/query        ($0.50 USDC)",
-                "--- System (localhost/bearer token) ---",
-                "POST /system/wallet",
-                "GET  /system/remittance/status",
-                "POST /system/remittance/execute",
-                "GET  /system/transactions",
-                "GET  /system/status",
-                "POST /system/shutdown",
-            ],
+            "available_endpoints": endpoint_list,
             "docs": "/docs",
         },
     )
@@ -443,14 +545,15 @@ async def validation_error_handler(request: Request, exc: Exception) -> JSONResp
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Return structured 500 Internal Server Error and log the traceback."""
-    logger.exception("Unhandled internal server error: %s", exc)
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error":   "Internal Server Error",
-            "message": "An unexpected error occurred. Please try again.",
-        },
-    )
+    request_id = getattr(request.state, "request_id", None) if hasattr(request, "state") else None
+    logger.exception("Unhandled internal server error [%s]: %s", request_id, exc)
+    content: dict = {
+        "error":   "Internal Server Error",
+        "message": "An unexpected error occurred. Please try again.",
+    }
+    if request_id:
+        content["request_id"] = request_id
+    return JSONResponse(status_code=500, content=content)
 
 
 # ─────────────────────────────────────────────────────────────

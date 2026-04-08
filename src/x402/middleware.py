@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from decimal import Decimal
 from typing import Callable
 
 from cachetools import TTLCache
@@ -47,6 +48,7 @@ from config.settings import (
     PAYMENT_NETWORK,
     PAYMENT_TOKEN,
     PRICING,
+    USDC_DECIMALS,
     WALLET_ADDRESS,
     CHAIN_ID,
 )
@@ -131,19 +133,56 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
     })
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        path = request.url.path
+        path = request.url.path.rstrip("/") if request.url.path != "/" else "/"
 
         # ── Free endpoints pass through immediately ──────────
         if path in self._FREE_PATHS or not path.startswith("/v1/"):
             return await call_next(request)
 
         # ── Determine pricing for this endpoint ──────────────
+        # Exact match first, then prefix match for path-parameter endpoints
+        # (e.g. /v1/markets/signal/{market_id} → /v1/markets/signal)
         pricing = PRICING.get(path)
+        if pricing is None:
+            for pricing_path, pricing_info in PRICING.items():
+                if path.startswith(pricing_path + "/") or path == pricing_path:
+                    pricing = pricing_info
+                    break
         if pricing is None:
             # Unknown paid path — pass through (let route handler return 404)
             return await call_next(request)
 
         required_amount = pricing["amount_base_units"]
+
+        # ── Apply subscription discount if X-API-Key provided ──
+        api_key_header = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
+        discount_pct = 0
+        if api_key_header:
+            try:
+                from src.runtime.subscriptions import SubscriptionManager
+                sm = getattr(request.app.state, "subscription_manager", None)
+                if sm is None:
+                    sm = SubscriptionManager()
+                api_key_record = sm.validate_key(api_key_header)
+                if api_key_record is not None:
+                    from src.runtime.subscriptions import TIER_CONFIG
+                    discount_pct = TIER_CONFIG[api_key_record.tier]["price_discount_pct"]
+                    if discount_pct > 0:
+                        required_amount = int(required_amount * (100 - discount_pct) / 100)
+                        logger.info(
+                            "Subscription discount applied: tier=%s discount=%d%% new_amount=%d",
+                            api_key_record.tier.value, discount_pct, required_amount,
+                        )
+                    # Record usage
+                    if not sm.record_usage(api_key_header):
+                        return self._error_response(
+                            429,
+                            "Monthly API call quota exceeded for your subscription tier. "
+                            "Upgrade at /system/subscriptions/tiers or wait for monthly reset.",
+                            path, pricing,
+                        )
+            except Exception as sub_exc:
+                logger.warning("Subscription check failed (proceeding at full price): %s", sub_exc)
 
         # ── Check for payment proof header ───────────────────
         proof_header = request.headers.get("X-Payment-Proof") or request.headers.get("x-payment-proof")
@@ -187,6 +226,27 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         _mark_tx_used(tx_hash)
         logger.info("Payment verified and consumed: tx=%s path=%s", tx_hash, path)
 
+        # ── Log revenue to transaction log ────────────────────
+        try:
+            from src.runtime.transaction_log import TransactionLog, TxDirection, TxCategory
+            tl = getattr(request.app.state, "transaction_log", None)
+            if tl is None:
+                tl = TransactionLog()
+            amount_usdc = Decimal(str(result.amount_received_base_units)) / Decimal(10 ** USDC_DECIMALS)
+            tl.log_inbound(
+                tx_hash=tx_hash,
+                amount_usdc=amount_usdc,
+                from_address=result.from_address if hasattr(result, "from_address") else "unknown",
+                category="x402-revenue",
+                note=f"x402 payment for {path}",
+            )
+        except Exception as log_exc:
+            logger.error(
+                "CRITICAL: Failed to log revenue for tx=%s path=%s: %s — "
+                "payment verified on-chain but not recorded in transaction log",
+                tx_hash, path, log_exc,
+            )
+
         # ── Execute the actual request handler ────────────────
         response = await call_next(request)
 
@@ -194,6 +254,30 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         response.headers["X-Payment-Verified"] = "true"
         response.headers["X-Payment-Tx"] = tx_hash
         response.headers["X-Payment-Amount-Received"] = str(result.amount_received_base_units)
+
+        # ── Track payment failures (payment consumed but endpoint errored) ──
+        if response.status_code >= 500:
+            logger.error(
+                "PAYMENT CONSUMED BUT ENDPOINT FAILED: tx=%s path=%s status=%d — "
+                "customer paid %s USDC but received a server error — REFUND CANDIDATE",
+                tx_hash, path, response.status_code, pricing["amount_usdc"],
+            )
+            # Log as refund candidate in transaction log
+            try:
+                from src.runtime.transaction_log import TransactionLog
+                tl = getattr(request.app.state, "transaction_log", None)
+                if tl is None:
+                    tl = TransactionLog()
+                amount_usdc = Decimal(str(pricing["amount_base_units"])) / Decimal(10 ** USDC_DECIMALS)
+                tl.log_inbound(
+                    tx_hash=f"REFUND-{tx_hash}",
+                    amount_usdc=amount_usdc,
+                    from_address="system",
+                    category="refund-candidate",
+                    note=f"Endpoint {path} returned {response.status_code} after payment consumed",
+                )
+            except Exception:
+                pass  # Best-effort — the error log above is the critical record
 
         return response
 

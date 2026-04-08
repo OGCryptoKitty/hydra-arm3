@@ -33,7 +33,8 @@ logger = logging.getLogger("hydra.automaton")
 # Constants
 # ---------------------------------------------------------------------------
 
-STATE_FILE: Path = Path("/home/user/workspace/hydra-bootstrap/state.json")
+STATE_DIR: Path = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data")))
+STATE_FILE: Path = STATE_DIR / "state.json"
 USDC_DECIMALS: int = 6
 HEARTBEAT_INTERVAL: int = 60  # seconds
 
@@ -143,6 +144,8 @@ class HydraAutomaton:
         self._last_heartbeat: Optional[datetime] = None
         self._cached_balance: Decimal = Decimal("0")
         self._automaton_state: AutomatonState = AutomatonState.BOOT
+        self._running: bool = False
+        self._task: Optional[asyncio.Task] = None
 
         # Lifecycle manager (loads phase from state.json)
         self.lifecycle: LifecycleManager = LifecycleManager()
@@ -309,7 +312,8 @@ class HydraAutomaton:
                 "Formation funding reached. Ready for entity formation sequence."
             )
 
-        if tier >= SurvivalTier.SURPLUS and self.receiving_wallet:
+        # Remittance check triggers at $1,000 USDC (VIABLE+)
+        if balance >= Decimal("1000") and self.receiving_wallet:
             await self._remittance_check(balance)
 
         # ---- Lifecycle transition check ------------------------------
@@ -349,8 +353,8 @@ class HydraAutomaton:
         module; this method records the trigger and updates state.
         """
         logger.info(
-            "REMITTANCE TRIGGER: Balance $%s exceeds $5,000 SURPLUS threshold. "
-            "Receiving wallet: %s. Awaiting remittance module execution.",
+            "REMITTANCE TRIGGER: Balance $%s exceeds $1,000 threshold. "
+            "Receiving wallet: %s. Awaiting owner confirmation to execute transfer.",
             f"{balance:.2f}",
             self.receiving_wallet,
         )
@@ -374,9 +378,13 @@ class HydraAutomaton:
             asyncio.create_task(automaton.run())
         """
         logger.info("HydraAutomaton run loop started.")
-        while True:
+        self._running = True
+        while self._running:
             try:
                 await self.heartbeat()
+            except asyncio.CancelledError:
+                logger.info("HydraAutomaton heartbeat cancelled.")
+                break
             except Exception as exc:  # noqa: BLE001
                 logger.error(
                     "Heartbeat exception (non-fatal, loop continues): %s", exc,
@@ -416,6 +424,49 @@ class HydraAutomaton:
     # Helpers
     # ------------------------------------------------------------------
 
+    async def stop(self) -> None:
+        """Stop the automaton heartbeat loop gracefully."""
+        self._running = False
+        if hasattr(self, "_task") and self._task and not self._task.done():
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+        logger.info("HydraAutomaton stopped.")
+
     def _uptime_seconds(self) -> float:
         """Return seconds since the automaton was initialised."""
         return (datetime.now(timezone.utc) - self._start_time).total_seconds()
+
+
+# ---------------------------------------------------------------------------
+# Module-level singleton
+# ---------------------------------------------------------------------------
+
+_automaton_instance: Optional[HydraAutomaton] = None
+
+
+def get_automaton() -> HydraAutomaton:
+    """
+    Return the module-level singleton HydraAutomaton instance.
+
+    Creates a new instance with env-var defaults if none exists.
+    Used by system_routes and main to share a single automaton.
+    """
+    global _automaton_instance
+    if _automaton_instance is None:
+        import config.settings as settings
+        pk = os.getenv("WALLET_PRIVATE_KEY", "")
+        _automaton_instance = HydraAutomaton(
+            wallet_address=settings.WALLET_ADDRESS,
+            private_key=pk,
+            base_rpc_url=settings.BASE_RPC_URL,
+        )
+    return _automaton_instance
+
+
+def set_automaton(instance: HydraAutomaton) -> None:
+    """Set the module-level singleton (called from lifespan startup)."""
+    global _automaton_instance
+    _automaton_instance = instance
