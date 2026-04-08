@@ -1,6 +1,6 @@
 # Twitter/X Thread
 
-Replace `HYDRA_URL` with your Render deployment URL before posting.
+Replace `https://hydra-api-nlnj.onrender.com` with your Render deployment URL before posting.
 
 ---
 
@@ -13,7 +13,7 @@ Your bot sees the SEC press release before the market prices it in.
 
 AI-powered analysis. Pay per call in USDC. No signup.
 
-HYDRA_URL/docs
+https://hydra-api-nlnj.onrender.com/docs
 
 **2/7**
 The insight: regulatory events are the #1 driver of prediction market prices.
@@ -55,13 +55,13 @@ That's 15:1 risk/reward on a single API call.
 Try it free right now:
 
 Discovery — see all 200+ markets HYDRA covers:
-GET HYDRA_URL/v1/markets/discovery
+GET https://hydra-api-nlnj.onrender.com/v1/markets/discovery
 
 Pricing — check every endpoint cost:
-GET HYDRA_URL/v1/markets/pricing
+GET https://hydra-api-nlnj.onrender.com/v1/markets/pricing
 
 Full docs:
-HYDRA_URL/docs
+https://hydra-api-nlnj.onrender.com/docs
 
 **7/7**
 Built with:

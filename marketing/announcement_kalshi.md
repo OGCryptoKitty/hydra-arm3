@@ -2,7 +2,7 @@
 
 ## Post to: Kalshi Discord, Reddit r/Kalshi, Twitter/X
 
-Replace `HYDRA_URL` with your Render deployment URL before posting.
+Replace `https://hydra-api-nlnj.onrender.com` with your Render deployment URL before posting.
 
 ---
 
@@ -14,8 +14,8 @@ Live NY Fed funds rate + Treasury yields + Fed speech analysis. $5/call for sign
 
 Pay in USDC on Base. No signup needed.
 
-Free discovery: HYDRA_URL/v1/markets/discovery
-Docs: HYDRA_URL/docs
+Free discovery: https://hydra-api-nlnj.onrender.com/v1/markets/discovery
+Docs: https://hydra-api-nlnj.onrender.com/docs
 
 ---
 
@@ -62,11 +62,11 @@ If you're trading the KXFED series or any regulatory markets on Kalshi, HYDRA gi
 
 **Try free:**
 ```
-GET HYDRA_URL/v1/markets/discovery — see all Kalshi markets HYDRA tracks
-GET HYDRA_URL/docs — interactive API documentation
+GET https://hydra-api-nlnj.onrender.com/v1/markets/discovery — see all Kalshi markets HYDRA tracks
+GET https://hydra-api-nlnj.onrender.com/docs — interactive API documentation
 ```
 
-Docs: HYDRA_URL/docs
+Docs: https://hydra-api-nlnj.onrender.com/docs
 
 ---
 
@@ -104,8 +104,8 @@ x402 protocol — send USDC on Base to the API wallet, include tx hash in your r
 
 **Try it:**
 ```
-GET HYDRA_URL/v1/markets/discovery
-GET HYDRA_URL/docs
+GET https://hydra-api-nlnj.onrender.com/v1/markets/discovery
+GET https://hydra-api-nlnj.onrender.com/docs
 ```
 
 The AI analysis is the key differentiator vs manual research. It's reading the actual Fed language and scoring the hawkish/dovish signals, not just matching keywords.

@@ -1047,7 +1047,7 @@ async def get_chainlink_oracle_data(
         "each pre-matched to active prediction markets. "
         "Tiny response size keeps latency low. "
         "When this feed shows a HIGH urgency event matched to a market you hold, "
-        "call /v1/markets/signal/{market_id} for the full analysis ($0.10)."
+        "call /v1/markets/signal/{market_id} for the full analysis ($5.00)."
     ),
     response_class=JSONResponse,
 )
@@ -1117,7 +1117,7 @@ async def get_micro_feed(request: Request) -> JSONResponse:
             if has_high_urgency else None
         ),
         "next_action": (
-            "Call POST /v1/markets/signal/{market_id} ($0.10) for deep analysis on matched markets"
+            "Call POST /v1/markets/signal/{market_id} ($5.00) for deep analysis on matched markets"
             if compact_events else "No new events — poll again in 5 minutes"
         ),
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -1161,7 +1161,7 @@ class AlphaRequest(BaseModel):
         "risk/reward ratio, optimal entry price, similar historical trades "
         "with outcomes, expected resolution timeline, and whether to take the trade. "
         "Designed for quant funds and serious traders sizing $1,000+ positions. "
-        "The $2.00 cost is asymmetric versus potential alpha on a large position."
+        "The $30.00 cost is asymmetric versus potential alpha on a large position."
     ),
     response_class=JSONResponse,
 )

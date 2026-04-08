@@ -1,6 +1,6 @@
 # Reddit r/algotrading Announcement
 
-Replace `HYDRA_URL` with your Render deployment URL before posting.
+Replace `https://hydra-api-nlnj.onrender.com` with your Render deployment URL before posting.
 
 ---
 
@@ -41,6 +41,6 @@ HYDRA is a REST API that:
 - Margin: 99%+
 - For users: if you trade $50K/month on regulatory markets, a 1% informational edge = $500/month
 
-**Code is open source.** API docs at `HYDRA_URL/docs`. Free discovery endpoint at `HYDRA_URL/v1/markets/discovery`.
+**Code is open source.** API docs at `https://hydra-api-nlnj.onrender.com/docs`. Free discovery endpoint at `https://hydra-api-nlnj.onrender.com/v1/markets/discovery`.
 
 Curious what this community thinks about the pricing model and whether regulatory intelligence is something your strategies would use.

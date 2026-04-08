@@ -2,7 +2,7 @@
 
 ## Post to: Polymarket Discord, Telegram, Twitter/X, Reddit r/Polymarket
 
-Replace `HYDRA_URL` with your Render deployment URL before posting.
+Replace `https://hydra-api-nlnj.onrender.com` with your Render deployment URL before posting.
 
 ---
 
@@ -14,8 +14,8 @@ HYDRA monitors SEC, CFTC, Fed, FinCEN in real-time. AI (Claude) scores each regu
 
 Pay-per-call in USDC on Base. No API key needed to start.
 
-Free: HYDRA_URL/v1/markets/discovery
-Docs: HYDRA_URL/docs
+Free: https://hydra-api-nlnj.onrender.com/v1/markets/discovery
+Docs: https://hydra-api-nlnj.onrender.com/docs
 
 Subscription tiers: 10-30% off every call.
 
@@ -53,9 +53,9 @@ The problem: by the time you see the price move, you're late. HYDRA lets your bo
 
 **Try free right now:**
 ```
-GET HYDRA_URL/v1/markets/discovery   — see all 200+ markets HYDRA covers
-GET HYDRA_URL/v1/markets/pricing     — check every endpoint cost
-GET HYDRA_URL/docs                   — full interactive API docs
+GET https://hydra-api-nlnj.onrender.com/v1/markets/discovery   — see all 200+ markets HYDRA covers
+GET https://hydra-api-nlnj.onrender.com/v1/markets/pricing     — check every endpoint cost
+GET https://hydra-api-nlnj.onrender.com/docs                   — full interactive API docs
 ```
 
 **Bot integration (Python):**
@@ -63,17 +63,17 @@ GET HYDRA_URL/docs                   — full interactive API docs
 import httpx
 
 # 1. Discover what HYDRA covers (free)
-markets = httpx.get("HYDRA_URL/v1/markets/discovery").json()
+markets = httpx.get("https://hydra-api-nlnj.onrender.com/v1/markets/discovery").json()
 
 # 2. Poll for breaking regulatory events ($0.25/call)
 feed = httpx.get(
-    "HYDRA_URL/v1/markets/feed",
+    "https://hydra-api-nlnj.onrender.com/v1/markets/feed",
     headers={"X-Payment-Proof": "0x_YOUR_TX_HASH"}
 ).json()
 
 # 3. Deep signal on a specific market ($5.00)
 signal = httpx.post(
-    "HYDRA_URL/v1/markets/signal/YOUR_CONDITION_ID",
+    "https://hydra-api-nlnj.onrender.com/v1/markets/signal/YOUR_CONDITION_ID",
     headers={"X-Payment-Proof": "0x_YOUR_TX_HASH"}
 ).json()
 
@@ -83,7 +83,7 @@ if signal["signal_direction"] == "BULLISH_YES" and signal["confidence"] > 70:
     pass
 ```
 
-Docs: HYDRA_URL/docs
+Docs: https://hydra-api-nlnj.onrender.com/docs
 
 ---
 
@@ -114,8 +114,8 @@ I built HYDRA because my Polymarket bot kept getting front-run on regulatory eve
 - If you trade $50K/month on regulatory markets, a 1% edge = $500/month profit from feed alone
 
 **Try it:**
-- Discovery: `GET HYDRA_URL/v1/markets/discovery`
-- Pricing: `GET HYDRA_URL/v1/markets/pricing`
-- Full docs: `HYDRA_URL/docs`
+- Discovery: `GET https://hydra-api-nlnj.onrender.com/v1/markets/discovery`
+- Pricing: `GET https://hydra-api-nlnj.onrender.com/v1/markets/pricing`
+- Full docs: `https://hydra-api-nlnj.onrender.com/docs`
 
 Open to feedback. The AI analysis is the differentiator — it's not just keyword matching, it's Claude analyzing the actual regulatory text and scoring probability shifts.

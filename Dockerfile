@@ -62,5 +62,5 @@ USER hydra
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8402/health')" || exit 1
 
-# Start server with 2 workers for production
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8402", "--workers", "2", "--log-level", "info"]
+# Start server with 4 workers for production throughput
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8402", "--workers", "4", "--timeout-keep-alive", "30", "--log-level", "info"]
