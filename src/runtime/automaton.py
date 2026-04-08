@@ -35,7 +35,10 @@ logger = logging.getLogger("hydra.automaton")
 # Constants
 # ---------------------------------------------------------------------------
 
-STATE_FILE: Path = Path("/home/user/workspace/hydra-bootstrap/state.json")
+_STATE_DIR: Path = Path(
+    os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data"))
+)
+STATE_FILE: Path = _STATE_DIR / "state.json"
 USDC_DECIMALS: int = 6
 HEARTBEAT_INTERVAL: int = 60  # seconds
 
@@ -149,6 +152,7 @@ class HydraAutomaton:
         self._last_heartbeat: Optional[datetime] = None
         self._cached_balance: Decimal = Decimal("0")
         self._automaton_state: AutomatonState = AutomatonState.BOOT
+        self._running: bool = True
 
         # Lifecycle manager (loads phase from state.json)
         self.lifecycle: LifecycleManager = LifecycleManager()
@@ -418,7 +422,7 @@ class HydraAutomaton:
             from src.runtime.remittance import RemittanceManager
             rm = RemittanceManager(
                 private_key=self._private_key,
-                wallet_address=self._wallet_address,
+                wallet_address=self.wallet_address,
             )
 
             if not rm.receiving_wallet:
@@ -479,7 +483,7 @@ class HydraAutomaton:
             asyncio.create_task(automaton.run())
         """
         logger.info("HydraAutomaton run loop started.")
-        while True:
+        while self._running:
             try:
                 await self.heartbeat()
             except Exception as exc:  # noqa: BLE001
@@ -521,6 +525,44 @@ class HydraAutomaton:
     # Helpers
     # ------------------------------------------------------------------
 
+    async def stop(self) -> None:
+        """Signal the automaton to stop on next heartbeat iteration."""
+        self._running = False
+        logger.info("HydraAutomaton stop requested.")
+
     def _uptime_seconds(self) -> float:
         """Return seconds since the automaton was initialised."""
         return (datetime.now(timezone.utc) - self._start_time).total_seconds()
+
+
+# ---------------------------------------------------------------------------
+# Module-level singleton accessor
+# ---------------------------------------------------------------------------
+
+_automaton_instance: Optional[HydraAutomaton] = None
+
+
+def get_automaton() -> HydraAutomaton:
+    """
+    Return the module-level HydraAutomaton singleton.
+
+    The instance is set by ``set_automaton()`` during app startup (lifespan).
+    If not set, creates a read-only placeholder using env vars.
+    """
+    global _automaton_instance
+    if _automaton_instance is not None:
+        return _automaton_instance
+
+    # Create a fallback instance from environment
+    _automaton_instance = HydraAutomaton(
+        wallet_address=os.getenv("WALLET_ADDRESS", "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"),
+        private_key=os.getenv("WALLET_PRIVATE_KEY", "0x" + "00" * 32),
+        base_rpc_url=os.getenv("BASE_RPC_URL", "https://mainnet.base.org"),
+    )
+    return _automaton_instance
+
+
+def set_automaton(instance: HydraAutomaton) -> None:
+    """Set the module-level HydraAutomaton singleton (called during startup)."""
+    global _automaton_instance
+    _automaton_instance = instance

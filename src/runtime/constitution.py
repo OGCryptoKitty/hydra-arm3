@@ -11,6 +11,7 @@ Law 3  COMPLIANCE  — Maintain required regulatory filings (calendar deadlines)
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
@@ -57,6 +58,15 @@ _SANCTIONED_ADDRESSES: frozenset[str] = frozenset(
 
 # Minimum operating reserve that must remain after any remittance
 SOLVENCY_RESERVE: Decimal = Decimal("500")
+
+
+@dataclass
+class ValidationResult:
+    """Result of a constitutional validation check."""
+    approved: bool
+    reason: str = ""
+    checks: Dict[str, Any] = field(default_factory=dict)
+    reasons: List[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -237,12 +247,16 @@ class ConstitutionCheck:
     # Master validator
     # ------------------------------------------------------------------
 
+    def check_legality(self, address: str, amount: float = 0) -> Tuple[bool, str]:
+        """Alias for check_ofac — used by remittance set_receiving_wallet."""
+        return self.check_ofac(address)
+
     def validate_remittance(
         self,
         to_address: str,
-        amount: Decimal,
-        current_balance: Decimal,
-    ) -> Tuple[bool, List[str]]:
+        amount: Any,
+        current_balance: Any,
+    ) -> ValidationResult:
         """
         Run all three constitutional checks before an outbound remittance.
 
@@ -250,35 +264,44 @@ class ConstitutionCheck:
         ----------
         to_address : str
             Destination Ethereum address.
-        amount : Decimal
+        amount : Decimal or float
             USDC amount to remit.
-        current_balance : Decimal
+        current_balance : Decimal or float
             Current wallet balance in USDC.
 
         Returns
         -------
-        (approved, reasons) : (bool, list[str])
-            approved=True only when ALL laws pass.
-            reasons contains pass/fail messages from each law.
+        ValidationResult
+            .approved=True only when ALL laws pass.
+            .reasons contains pass/fail messages from each law.
+            .checks contains per-law boolean results.
+            .reason is the first failure reason (or empty string).
         """
+        amount = Decimal(str(amount))
+        current_balance = Decimal(str(current_balance))
+
         reasons: List[str] = []
+        checks: Dict[str, Any] = {}
         approved = True
 
         # Law 1 — LEGALITY
         ofac_ok, ofac_reason = self.check_ofac(to_address)
         reasons.append(f"[Law 1 LEGALITY] {ofac_reason}")
+        checks["legality"] = ofac_ok
         if not ofac_ok:
             approved = False
 
         # Law 2 — SOLVENCY
         solvency_ok, solvency_reason = self.check_solvency(current_balance, amount)
         reasons.append(f"[Law 2 SOLVENCY] {solvency_reason}")
+        checks["solvency"] = solvency_ok
         if not solvency_ok:
             approved = False
 
         # Law 3 — COMPLIANCE (advisory — does not block, but logs urgent items)
         compliance_items = self.check_compliance()
         urgent_items = [c for c in compliance_items if c["urgent"]]
+        checks["compliance"] = len(urgent_items) == 0
         if urgent_items:
             for item in urgent_items:
                 msg = (
@@ -303,4 +326,15 @@ class ConstitutionCheck:
                 "; ".join(reasons),
             )
 
-        return approved, reasons
+        # Build failure reason string
+        failure_reason = ""
+        if not approved:
+            failure_reasons = [r for r in reasons if "VIOLATION" in r or "BLOCKED" in r]
+            failure_reason = "; ".join(failure_reasons) if failure_reasons else "; ".join(reasons)
+
+        return ValidationResult(
+            approved=approved,
+            reason=failure_reason,
+            checks=checks,
+            reasons=reasons,
+        )

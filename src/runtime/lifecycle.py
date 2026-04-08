@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from decimal import Decimal
 from enum import IntEnum
 from pathlib import Path
@@ -22,7 +23,10 @@ logger = logging.getLogger("hydra.lifecycle")
 # Constants
 # ---------------------------------------------------------------------------
 
-STATE_FILE: Path = Path("/home/user/workspace/hydra-bootstrap/state.json")
+_STATE_DIR: Path = Path(
+    os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data"))
+)
+STATE_FILE: Path = _STATE_DIR / "state.json"
 
 FORMATION_THRESHOLD: Decimal = Decimal("3000")  # VIABLE tier minimum for forming
 
@@ -246,3 +250,50 @@ class LifecycleManager:
         }
 
         return instructions.get(self._phase, "Unknown phase.")
+
+    # ------------------------------------------------------------------
+    # State accessors (used by system_routes.py)
+    # ------------------------------------------------------------------
+
+    def get_state(self) -> Dict[str, Any]:
+        """Return a serialisable snapshot of lifecycle state."""
+        data: Dict[str, Any] = {"phase": self._phase.value, "phase_label": self._phase.name}
+        if STATE_FILE.exists():
+            try:
+                with STATE_FILE.open("r", encoding="utf-8") as fh:
+                    persisted = json.load(fh)
+                data.update({
+                    "entity_formed": persisted.get("entity_formed", False),
+                    "ein_obtained": persisted.get("ein_obtained", False),
+                    "csp_engaged": persisted.get("csp_engaged", False),
+                    "formation_started_at": persisted.get("formation_started_at"),
+                    "operating_since": persisted.get("operating_since"),
+                    "remitting_since": persisted.get("remitting_since"),
+                })
+            except (json.JSONDecodeError, OSError):
+                pass
+        return data
+
+    def on_receiving_wallet_set(self) -> None:
+        """Advance from OPERATING to REMITTING when a receiving wallet is configured."""
+        if self._phase == Phase.OPERATING:
+            self.advance_phase(Phase.REMITTING)
+
+    def add_note(self, note: str) -> None:
+        """Append a timestamped note to state.json."""
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        data: Dict[str, Any] = {}
+        if STATE_FILE.exists():
+            try:
+                with STATE_FILE.open("r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+            except (json.JSONDecodeError, OSError):
+                pass
+        notes = data.get("notes", [])
+        notes.append(note)
+        data["notes"] = notes
+        try:
+            with STATE_FILE.open("w", encoding="utf-8") as fh:
+                json.dump(data, fh, indent=2)
+        except OSError as exc:
+            logger.error("Failed to add note to state.json: %s", exc)
