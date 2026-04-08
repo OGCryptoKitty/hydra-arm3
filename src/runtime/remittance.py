@@ -55,7 +55,10 @@ logger = logging.getLogger(__name__)
 # Constants
 # ─────────────────────────────────────────────────────────────
 
-BOOTSTRAP_DIR = Path(os.getenv("HYDRA_BOOTSTRAP_DIR", "/home/user/workspace/hydra-bootstrap"))
+BOOTSTRAP_DIR = Path(os.getenv(
+    "HYDRA_BOOTSTRAP_DIR",
+    os.getenv("HYDRA_STATE_DIR", "/tmp/hydra-data"),
+))
 WALLET_JSON       = BOOTSTRAP_DIR / "wallet.json"
 REMITTANCE_CONFIG = BOOTSTRAP_DIR / "remittance-config.json"
 REMITTANCE_LOG    = BOOTSTRAP_DIR / "remittance-log.jsonl"
