@@ -1,157 +1,145 @@
 # HYDRA Arm 3 — Regulatory Intelligence SaaS
 
-A production-ready regulatory compliance analysis API. Pay-per-use in USDC on Base via the **x402** HTTP payment protocol.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/OGCryptoKitty/hydra-arm3)
 
-## What It Does
+Production-ready regulatory intelligence API. Pay-per-use in **USDC on Base** via the **x402** HTTP payment protocol. Zero AI dependency — all endpoints are rule-based and deterministic.
 
-| Endpoint | Price | Description |
-|---|---|---|
-| `POST /v1/regulatory/scan` | $1.00 USDC | Full regulatory risk scan — matches business to applicable regulations, risk score, recommended actions |
-| `POST /v1/regulatory/changes` | $0.50 USDC | Recent regulatory changes from SEC, CFTC, FinCEN, OCC, CFPB RSS feeds |
-| `POST /v1/regulatory/jurisdiction` | $2.00 USDC | Jurisdiction comparison across US states (WY, DE, NV, NY, TX) and international (EU, UK, SG) |
-| `POST /v1/regulatory/query` | $0.50 USDC | Regulatory Q&A — natural language queries answered from structured knowledge base |
+**Live:** [hydra-api-nlnj.onrender.com](https://hydra-api-nlnj.onrender.com) | **Docs:** [/docs](https://hydra-api-nlnj.onrender.com/docs) | **x402 Discovery:** [/.well-known/x402.json](https://hydra-api-nlnj.onrender.com/.well-known/x402.json)
 
-Free endpoints: `GET /health`, `GET /pricing`, `GET /docs`
+## Endpoints &amp; Pricing
+
+### Regulatory Intelligence
+| Method | Endpoint | Price | Description |
+|--------|----------|-------|-------------|
+| POST | `/v1/regulatory/scan` | $2.00 | Full regulatory risk scan with scored impact assessment |
+| POST | `/v1/regulatory/changes` | $1.00 | SEC, CFTC, FinCEN, OCC, CFPB classified filings |
+| POST | `/v1/regulatory/jurisdiction` | $3.00 | Jurisdiction comparison across US states + international |
+| POST | `/v1/regulatory/query` | $1.00 | Regulatory Q&amp;A with statutory citations |
+
+### Prediction Market Signals
+| Method | Endpoint | Price | Description |
+|--------|----------|-------|-------------|
+| GET | `/v1/markets` | FREE | All active regulatory prediction markets |
+| GET | `/v1/markets/discovery` | FREE | Market discovery with HYDRA domain coverage |
+| GET | `/v1/markets/pricing` | FREE | Endpoint pricing for bots |
+| GET | `/v1/markets/feed` | $0.10 | High-frequency micro event feed (bot polling) |
+| POST | `/v1/markets/events` | $0.50 | Classified regulatory events matched to markets |
+| POST | `/v1/markets/signal/{id}` | $2.00 | Deep signal for one prediction market |
+| POST | `/v1/markets/signals` | $5.00 | Bulk signals for all active markets |
+| POST | `/v1/markets/alpha` | $10.00 | Premium alpha report with Kelly sizing |
+| POST | `/v1/markets/resolution` | $25.00 | Oracle-grade resolution verdict |
+
+### Fed Decision Package
+| Method | Endpoint | Price | Description |
+|--------|----------|-------|-------------|
+| POST | `/v1/fed/signal` | $5.00 | Pre-FOMC signal with rate probability model |
+| POST | `/v1/fed/decision` | $25.00 | Real-time FOMC decision classification |
+| POST | `/v1/fed/resolution` | $50.00 | FOMC resolution verdict for oracles (UMA/Chainlink) |
+
+### Oracle Integration
+| Method | Endpoint | Price | Description |
+|--------|----------|-------|-------------|
+| POST | `/v1/oracle/uma` | $5.00 | UMA Optimistic Oracle assertion data |
+| POST | `/v1/oracle/chainlink` | $5.00 | Chainlink External Adapter format |
+
+### Free System Endpoints
+`GET /health` · `GET /pricing` · `GET /docs` · `GET /openapi.json` · `GET /metrics` · `GET /metrics/revenue`
 
 ## x402 Payment Flow
 
 ```
-1. Client → POST /v1/regulatory/scan
-                          ↓
-2. Server ← 402 Payment Required
-   Headers: X-Payment-Required, X-Payment-Amount, X-Payment-Address, X-Payment-Network
-   Body:    { payment: { amount_usdc, amount_base_units, wallet_address, chain_id }, retry_instructions }
+1. POST /v1/regulatory/scan → 402 Payment Required
+   Response includes: amount, wallet, chain_id, x402 machine-readable block
 
-3. Client → Send 1.00 USDC to 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141 on Base (chain 8453)
+2. Send USDC to 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141 on Base (chain 8453)
 
-4. Client → POST /v1/regulatory/scan
-   Header: X-Payment-Proof: 0x<tx_hash>
-                          ↓
-5. Server verifies tx on Base (checks USDC Transfer event on-chain)
-                          ↓
-6. Server ← 200 OK + response
-   Headers: X-Payment-Verified: true, X-Payment-Tx: 0x...
+3. POST /v1/regulatory/scan + Header: X-Payment-Proof: 0x{tx_hash}
+   → 200 OK (payment verified on-chain via Base RPC)
 ```
 
-## Quick Start
+All payments are **final**. USDC on Base L2 is a permissionless transfer with no clawback.
 
-### Local (Python)
+## Bot Integration
 
 ```bash
-# 1. Install dependencies
+# 1. Discover markets (free)
+curl https://hydra-api-nlnj.onrender.com/v1/markets/discovery
+
+# 2. Check pricing (free)
+curl https://hydra-api-nlnj.onrender.com/v1/markets/pricing
+
+# 3. Poll feed every 5 min ($0.10 each)
+curl -H "X-Payment-Proof: 0x..." https://hydra-api-nlnj.onrender.com/v1/markets/feed
+
+# 4. Get signals before trading ($5.00)
+curl -X POST -H "X-Payment-Proof: 0x..." -H "Content-Type: application/json" \
+  -d '{"platform":"all","category":"all"}' \
+  https://hydra-api-nlnj.onrender.com/v1/markets/signals
+```
+
+## Deploy
+
+### One-Click (Render)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/OGCryptoKitty/hydra-arm3)
+
+The `render.yaml` blueprint auto-configures everything. After connecting, every push to master auto-deploys.
+
+### Local
+
+```bash
 pip install -r requirements.txt
-
-# 2. Configure environment
 cp .env.example .env
-# Edit .env if needed (defaults work out of the box)
-
-# 3. Start server
 uvicorn src.main:app --host 0.0.0.0 --port 8402
 ```
 
 ### Docker
 
 ```bash
-# Production
 docker-compose up
-
-# Development (auto-reload)
-docker-compose --profile dev up hydra-arm3-dev
-```
-
-The server starts on **port 8402** (HTTP 402 reference).
-
-## Example Usage
-
-### Check pricing (free)
-```bash
-curl http://localhost:8402/pricing
-```
-
-### Regulatory scan with payment
-```bash
-# Step 1: Get payment instructions
-curl -X POST http://localhost:8402/v1/regulatory/scan \
-  -H "Content-Type: application/json" \
-  -d '{"business_description": "A DeFi lending protocol for US users with governance tokens", "jurisdiction": "US"}'
-# Returns 402 with wallet address and amount
-
-# Step 2: Send 1.00 USDC to the wallet on Base
-# Step 3: Retry with tx hash
-curl -X POST http://localhost:8402/v1/regulatory/scan \
-  -H "Content-Type: application/json" \
-  -H "X-Payment-Proof: 0x<your_tx_hash>" \
-  -d '{"business_description": "A DeFi lending protocol for US users with governance tokens", "jurisdiction": "US"}'
-```
-
-### Jurisdiction comparison with payment
-```bash
-curl -X POST http://localhost:8402/v1/regulatory/jurisdiction \
-  -H "Content-Type: application/json" \
-  -H "X-Payment-Proof: 0x<your_tx_hash>" \
-  -d '{"jurisdictions": ["WY", "DE", "NY", "EU"], "business_type": "crypto"}'
-```
-
-### Regulatory Q&A with payment
-```bash
-curl -X POST http://localhost:8402/v1/regulatory/query \
-  -H "Content-Type: application/json" \
-  -H "X-Payment-Proof: 0x<your_tx_hash>" \
-  -d '{"question": "Do I need a money transmitter license in Wyoming to operate a crypto exchange?"}'
 ```
 
 ## Architecture
 
-```
-hydra-arm3/
-├── config/
-│   └── settings.py          # Environment config, pricing tiers, chain constants
-├── src/
-│   ├── main.py              # FastAPI app — middleware stack, lifespan, error handlers
-│   ├── api/
-│   │   └── routes.py        # Route handlers (health, pricing, 4 paid endpoints)
-│   ├── models/
-│   │   └── schemas.py       # Pydantic request/response models
-│   ├── services/
-│   │   ├── regulatory.py    # Rule-based regulatory intelligence engine
-│   │   └── feeds.py         # RSS feed aggregator (SEC/CFTC/FinCEN/OCC/CFPB)
-│   └── x402/
-│       ├── middleware.py    # x402 payment middleware (FastAPI BaseHTTPMiddleware)
-│       └── verify.py        # On-chain USDC payment verification via Base RPC
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-└── .env.example
-```
+- **FastAPI** async API with x402 payment middleware
+- **Web3.py** on-chain USDC payment verification via Base RPC
+- **HydraAutomaton** — autonomous heartbeat (balance checks, lifecycle, remittance, keepalive)
+- **ConstitutionCheck** — three-law compliance (OFAC, solvency, filing deadlines)
+- **TransactionLog** — append-only JSONL audit trail for tax compliance
+- **Rule-based engines** — all endpoints are deterministic, zero LLM dependency
+
+## Market Coverage
+
+- **Polymarket**: ~110 active regulation markets
+- **Kalshi**: Fed funds rate (KXFED), crypto market structure, GENIUS Act, SEC
+- **UMA Optimistic Oracle**: Assertion data for bond posting
+- **Chainlink**: External Adapter format for on-chain delivery
 
 ## Payment Verification
 
-Payments are verified by:
-1. Connecting to Base mainnet via `BASE_RPC_URL`
-2. Fetching the transaction receipt for the provided tx hash
-3. Parsing ERC-20 `Transfer(address,address,uint256)` events from the USDC contract (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
-4. Confirming the recipient matches `WALLET_ADDRESS` and `value >= required_amount`
-5. Caching the used tx hash for 24 hours (replay prevention)
-
-## Regulatory Knowledge Base
-
-Covers:
-- **Federal**: Securities Act 1933, Exchange Act 1934, Investment Company Act 1940, Investment Advisers Act 1940, Commodity Exchange Act, Bank Secrecy Act, FinCEN CDD Rule, TILA/Reg Z
-- **State**: Wyoming (DAO LLC, SPDI, MTL exemption), Delaware (DGCL), Nevada (Blockchain Act), New York (BitLicense, Martin Act), Texas
-- **International**: EU MiCA, EU GDPR/PSD2/MiFID II, UK FCA/FSMA, Singapore MAS/PSA
+1. Fetch transaction receipt from Base mainnet RPC
+2. Parse ERC-20 `Transfer` events from USDC contract
+3. Confirm recipient = treasury wallet, amount >= required
+4. Cache tx hash for 24h (replay prevention)
+5. Attach `X-Payment-Verified: true` header to response
 
 ## Environment Variables
 
 | Variable | Default | Description |
-|---|---|---|
-| `WALLET_ADDRESS` | `0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141` | USDC recipient wallet |
-| `BASE_RPC_URL` | `https://mainnet.base.org` | Base L2 RPC endpoint |
-| `USDC_CONTRACT_ADDRESS` | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | USDC on Base mainnet |
-| `DEBUG` | `false` | Enable verbose logging |
+|----------|---------|-------------|
+| `WALLET_ADDRESS` | `0x2F12...141` | USDC recipient wallet |
+| `BASE_RPC_URL` | `https://mainnet.base.org` | Base L2 RPC |
+| `HYDRA_STATE_DIR` | `/tmp/hydra-data` | State persistence directory |
 | `PORT` | `8402` | Server port |
-| `FEED_CACHE_TTL` | `3600` | Feed cache TTL in seconds |
-| `PAYMENT_CACHE_TTL` | `86400` | Used tx hash cache TTL in seconds |
+| `DEBUG` | `false` | Verbose logging |
 
-## Disclaimer
+## Discovery
 
-This application is for informational purposes only and does not constitute legal advice.
+- **AI Plugins**: `/.well-known/ai-plugin.json` (ChatGPT, Claude, Copilot)
+- **x402 Protocol**: `/.well-known/x402.json`
+- **OpenAPI**: `/openapi.json`
+- **APIs.json**: `/static/apis.json`
+
+## License
+
+Proprietary — HYDRA Systems LLC
