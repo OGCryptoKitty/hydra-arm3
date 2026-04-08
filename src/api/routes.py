@@ -25,6 +25,7 @@ import config.settings as settings
 from src.models.schemas import (
     Agency,
     EndpointPricing,
+    JurisdictionComparisonResponse,
     JurisdictionRequest,
     PricingResponse,
     RegulatoryChangesRequest,
@@ -207,7 +208,7 @@ async def regulatory_changes(
 
 @router.post(
     "/v1/regulatory/jurisdiction",
-    response_model=None,  # We'll return raw dict to avoid serialization issues
+    response_model=JurisdictionComparisonResponse,
     tags=["Regulatory Intelligence"],
     summary="Jurisdiction Comparison ($2.00 USDC)",
     description=(
