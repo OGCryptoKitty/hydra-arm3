@@ -343,17 +343,57 @@ class HydraAutomaton:
 
     async def _remittance_check(self, balance: Decimal) -> None:
         """
-        Log a remittance trigger event.
+        Auto-execute remittance when balance exceeds threshold
+        and a receiving wallet is configured.
 
-        Actual on-chain transfer is handled by a separate remittance
-        module; this method records the trigger and updates state.
+        Fully autonomous — no human confirmation required.
+        All payments are FINAL. USDC on Base L2 has no clawback mechanism.
         """
-        logger.info(
-            "REMITTANCE TRIGGER: Balance $%s exceeds $5,000 SURPLUS threshold. "
-            "Receiving wallet: %s. Awaiting remittance module execution.",
-            f"{balance:.2f}",
-            self.receiving_wallet,
-        )
+        try:
+            from src.runtime.remittance import RemittanceManager
+            rm = RemittanceManager(
+                private_key=self._private_key,
+                wallet_address=self._wallet_address,
+            )
+
+            if not rm.receiving_wallet:
+                logger.info(
+                    "REMITTANCE: Balance $%s exceeds threshold but no receiving wallet configured. "
+                    "Set via POST /system/wallet to enable autonomous profit remittance.",
+                    f"{balance:.2f}",
+                )
+                return
+
+            remittable = rm.calculate_remittable_amount(balance)
+            if remittable <= Decimal("0"):
+                return
+
+            logger.info(
+                "AUTO-REMITTANCE: Executing autonomous transfer of $%s USDC to %s...",
+                f"{remittable:.2f}",
+                rm.receiving_wallet[:8] + "...",
+            )
+
+            result = await rm.execute_remittance()
+
+            if result.success:
+                logger.warning(
+                    "AUTO-REMITTANCE SUCCESS: $%s USDC sent to %s (tx=%s). "
+                    "Transfer is FINAL — USDC on Base L2 has no clawback mechanism.",
+                    result.amount_usdc,
+                    result.receiving_address[:8] + "..." if result.receiving_address else "?",
+                    result.tx_hash,
+                )
+            else:
+                logger.error(
+                    "AUTO-REMITTANCE FAILED: %s — will retry on next heartbeat.",
+                    result.error_message,
+                )
+        except Exception as exc:
+            logger.error(
+                "AUTO-REMITTANCE ERROR: %s — balance $%s remains in treasury.",
+                exc, f"{balance:.2f}",
+            )
 
     # ------------------------------------------------------------------
     # Main loop

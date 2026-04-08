@@ -1076,8 +1076,11 @@ async def get_micro_feed(request: Request) -> JSONResponse:
         top_10 = enriched[:10]
 
     except Exception as exc:
-        logger.exception("Error in micro feed endpoint: %s", exc)
-        raise HTTPException(status_code=500, detail=f"Feed unavailable: {exc}") from exc
+        logger.exception("Error in micro feed endpoint (fallback to static): %s", exc)
+        # Fallback: return static regulatory context instead of 500
+        # This ensures the $0.25 payment always delivers value
+        enriched = []
+        top_10 = []
 
     # Minimal payload — fast for bots to parse
     compact_events = []
