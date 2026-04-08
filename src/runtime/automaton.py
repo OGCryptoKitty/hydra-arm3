@@ -336,6 +336,9 @@ class HydraAutomaton:
             entity_formed=entity_formed,
         )
 
+        # ---- Self-ping keepalive (prevent Render free-tier sleep) -----
+        await self._keepalive_ping()
+
         # ---- Update automaton FSM state ------------------------------
         self._automaton_state = self._derive_automaton_state(tier, phase)
 
@@ -409,6 +412,37 @@ class HydraAutomaton:
         if tier == SurvivalTier.CRITICAL and phase == Phase.BOOT:
             return AutomatonState.BOOT
         return AutomatonState.EARNING
+
+    async def _keepalive_ping(self) -> None:
+        """
+        Self-ping /health to prevent Render free-tier from sleeping.
+
+        Render spins down free services after 15 minutes of inactivity.
+        Since the heartbeat runs every 60 seconds, this keeps the service alive.
+        Uses httpx if available, falls back silently if not.
+        """
+        try:
+            port = int(os.getenv("PORT", "8402"))
+            url = f"http://127.0.0.1:{port}/health"
+            import httpx
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.get(url)
+                logger.debug("Keepalive ping: %s → %d", url, resp.status_code)
+        except ImportError:
+            # httpx not available — try urllib (sync, wrapped in executor)
+            try:
+                import urllib.request
+                port = int(os.getenv("PORT", "8402"))
+                url = f"http://127.0.0.1:{port}/health"
+                await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: urllib.request.urlopen(url, timeout=5),
+                )
+            except Exception:
+                pass
+        except Exception:
+            # Non-critical — if ping fails, service is either starting up or shutting down
+            pass
 
     async def _remittance_check(self, balance: Decimal) -> None:
         """
