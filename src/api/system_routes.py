@@ -436,10 +436,10 @@ async def get_transactions(
     if year:
         raw_summary = await asyncio.to_thread(tl.generate_tax_summary, year)
         summary: dict[str, Any] = {
-            "total_revenue":       str(raw_summary.get("total_revenue_usdc", 0)),
-            "total_distributions": str(raw_summary.get("total_distributions_usdc", 0)),
-            "total_expenses":      str(raw_summary.get("total_expenses_usdc", 0)),
-            "net_income":          str(raw_summary.get("net_income_usdc", 0)),
+            "total_revenue":       str(raw_summary.get("total_revenue", 0)),
+            "total_distributions": str(raw_summary.get("total_distributions", 0)),
+            "total_expenses":      str(raw_summary.get("total_expenses", 0)),
+            "net_income":          str(raw_summary.get("net_income", 0)),
         }
     else:
         raw_summary = await asyncio.to_thread(tl.get_full_summary)
@@ -513,8 +513,8 @@ async def automaton_status(
             # Phase and automaton state
             "phase":              lc_state.get("phase_label", "BOOT"),
             "phase_description":  lm.get_phase_instructions(),
-            "automaton_state":    auto_status.get("state"),
-            "survival_tier":      auto_status.get("survival_tier"),
+            "automaton_state":    auto_status.get("automaton_state"),
+            "survival_tier":      auto_status.get("tier"),
 
             # Treasury
             "balance_usdc":       auto_status.get("balance_usdc"),
@@ -707,16 +707,16 @@ async def system_shutdown(
     # Mark lifecycle as shutdown (persist to state.json)
     try:
         import json as _json
-        from pathlib import Path as _Path
-        state_file = BOOTSTRAP_DIR / "state.json"
+        from src.runtime.lifecycle import STATE_FILE as _state_file
         state: dict[str, Any] = {}
-        if state_file.exists():
-            state = _json.loads(state_file.read_text())
+        if _state_file.exists():
+            state = _json.loads(_state_file.read_text())
         state["phase"]          = 99
         state["phase_label"]    = "SHUTDOWN"
         state["shutdown_at"]    = datetime.now(timezone.utc).isoformat()
         state["last_updated"]   = datetime.now(timezone.utc).isoformat()
-        state_file.write_text(_json.dumps(state, indent=2))
+        _state_file.parent.mkdir(parents=True, exist_ok=True)
+        _state_file.write_text(_json.dumps(state, indent=2))
     except Exception as exc:
         logger.warning("Could not persist SHUTDOWN state: %s", exc)
 

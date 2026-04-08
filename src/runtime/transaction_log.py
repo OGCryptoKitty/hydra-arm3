@@ -34,8 +34,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from decimal import Decimal
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -45,10 +47,29 @@ logger = logging.getLogger("hydra.transaction_log")
 # Constants
 # ---------------------------------------------------------------------------
 
-LOG_FILE: Path = Path("/home/user/workspace/hydra-bootstrap/transactions.jsonl")
+_STATE_DIR: Path = Path(
+    os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data"))
+)
+LOG_FILE: Path = _STATE_DIR / "transactions.jsonl"
 
 INBOUND_CATEGORIES = frozenset({"x402-revenue"})
 OUTBOUND_CATEGORIES = frozenset({"member-distribution", "operating-expense"})
+
+
+# ---------------------------------------------------------------------------
+# Enums (used by system_routes.py, remittance.py)
+# ---------------------------------------------------------------------------
+
+
+class TxDirection(str, Enum):
+    INBOUND = "inbound"
+    OUTBOUND = "outbound"
+
+
+class TxCategory(str, Enum):
+    X402_REVENUE = "x402-revenue"
+    MEMBER_DISTRIBUTION = "member-distribution"
+    OPERATING_EXPENSE = "operating-expense"
 
 
 # ---------------------------------------------------------------------------
@@ -330,3 +351,105 @@ class TransactionLog:
         }
         logger.info("Tax summary for %d: %s", year, summary)
         return summary
+
+    # ------------------------------------------------------------------
+    # Extended API (used by system_routes, remittance, metrics)
+    # ------------------------------------------------------------------
+
+    def get_entries(
+        self,
+        direction: Optional[TxDirection] = None,
+        category: Optional[TxCategory] = None,
+        year: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Filter transactions using typed enums. Wraps get_transactions."""
+        return self.get_transactions(
+            year=year,
+            direction=direction.value if direction else None,
+            category=category.value if category else None,
+        )
+
+    def get_full_summary(self) -> Dict[str, Any]:
+        """
+        Compute an all-time financial summary across all records.
+
+        Returns dict with keys:
+            total_revenue_usdc, total_distributions_usdc,
+            total_expenses_usdc, net_profit_usdc, transaction_count,
+            revenue_by_endpoint.
+        """
+        records = self.get_transactions()
+        total_revenue = Decimal("0")
+        total_distributions = Decimal("0")
+        total_expenses = Decimal("0")
+        revenue_by_endpoint: Dict[str, Dict[str, Any]] = {}
+
+        for record in records:
+            try:
+                amount = Decimal(record["amount_usdc"])
+            except (KeyError, ValueError):
+                continue
+
+            direction = record.get("direction")
+            category = record.get("category")
+
+            if direction == "inbound":
+                total_revenue += amount
+                endpoint = record.get("note", "")
+                if endpoint:
+                    ep_data = revenue_by_endpoint.setdefault(
+                        endpoint, {"revenue_usdc": Decimal("0"), "calls": 0}
+                    )
+                    ep_data["revenue_usdc"] += amount
+                    ep_data["calls"] += 1
+            elif direction == "outbound":
+                if category == "member-distribution":
+                    total_distributions += amount
+                elif category == "operating-expense":
+                    total_expenses += amount
+
+        # Serialize Decimals in revenue_by_endpoint
+        serialized_endpoints = {}
+        for ep, data in revenue_by_endpoint.items():
+            serialized_endpoints[ep] = {
+                "revenue_usdc": str(data["revenue_usdc"].quantize(Decimal("0.01"))),
+                "calls": data["calls"],
+            }
+
+        return {
+            "total_revenue_usdc": str(total_revenue.quantize(Decimal("0.01"))),
+            "total_distributions_usdc": str(total_distributions.quantize(Decimal("0.01"))),
+            "total_expenses_usdc": str(total_expenses.quantize(Decimal("0.01"))),
+            "net_profit_usdc": str((total_revenue - total_expenses).quantize(Decimal("0.01"))),
+            "transaction_count": len(records),
+            "revenue_by_endpoint": serialized_endpoints,
+        }
+
+    def log(
+        self,
+        tx_hash: str,
+        direction: TxDirection,
+        category: TxCategory,
+        amount_usdc: float,
+        counterparty_address: str,
+        note: str = "",
+        timestamp: Optional[str] = None,
+    ) -> None:
+        """Generic log method accepting TxDirection/TxCategory enums."""
+        amount_dec = Decimal(str(amount_usdc))
+        if direction == TxDirection.INBOUND:
+            self.log_inbound(
+                tx_hash=tx_hash,
+                amount_usdc=amount_dec,
+                from_address=counterparty_address,
+                category=category.value,
+                note=note,
+            )
+        else:
+            self.log_outbound(
+                tx_hash=tx_hash,
+                amount_usdc=amount_dec,
+                to_address=counterparty_address,
+                category=category.value,
+                note=note,
+            )

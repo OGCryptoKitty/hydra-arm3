@@ -41,7 +41,7 @@ from src.api.routes import router
 from src.api.prediction_routes import prediction_router
 from src.api.system_routes import system_router
 from src.api.fed_routes import fed_router
-from src.runtime.automaton import HydraAutomaton
+from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
 from src.runtime.remittance import RemittanceManager
@@ -148,6 +148,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             automaton.run(), name="hydra-automaton-heartbeat"
         )
         app.state.automaton = automaton
+        set_automaton(automaton)
         logger.info("HydraAutomaton heartbeat task started.")
     except Exception as exc:
         logger.error("Failed to start HydraAutomaton: %s", exc)
@@ -335,7 +336,10 @@ async def health_check(request: Request) -> JSONResponse:
     """
     automaton_status: dict = {}
     try:
-        automaton = getattr(request.app.state, "automaton", None) or get_automaton()
+        automaton = getattr(request.app.state, "automaton", None)
+        if automaton is None:
+            from src.runtime.automaton import get_automaton
+            automaton = get_automaton()
         automaton_status = automaton.get_status()
     except Exception as exc:
         logger.debug("Could not fetch automaton status for /health: %s", exc)
@@ -407,7 +411,7 @@ async def metrics(request: Request) -> JSONResponse:
         "transaction_count": tx_summary.get("transaction_count", 0),
         "remittance_threshold_usdc": "1000",
         "endpoint_count": len(settings.PRICING),
-        "llm_enabled": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "llm_enabled": bool(_os.getenv("ANTHROPIC_API_KEY")),
         "version": settings.APP_VERSION,
     })
 
@@ -445,21 +449,6 @@ async def revenue_metrics(request: Request) -> JSONResponse:
         "treasury_wallet": settings.WALLET_ADDRESS,
         "version": settings.APP_VERSION,
     })
-
-
-@app.get("/metrics/prometheus", tags=["System"], include_in_schema=True)
-async def prometheus_metrics(request: Request) -> Response:
-    """
-    Prometheus-compatible metrics endpoint.
-    Scrape this with Prometheus, Grafana Agent, or DataDog.
-    """
-    from starlette.responses import PlainTextResponse
-    from src.middleware.monitoring import get_metrics_collector
-    collector = get_metrics_collector()
-    return PlainTextResponse(
-        content=collector.to_prometheus(),
-        media_type="text/plain; version=0.0.4; charset=utf-8",
-    )
 
 
 # ─────────────────────────────────────────────────────────────
