@@ -25,7 +25,6 @@ import config.settings as settings
 from src.models.schemas import (
     Agency,
     EndpointPricing,
-    HealthResponse,
     JurisdictionRequest,
     PricingResponse,
     RegulatoryChangesRequest,
@@ -62,28 +61,8 @@ router = APIRouter()
 #         "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
 #     }
 
-@router.get("/health", response_model=HealthResponse, tags=["System"])
-async def health_check() -> HealthResponse:
-    """
-    Returns application health status. No payment required.
-    """
-    # Include automaton status snapshot (non-critical — never fails the health check)
-    automaton_status: dict = {}
-    try:
-        from src.runtime.automaton import get_automaton
-        automaton_status = get_automaton().get_status()
-    except Exception as exc:
-        logger.debug("Could not fetch automaton status for /health: %s", exc)
-
-    return HealthResponse(
-        status="ok",
-        version=settings.APP_VERSION,
-        app_name=settings.APP_NAME,
-        payment_network=settings.PAYMENT_NETWORK,
-        payment_token=settings.PAYMENT_TOKEN,
-        wallet_address=settings.WALLET_ADDRESS,
-        automaton=automaton_status if automaton_status else None,
-    )
+# /health is defined in src/main.py (richer version with remittance status).
+# Do NOT add a duplicate /health here — it would conflict.
 
 
 @router.get("/pricing", response_model=PricingResponse, tags=["System"])

@@ -526,13 +526,11 @@ async def automaton_status(
             "entity_formed":                 lc_state.get("entity_formed", False),
             "ein_obtained":                  lc_state.get("ein_obtained", False),
             "csp_engaged":                   lc_state.get("csp_engaged", False),
-            "receiving_wallet_configured":   auto_status.get("receiving_wallet_configured"),
+            "receiving_wallet_configured":   auto_status.get("receiving_wallet") is not None,
 
             # Timing and heartbeat
-            "uptime":            auto_status.get("uptime"),
             "uptime_seconds":    auto_status.get("uptime_seconds"),
             "last_heartbeat":    auto_status.get("last_heartbeat"),
-            "heartbeat_count":   auto_status.get("heartbeat_count"),
             "wallet_address":    auto_status.get("wallet_address"),
 
             # Financial totals (all-time)
