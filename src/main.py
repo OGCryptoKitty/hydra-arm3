@@ -396,6 +396,102 @@ async def health_check(request: Request) -> JSONResponse:
     )
 
 
+# Metrics endpoint — operational monitoring
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/metrics", tags=["System"], include_in_schema=True)
+async def metrics(request: Request) -> JSONResponse:
+    """
+    Operational metrics for monitoring dashboards.
+    Returns uptime, transaction counts, balance, and endpoint pricing summary.
+    No payment required.
+    """
+    from src.runtime.transaction_log import TransactionLog
+
+    uptime_seconds = 0.0
+    balance_usdc = "0.00"
+    automaton_phase = "UNKNOWN"
+    try:
+        automaton = getattr(request.app.state, "automaton", None)
+        if automaton:
+            status = automaton.get_status()
+            uptime_seconds = status.get("uptime_seconds", 0)
+            balance_usdc = status.get("balance_usdc", "0")
+            automaton_phase = status.get("phase", "UNKNOWN")
+    except Exception:
+        pass
+
+    tx_summary = {}
+    try:
+        tl = TransactionLog()
+        tx_summary = tl.get_full_summary()
+    except Exception:
+        pass
+
+    return JSONResponse(content={
+        "uptime_seconds": uptime_seconds,
+        "phase": automaton_phase,
+        "balance_usdc": balance_usdc,
+        "total_revenue_usdc": tx_summary.get("total_revenue_usdc", "0"),
+        "total_distributions_usdc": tx_summary.get("total_distributions_usdc", "0"),
+        "transaction_count": tx_summary.get("transaction_count", 0),
+        "remittance_threshold_usdc": "1000",
+        "endpoint_count": len(settings.PRICING),
+        "llm_enabled": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "version": settings.APP_VERSION,
+    })
+
+
+@app.get("/metrics/revenue", tags=["System"], include_in_schema=True)
+async def revenue_metrics(request: Request) -> JSONResponse:
+    """
+    Revenue analytics — per-endpoint breakdown, net profit, call counts.
+    No payment required. Useful for monitoring revenue velocity.
+    """
+    from src.runtime.transaction_log import TransactionLog
+
+    try:
+        tl = getattr(request.app.state, "transaction_log", None)
+        if tl is None:
+            tl = TransactionLog()
+        summary = tl.get_full_summary()
+    except Exception:
+        summary = {}
+
+    pricing_summary = {}
+    for path, info in settings.PRICING.items():
+        pricing_summary[path] = {
+            "price_usdc": str(info["amount_usdc"]),
+            "revenue_usdc": summary.get("revenue_by_endpoint", {}).get(path, {}).get("revenue_usdc", "0.00"),
+            "calls": summary.get("revenue_by_endpoint", {}).get(path, {}).get("calls", 0),
+        }
+
+    return JSONResponse(content={
+        "total_revenue_usdc": summary.get("total_revenue_usdc", "0.00"),
+        "total_distributions_usdc": summary.get("total_distributions_usdc", "0.00"),
+        "net_profit_usdc": summary.get("net_profit_usdc", "0.00"),
+        "transaction_count": summary.get("transaction_count", 0),
+        "endpoints": pricing_summary,
+        "treasury_wallet": settings.WALLET_ADDRESS,
+        "version": settings.APP_VERSION,
+    })
+
+
+@app.get("/metrics/prometheus", tags=["System"], include_in_schema=True)
+async def prometheus_metrics(request: Request) -> Response:
+    """
+    Prometheus-compatible metrics endpoint.
+    Scrape this with Prometheus, Grafana Agent, or DataDog.
+    """
+    from starlette.responses import PlainTextResponse
+    from src.middleware.monitoring import get_metrics_collector
+    collector = get_metrics_collector()
+    return PlainTextResponse(
+        content=collector.to_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
+
+
 # ─────────────────────────────────────────────────────────────
 # Global Exception Handlers
 # ─────────────────────────────────────────────────────────────

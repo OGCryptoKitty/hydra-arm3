@@ -110,6 +110,7 @@ class PricingResponse(BaseModel):
     wallet_address: str
     chain_id: int
     instructions: str
+    x402: dict | None = None
 
 
 # ─────────────────────────────────────────────────────────────

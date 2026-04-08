@@ -112,6 +112,15 @@ async def get_pricing() -> PricingResponse:
             f"Send the exact USDC amount to {settings.WALLET_ADDRESS}, then retry your request "
             f"with the transaction hash in the X-Payment-Proof header."
         ),
+        x402={
+            "version": "1.0",
+            "scheme": "exact",
+            "token_contract": settings.USDC_CONTRACT_ADDRESS,
+            "token_decimals": settings.USDC_DECIMALS,
+            "proof_header": "X-Payment-Proof",
+            "proof_type": "tx_hash",
+            "discovery_url": "/.well-known/x402.json",
+        },
     )
 
 

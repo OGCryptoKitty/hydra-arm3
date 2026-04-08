@@ -47,6 +47,8 @@ from config.settings import (
     PAYMENT_NETWORK,
     PAYMENT_TOKEN,
     PRICING,
+    USDC_CONTRACT_ADDRESS,
+    USDC_DECIMALS,
     WALLET_ADDRESS,
     CHAIN_ID,
 )
@@ -155,6 +157,22 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         response.headers["X-Payment-Verified"] = "true"
         response.headers["X-Payment-Tx"] = tx_hash
         response.headers["X-Payment-Amount-Received"] = str(result.amount_received_base_units)
+        # Prevent proxies/CDNs from caching paid content (each response is unique per payment)
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        response.headers["Vary"] = "X-Payment-Proof"
+
+        # ── Log payment-consumed delivery failures for operational awareness ──
+        # All payments are FINAL — no refunds are issued. USDC on Base L2 is
+        # a permissionless transfer; once confirmed, the payment is complete.
+        # This log entry is for operational monitoring only (to fix recurring
+        # endpoint failures that degrade service quality).
+        if response.status_code >= 500:
+            logger.error(
+                "DELIVERY ISSUE: tx=%s path=%s status=%d — "
+                "payment of %s USDC consumed, endpoint returned server error. "
+                "All payments are final. Investigate endpoint stability.",
+                tx_hash, path, response.status_code, pricing["amount_usdc"],
+            )
 
         return response
 
@@ -175,9 +193,26 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
                 "wallet_address": WALLET_ADDRESS,
                 "network": PAYMENT_NETWORK,
                 "token": PAYMENT_TOKEN,
+                "token_contract": USDC_CONTRACT_ADDRESS,
                 "chain_id": CHAIN_ID,
                 "endpoint": path,
                 "description": pricing["description"],
+            },
+            "x402": {
+                "version": "1.0",
+                "scheme": "exact",
+                "pay": {
+                    "to": WALLET_ADDRESS,
+                    "amount": str(pricing["amount_base_units"]),
+                    "token": USDC_CONTRACT_ADDRESS,
+                    "chain_id": CHAIN_ID,
+                    "network": "base",
+                },
+                "proof": {
+                    "header": "X-Payment-Proof",
+                    "type": "tx_hash",
+                    "format": "0x-prefixed 32-byte hex",
+                },
             },
             "retry_instructions": {
                 "step_1": f"Send {pricing['amount_usdc']} USDC to {WALLET_ADDRESS} on Base (chain ID {CHAIN_ID})",
