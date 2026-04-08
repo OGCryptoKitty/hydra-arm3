@@ -18,7 +18,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -54,14 +54,14 @@ ERC20_ABI = [
 # ---------------------------------------------------------------------------
 
 
-class SurvivalTier(Enum):
+class SurvivalTier(IntEnum):
     """USDC balance tiers that govern spending behaviour."""
 
-    CRITICAL = auto()   # < $100
-    MINIMAL = auto()    # $100 – $499.99
-    VIABLE = auto()     # $500 – $2,999.99
-    FUNDED = auto()     # $3,000 – $4,999.99
-    SURPLUS = auto()    # $5,000+
+    CRITICAL = 1   # < $100
+    MINIMAL = 2    # $100 – $499.99
+    VIABLE = 3     # $500 – $2,999.99
+    FUNDED = 4     # $3,000 – $4,999.99
+    SURPLUS = 5    # $5,000+
 
 
 class AutomatonState(Enum):

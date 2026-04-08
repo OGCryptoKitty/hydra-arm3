@@ -55,19 +55,58 @@ from src.x402.verify import is_valid_tx_hash, verify_usdc_payment
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────
-# In-memory replay-prevention cache
+# Replay-prevention cache (in-memory + disk-backed)
 # Stores: tx_hash → unix timestamp of first verification
+# Disk file ensures restarts don't allow replays on Render free tier
 # ─────────────────────────────────────────────────────────────
 
 _used_tx_cache: TTLCache = TTLCache(maxsize=10_000, ttl=PAYMENT_CACHE_TTL)
 
+import os as _os
+from pathlib import Path as _Path
+_REPLAY_FILE = _Path(_os.getenv("HYDRA_STATE_DIR", _os.getenv("HYDRA_BOOTSTRAP_DIR", "/app/data"))) / "used_tx_hashes.jsonl"
+
+
+def _load_replay_cache() -> None:
+    """Load persisted tx hashes from disk on startup."""
+    if not _REPLAY_FILE.exists():
+        return
+    now = time.time()
+    try:
+        with _REPLAY_FILE.open("r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split("\t", 1)
+                tx_hash = parts[0]
+                ts = float(parts[1]) if len(parts) > 1 else now
+                # Only load entries that haven't expired
+                if now - ts < PAYMENT_CACHE_TTL:
+                    _used_tx_cache[tx_hash] = ts
+    except Exception:
+        pass  # Best-effort — in-memory cache still works
+
 
 def _mark_tx_used(tx_hash: str) -> None:
-    _used_tx_cache[tx_hash.lower()] = time.time()
+    key = tx_hash.lower()
+    ts = time.time()
+    _used_tx_cache[key] = ts
+    # Persist to disk
+    try:
+        _REPLAY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with _REPLAY_FILE.open("a") as f:
+            f.write(f"{key}\t{ts}\n")
+    except Exception:
+        pass  # Best-effort — in-memory cache is primary
 
 
 def _is_tx_used(tx_hash: str) -> bool:
     return tx_hash.lower() in _used_tx_cache
+
+
+# Load on module import
+_load_replay_cache()
 
 
 # ─────────────────────────────────────────────────────────────

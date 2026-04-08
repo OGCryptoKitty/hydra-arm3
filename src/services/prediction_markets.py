@@ -55,18 +55,20 @@ _event_cache: TTLCache = TTLCache(maxsize=50, ttl=300)
 # ─────────────────────────────────────────────────────────────
 
 REGULATORY_KEYWORDS = [
-    "sec", "cftc", "fed", "federal reserve", "fomc", "fincen", "occ", "cfpb",
+    # Agency names (exact enough to avoid false positives)
+    "sec ", " sec", "cftc", "federal reserve", "fomc", "fincen", "occ", "cfpb",
+    # Crypto-specific
     "crypto", "bitcoin", "ethereum", "stablecoin", "defi",
-    "regulation", "regulatory", "legislation", "law", "bill", "act",
-    "enforcement", "lawsuit", "settlement", "ruling", "ruling",
-    "interest rate", "rate hike", "rate cut", "basis points",
-    "genius act", "clarity act", "fit21", "market structure",
-    "etf", "spot etf", "approval", "reject",
+    # Regulatory terms (multi-word to avoid matching sports/entertainment)
+    "regulation", "regulatory", "legislation",
+    "enforcement action", "enforcement case",
+    "interest rate", "rate hike", "rate cut", "basis points", "fed rate",
+    "genius act", "clarity act", "fit21", "market structure bill",
+    "spot etf", "etf approval",
     "securities", "commodity", "derivatives",
-    "congress", "senate", "house", "president",
-    "scotus", "supreme court", "court",
-    "ban", "restriction", "license", "charter",
-    "bank", "banking", "fdic", "fintech",
+    "scotus", "supreme court",
+    "banking crisis", "bank failure", "fdic",
+    "tariff", "trade policy",
 ]
 
 # Tag IDs on Polymarket for regulatory/political markets
