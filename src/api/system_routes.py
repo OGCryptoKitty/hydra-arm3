@@ -36,7 +36,10 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-BOOTSTRAP_DIR = Path(os.getenv("HYDRA_BOOTSTRAP_DIR", "/home/user/workspace/hydra-bootstrap"))
+BOOTSTRAP_DIR = Path(os.getenv(
+    "HYDRA_BOOTSTRAP_DIR",
+    os.getenv("HYDRA_STATE_DIR", "/tmp/hydra-data"),
+))
 WALLET_JSON   = BOOTSTRAP_DIR / "wallet.json"
 
 system_router = APIRouter(prefix="/system", tags=["System Management"])
