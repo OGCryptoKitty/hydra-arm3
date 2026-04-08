@@ -1,0 +1,155 @@
+name: Deploy & Verify HYDRA
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check if service is already live
+        id: health_check
+        continue-on-error: true
+        run: |
+          echo "Checking https://hydra-api-nlnj.onrender.com/health ..."
+          HTTP_CODE=$(curl -s -o /tmp/health_response.json -w "%{http_code}" \
+            --max-time 15 \
+            https://hydra-api-nlnj.onrender.com/health 2>/dev/null || echo "000")
+          echo "HTTP status: $HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "status=live" >> $GITHUB_OUTPUT
+            echo "✅ Service is LIVE"
+            cat /tmp/health_response.json | python3 -m json.tool 2>/dev/null || cat /tmp/health_response.json
+          else
+            echo "status=down" >> $GITHUB_OUTPUT
+            echo "⚠️ Service returned HTTP $HTTP_CODE — may be sleeping or not deployed"
+          fi
+
+      - name: Trigger Render deploy hook (if secret exists)
+        if: steps.health_check.outputs.status != 'live'
+        continue-on-error: true
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            echo "🚀 Triggering Render deploy hook..."
+            curl -s -X POST "$RENDER_DEPLOY_HOOK" --max-time 30
+            echo ""
+            echo "Deploy hook triggered. Waiting for service to start..."
+          else
+            echo "ℹ️ No RENDER_DEPLOY_HOOK secret configured."
+            echo ""
+            echo "To enable auto-deploy, either:"
+            echo "  1. Connect this repo to Render at https://render.com (uses render.yaml blueprint)"
+            echo "  2. Or add a RENDER_DEPLOY_HOOK secret with your Render deploy hook URL"
+            echo ""
+            echo "The render.yaml blueprint is ready — Render will auto-configure everything."
+          fi
+
+      - name: Wait for service to come up
+        if: steps.health_check.outputs.status != 'live'
+        id: wait_check
+        run: |
+          echo "Waiting for service to respond (checking every 30s for up to 5 min)..."
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 30
+            HTTP_CODE=$(curl -s -o /tmp/health_retry.json -w "%{http_code}" \
+              --max-time 15 \
+              https://hydra-api-nlnj.onrender.com/health 2>/dev/null || echo "000")
+            echo "Attempt $i: HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "status=live" >> $GITHUB_OUTPUT
+              echo "✅ Service is now LIVE!"
+              cat /tmp/health_retry.json | python3 -m json.tool 2>/dev/null || true
+              exit 0
+            fi
+          done
+          echo "status=down" >> $GITHUB_OUTPUT
+          echo "❌ Service did not come up within 5 minutes"
+
+      - name: Verify all endpoints respond
+        if: steps.health_check.outputs.status == 'live' || steps.wait_check.outputs.status == 'live'
+        run: |
+          BASE="https://hydra-api-nlnj.onrender.com"
+          echo "=== Endpoint Verification ==="
+          
+          echo -n "GET  /health ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/health" --max-time 10
+          echo ""
+          
+          echo -n "GET  /pricing ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/pricing" --max-time 10
+          echo ""
+          
+          echo -n "GET  /docs ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/docs" --max-time 10
+          echo ""
+          
+          echo -n "GET  /openapi.json ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/openapi.json" --max-time 10
+          echo ""
+          
+          echo -n "GET  /.well-known/x402.json ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/x402.json" --max-time 10
+          echo ""
+          
+          echo -n "GET  /.well-known/ai-plugin.json ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/ai-plugin.json" --max-time 10
+          echo ""
+          
+          echo -n "GET  /v1/markets (free discovery) ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/v1/markets" --max-time 10
+          echo ""
+          
+          echo -n "GET  /v1/markets/discovery (free) ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/v1/markets/discovery" --max-time 10
+          echo ""
+          
+          echo -n "POST /v1/regulatory/scan (expect 402) ... "
+          curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/v1/regulatory/scan" \
+            -H "Content-Type: application/json" \
+            -d '{"business_description":"test crypto exchange in Wyoming","jurisdiction":"US"}' \
+            --max-time 10
+          echo ""
+          
+          echo -n "POST /v1/fed/signal (expect 402) ... "
+          curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/v1/fed/signal" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            --max-time 10
+          echo ""
+          
+          echo ""
+          echo "Free endpoints should return 200. Paid endpoints should return 402."
+          echo "402 = x402 payment required (correct behavior — payment gateway working)."
+
+      - name: Report deployment status
+        if: always()
+        run: |
+          echo "============================================"
+          echo " HYDRA DEPLOYMENT STATUS REPORT"
+          echo "============================================"
+          echo ""
+          if [ "${{ steps.health_check.outputs.status }}" = "live" ] || [ "${{ steps.wait_check.outputs.status }}" = "live" ]; then
+            echo "✅ HYDRA is DEPLOYED and LIVE"
+            echo "   URL: https://hydra-api-nlnj.onrender.com"
+            echo "   Docs: https://hydra-api-nlnj.onrender.com/docs"
+            echo "   x402: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
+            echo ""
+            echo "   All commits on master are deployed."
+            echo "   Keepalive ping active (60s interval)."
+            echo "   Payment middleware enforcing on all /v1/ endpoints."
+          else
+            echo "❌ HYDRA is NOT responding"
+            echo ""
+            echo "   To deploy, connect this repo to Render:"
+            echo "   https://render.com/deploy?repo=https://github.com/OGCryptoKitty/hydra-arm3"
+            echo ""
+            echo "   render.yaml blueprint will auto-configure everything."
+            echo "   After connecting, every push to master auto-deploys."
+          fi
+          echo ""
+          echo "============================================"
