@@ -336,16 +336,21 @@ async def landing_page() -> FileResponse:
     _index_path = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "index.html")
     if _os.path.exists(_index_path):
         return FileResponse(_index_path, media_type="text/html")
-    # Fallback to JSON if index.html is missing
+    # Fallback to JSON if index.html is missing (also serves as bot discovery)
     return JSONResponse(content={
-        "name": "HYDRA Regulatory Intelligence",
+        "name": "HYDRA Arm 3 — Regulatory Intelligence SaaS",
         "status": "operational",
-        "docs": "/docs",
-        "pricing": "/pricing",
-        "discovery": "/.well-known/x402.json",
-        "payment_protocol": "x402",
-        "payment_token": "USDC on Base (Chain 8453)",
+        "tagline": "AI-powered regulatory compliance analysis and prediction market signals. Pay-per-use in USDC.",
+        "pricing_range": "$0.25 — $50.00 USDC per call",
+        "payment_protocol": "x402 (HTTP 402 Payment Required)",
+        "payment_token": "USDC on Base L2 (Chain ID 8453)",
         "wallet": settings.WALLET_ADDRESS,
+        "endpoints": {
+            "docs": "/docs",
+            "pricing": "/pricing",
+            "health": "/health",
+            "discovery": "/.well-known/x402.json",
+        },
     })
 
 
