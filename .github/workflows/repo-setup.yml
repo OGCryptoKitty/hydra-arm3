@@ -5,13 +5,14 @@ on:
     branches: [master, main]
     paths:
       - '.github/workflows/repo-setup.yml'
+  workflow_dispatch:
 
 jobs:
   set-topics:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      metadata: write
+      administration: write
 
     steps:
       - name: Set repository topics
