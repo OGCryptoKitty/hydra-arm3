@@ -1108,6 +1108,29 @@ async def get_micro_feed(request: Request) -> JSONResponse:
 
     has_high_urgency = any(e.get("urgency") == "high" for e in compact_events)
 
+    # FOMC awareness — drives premium upsell during high-value windows
+    from datetime import date as _date
+    _today = _date.today()
+    _fomc_dates = [
+        _date(2026, 1, 28), _date(2026, 3, 18), _date(2026, 5, 6),
+        _date(2026, 6, 17), _date(2026, 7, 29), _date(2026, 9, 16),
+        _date(2026, 10, 28), _date(2026, 12, 16),
+    ]
+    _next_fomc = next((d for d in _fomc_dates if d >= _today), None)
+    _days_to_fomc = (_next_fomc - _today).days if _next_fomc else None
+
+    # Context-aware upsell based on urgency and FOMC proximity
+    if has_high_urgency:
+        _next_action = "HIGH URGENCY — Call POST /v1/markets/signal/{market_id} ($5.00) NOW for AI analysis"
+    elif _days_to_fomc is not None and _days_to_fomc == 0:
+        _next_action = "FOMC DAY — Call POST /v1/fed/decision ($25.00) for real-time rate decision classification"
+    elif _days_to_fomc is not None and _days_to_fomc <= 7:
+        _next_action = f"FOMC in {_days_to_fomc}d — Call POST /v1/fed/signal ($5.00) for pre-meeting positioning signal"
+    elif compact_events:
+        _next_action = "Call POST /v1/markets/signal/{market_id} ($5.00) for deep analysis on matched markets"
+    else:
+        _next_action = "No new events — poll again in 5 minutes"
+
     return JSONResponse(content={
         "events": compact_events,
         "event_count": len(compact_events),
@@ -1116,10 +1139,13 @@ async def get_micro_feed(request: Request) -> JSONResponse:
             "HIGH URGENCY EVENT(S) DETECTED — check matched markets immediately"
             if has_high_urgency else None
         ),
-        "next_action": (
-            "Call POST /v1/markets/signal/{market_id} ($5.00) for deep analysis on matched markets"
-            if compact_events else "No new events — poll again in 5 minutes"
-        ),
+        "next_action": _next_action,
+        "fomc": {
+            "next_date": _next_fomc.isoformat() if _next_fomc else None,
+            "days_until": _days_to_fomc,
+            "is_fomc_week": _days_to_fomc is not None and _days_to_fomc <= 7,
+        } if _days_to_fomc is not None else None,
+        "poll_interval_seconds": 300,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     })
 

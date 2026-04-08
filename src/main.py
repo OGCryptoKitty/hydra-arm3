@@ -383,8 +383,103 @@ async def x402_discovery() -> JSONResponse:
 
 
 # ─────────────────────────────────────────────────────────────
-# Health endpoint override — includes automaton status
+# Discoverability — robots.txt, apis.json, sitemap, FOMC calendar
+# Maximizes crawler indexing and API directory listings
 # ─────────────────────────────────────────────────────────────
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt() -> Response:
+    """Serve robots.txt for crawler discoverability."""
+    _robots_path = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "static", "robots.txt")
+    if _os.path.exists(_robots_path):
+        from starlette.responses import PlainTextResponse
+        with open(_robots_path) as f:
+            return PlainTextResponse(content=f.read(), media_type="text/plain")
+    from starlette.responses import PlainTextResponse
+    return PlainTextResponse(content="User-agent: *\nAllow: /\n", media_type="text/plain")
+
+
+@app.get("/apis.json", include_in_schema=False)
+async def apis_json() -> JSONResponse:
+    """Serve apis.json for API directory discoverability (APIs.io, APIs.guru, etc.)."""
+    _apis_path = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "static", "apis.json")
+    if _os.path.exists(_apis_path):
+        import json as _json
+        with open(_apis_path) as f:
+            return JSONResponse(content=_json.load(f))
+    return JSONResponse(content={"name": "HYDRA API", "url": "https://hydra-api-nlnj.onrender.com"})
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_xml() -> Response:
+    """Dynamic sitemap for search engine indexing."""
+    from starlette.responses import PlainTextResponse
+    base = "https://hydra-api-nlnj.onrender.com"
+    urls = [
+        f"<url><loc>{base}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>",
+        f"<url><loc>{base}/docs</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>",
+        f"<url><loc>{base}/pricing</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>",
+        f"<url><loc>{base}/health</loc><changefreq>always</changefreq><priority>0.5</priority></url>",
+        f"<url><loc>{base}/.well-known/x402.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>",
+    ]
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + "".join(urls)
+        + "</urlset>"
+    )
+    return PlainTextResponse(content=xml, media_type="application/xml")
+
+
+@app.get("/v1/fed/calendar", tags=["Fed Decision Package"], include_in_schema=True)
+async def fomc_calendar() -> JSONResponse:
+    """
+    FREE — Next FOMC meeting dates and countdown.
+    Designed to drive pre-FOMC signal purchases. Bots poll this to know when to buy.
+    """
+    from datetime import date, timedelta
+    today = date.today()
+
+    # 2026 FOMC scheduled meeting dates (2-day meetings, announcement on day 2)
+    fomc_dates = [
+        date(2026, 1, 28), date(2026, 3, 18), date(2026, 5, 6),
+        date(2026, 6, 17), date(2026, 7, 29), date(2026, 9, 16),
+        date(2026, 10, 28), date(2026, 12, 16),
+    ]
+
+    next_meeting = None
+    for d in fomc_dates:
+        if d >= today:
+            next_meeting = d
+            break
+    # If all 2026 dates passed, estimate Jan 2027
+    if next_meeting is None:
+        next_meeting = date(2027, 1, 27)
+
+    days_until = (next_meeting - today).days
+    is_fomc_week = days_until <= 7
+    is_fomc_day = days_until == 0
+
+    return JSONResponse(content={
+        "next_fomc_date": next_meeting.isoformat(),
+        "days_until_fomc": days_until,
+        "is_fomc_week": is_fomc_week,
+        "is_fomc_day": is_fomc_day,
+        "fomc_2026_schedule": [d.isoformat() for d in fomc_dates],
+        "trading_note": (
+            "FOMC DAY — Fed decision imminent. Buy /v1/fed/decision ($25) for real-time classification."
+            if is_fomc_day else
+            f"FOMC WEEK — {days_until} days out. Buy /v1/fed/signal ($5) for pre-meeting positioning."
+            if is_fomc_week else
+            f"{days_until} days to next FOMC. Monitor /v1/markets/feed ($0.25) for regulatory catalysts."
+        ),
+        "premium_endpoints": {
+            "pre_fomc_signal": {"endpoint": "POST /v1/fed/signal", "price": "$5.00", "when": "1-7 days before FOMC"},
+            "live_decision": {"endpoint": "POST /v1/fed/decision", "price": "$25.00", "when": "FOMC day, within 30 seconds"},
+            "resolution_verdict": {"endpoint": "POST /v1/fed/resolution", "price": "$50.00", "when": "After FOMC for oracle submission"},
+        },
+        "free": True,
+    })
 
 @app.get("/health", tags=["System"], include_in_schema=True)
 async def health_check(request: Request) -> JSONResponse:

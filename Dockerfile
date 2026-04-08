@@ -41,6 +41,8 @@ WORKDIR /app
 # Copy application code
 COPY config/ ./config/
 COPY src/ ./src/
+COPY static/ ./static/
+COPY index.html ./index.html
 COPY .env.example .env.example
 
 # Create persistent data directory

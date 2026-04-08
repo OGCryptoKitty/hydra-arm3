@@ -325,6 +325,9 @@ class TransactionLog:
         total_distributions = Decimal("0")
         total_expenses = Decimal("0")
 
+        revenue_by_endpoint: Dict[str, Decimal] = {}
+        calls_by_endpoint: Dict[str, int] = {}
+
         for record in records:
             try:
                 amount = Decimal(record["amount_usdc"])
@@ -336,17 +339,31 @@ class TransactionLog:
 
             if direction == "inbound":
                 total_revenue += amount
+                # Parse endpoint from note field: "x402 payment for /v1/..."
+                note = record.get("note", "")
+                if note.startswith("x402 payment for "):
+                    endpoint = note[len("x402 payment for "):]
+                    revenue_by_endpoint[endpoint] = revenue_by_endpoint.get(endpoint, Decimal("0")) + amount
+                    calls_by_endpoint[endpoint] = calls_by_endpoint.get(endpoint, 0) + 1
             elif direction == "outbound":
                 if category == "member-distribution":
                     total_distributions += amount
                 elif category == "operating-expense":
                     total_expenses += amount
 
+        # Sort endpoints by revenue descending
+        sorted_endpoints = sorted(revenue_by_endpoint.items(), key=lambda x: x[1], reverse=True)
+
         return {
             "total_revenue_usdc": str(total_revenue.quantize(Decimal("0.01"))),
             "total_distributions_usdc": str(total_distributions.quantize(Decimal("0.01"))),
             "total_expenses_usdc": str(total_expenses.quantize(Decimal("0.01"))),
+            "net_profit_usdc": str((total_revenue - total_distributions - total_expenses).quantize(Decimal("0.01"))),
             "transaction_count": len(records),
+            "revenue_by_endpoint": {
+                ep: {"revenue_usdc": str(rev.quantize(Decimal("0.01"))), "calls": calls_by_endpoint.get(ep, 0)}
+                for ep, rev in sorted_endpoints
+            },
         }
 
     def log(

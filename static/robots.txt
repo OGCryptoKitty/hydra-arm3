@@ -1,0 +1,15 @@
+# HYDRA Arm 3 — Regulatory Intelligence API
+# Allow all crawlers — we want maximum discoverability
+
+User-agent: *
+Allow: /
+
+# API documentation and discovery
+Sitemap: https://hydra-api-nlnj.onrender.com/sitemap.xml
+
+# Key pages for indexing
+# Landing page: /
+# API docs: /docs
+# Pricing: /pricing
+# Market discovery: /v1/markets/discovery
+# x402 payment manifest: /.well-known/x402.json

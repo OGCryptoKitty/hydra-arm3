@@ -130,6 +130,10 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         "/openapi.json",
         "/redoc",
         "/favicon.ico",
+        "/v1/markets",
+        "/v1/markets/discovery",
+        "/v1/markets/pricing",
+        "/v1/fed/calendar",
     })
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:

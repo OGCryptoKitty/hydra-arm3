@@ -1,0 +1,70 @@
+{
+  "name": "HYDRA Regulatory Intelligence API",
+  "description": "AI-powered regulatory compliance analysis and prediction market signals. Pay-per-use in USDC on Base L2 via x402 protocol.",
+  "url": "https://hydra-api-nlnj.onrender.com",
+  "image": "",
+  "created": "2026-04-01",
+  "modified": "2026-04-08",
+  "specificationVersion": "0.15",
+  "apis": [
+    {
+      "name": "HYDRA Regulatory Intelligence",
+      "description": "Regulatory risk scanning, prediction market signals, Fed decision intelligence, and oracle integration. All endpoints accept USDC on Base L2.",
+      "humanURL": "https://hydra-api-nlnj.onrender.com/docs",
+      "baseURL": "https://hydra-api-nlnj.onrender.com",
+      "tags": [
+        "regulatory",
+        "prediction-markets",
+        "polymarket",
+        "kalshi",
+        "fomc",
+        "federal-reserve",
+        "usdc",
+        "base-l2",
+        "x402",
+        "crypto",
+        "defi",
+        "oracle",
+        "uma",
+        "chainlink",
+        "ai",
+        "compliance"
+      ],
+      "properties": [
+        {
+          "type": "X-documentation",
+          "url": "https://hydra-api-nlnj.onrender.com/docs"
+        },
+        {
+          "type": "X-openapi",
+          "url": "https://hydra-api-nlnj.onrender.com/openapi.json"
+        },
+        {
+          "type": "X-pricing",
+          "url": "https://hydra-api-nlnj.onrender.com/pricing"
+        }
+      ],
+      "contact": [
+        {
+          "FN": "HYDRA API",
+          "url": "https://hydra-api-nlnj.onrender.com"
+        }
+      ]
+    }
+  ],
+  "maintainers": [
+    {
+      "FN": "HYDRA Autonomous System",
+      "url": "https://hydra-api-nlnj.onrender.com"
+    }
+  ],
+  "tags": [
+    "regulatory-intelligence",
+    "prediction-markets",
+    "fomc",
+    "x402-payments",
+    "usdc",
+    "base-l2",
+    "ai-powered"
+  ]
+}
