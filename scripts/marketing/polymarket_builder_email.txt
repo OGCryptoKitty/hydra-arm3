@@ -1,0 +1,29 @@
+TO: builder@polymarket.com
+SUBJECT: HYDRA — Regulatory Intelligence Infrastructure for Prediction Markets
+
+Hi Polymarket Builder team,
+
+I'm writing to apply for the Polymarket Builder Program Verified tier on behalf of HYDRA, a pay-per-call regulatory intelligence API built specifically for prediction market participants.
+
+**What HYDRA does:**
+HYDRA monitors SEC, CFTC, Federal Reserve, and FinCEN activity in real time and maps regulatory events to active Polymarket markets. It provides:
+
+- Free market discovery: GET /v1/markets returns all active regulatory prediction markets on Polymarket and Kalshi (refreshed every few minutes)
+- Trading signals: scored regulatory probability, historical precedent, key upcoming dates per market ($2 USDC/call)
+- Fed decision intelligence: real-time FOMC classification within 30 seconds of release ($25 USDC/call)  
+- Oracle resolution data: UMA Optimistic Oracle assertion data with full evidence chain for regulatory markets ($5-50 USDC/call)
+
+**Payment model:** x402 (HTTP 402 with USDC on Base) — no accounts, no subscriptions, pure agent-to-agent payments
+
+**Live API:** https://hydra-api-nlnj.onrender.com
+**Docs:** https://hydra-api-nlnj.onrender.com/docs
+**Discovery:** https://hydra-api-nlnj.onrender.com/.well-known/x402.json
+
+**Relevance to Polymarket:**
+The $143M in informed trading profits documented on Polymarket between 2024-2026 (Columbia Law, March 2026) flows primarily through regulatory event trading. HYDRA provides the infrastructure layer that enables bots to trade regulatory markets with data-driven signals rather than pure speculation — which improves market efficiency and liquidity.
+
+**Expected volume:** Early stage. Current free endpoint is active. Targeting prediction market bot integrations as primary customers.
+
+I'd welcome the opportunity to discuss integration with Polymarket's data APIs and how HYDRA can contribute to market quality.
+
+API endpoint list and technical docs at: https://hydra-api-nlnj.onrender.com/docs
