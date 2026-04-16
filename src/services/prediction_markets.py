@@ -960,8 +960,10 @@ class KalshiClient:
         """
         Fetch Kalshi events/markets related to regulation.
 
-        Filters for: Fed rate, SEC, CFTC, crypto, legislation markets.
-        Uses public GET /events and /markets endpoints.
+        Strategy:
+          1. Fetch known regulatory series directly (KXFED, etc.) — most reliable
+          2. Fetch events in Economics/Financials/Politics categories
+          3. Apply strict keyword filter to eliminate false positives
         """
         cache_key = "kalshi_regulatory_markets"
         if cache_key in _market_cache:
@@ -970,119 +972,89 @@ class KalshiClient:
         markets: list[dict[str, Any]] = []
         seen_tickers: set[str] = set()
 
-        # Fetch active markets, paginated
-        cursor = None
-        pages_fetched = 0
-        max_pages = 5  # limit to prevent excessive API calls
+        # --- Strategy 1: Fetch known regulatory series directly ---
+        for series in KALSHI_REGULATORY_SERIES:
+            data = await self._get("/events", params={"limit": 20, "status": "open", "series_ticker": series})
+            if data:
+                for event in data.get("events", []):
+                    event_ticker = event.get("event_ticker", "")
+                    if event_ticker not in seen_tickers:
+                        seen_tickers.add(event_ticker)
+                        # Fetch markets for this event
+                        mdata = await self._get("/markets", params={"event_ticker": event_ticker, "limit": 20})
+                        if mdata:
+                            for market in mdata.get("markets", []):
+                                ticker = market.get("ticker", "")
+                                if ticker not in seen_tickers:
+                                    seen_tickers.add(ticker)
+                                    markets.append(self._normalize_kalshi_market(market, event))
 
-        while pages_fetched < max_pages:
-            params: dict[str, Any] = {"limit": 200, "status": "open"}
-            if cursor:
-                params["cursor"] = cursor
-
-            data = await self._get("/markets", params=params)
-            if not data:
-                break
-
-            batch = data.get("markets", [])
-            if not batch:
-                break
-
-            for market in batch:
-                ticker = market.get("ticker") or ""
-                if ticker in seen_tickers:
-                    continue
-
-                title = (
-                    market.get("title") or
-                    market.get("question") or
-                    market.get("subtitle") or
-                    ""
-                )
-                series_ticker = market.get("series_ticker") or ""
-                event_ticker = market.get("event_ticker") or ""
-
-                # Check if matches regulatory keywords OR is in a known regulatory series
-                is_regulatory = (
-                    _matches_regulatory(title + " " + series_ticker + " " + event_ticker)
-                    or any(
-                        series_ticker.upper().startswith(s) or event_ticker.upper().startswith(s)
-                        for s in KALSHI_REGULATORY_SERIES
-                    )
-                )
-
-                if not is_regulatory:
-                    continue
-
-                seen_tickers.add(ticker)
-
-                # Extract yes/no prices (Kalshi uses cents: 0-99)
-                yes_price_cents = market.get("yes_ask") or market.get("yes_bid") or 50
-                yes_price = yes_price_cents / 100.0
-
-                markets.append({
-                    "platform": "kalshi",
-                    "title": title,
-                    "market_question": title,
-                    "ticker": ticker,
-                    "series_ticker": series_ticker,
-                    "event_ticker": event_ticker,
-                    "volume_24hr": float(market.get("volume") or market.get("volume_24h") or 0),
-                    "liquidity": float(market.get("liquidity") or 0),
-                    "yes_bid": market.get("yes_bid"),
-                    "yes_ask": market.get("yes_ask"),
-                    "no_bid": market.get("no_bid"),
-                    "no_ask": market.get("no_ask"),
-                    "yes_price": yes_price,
-                    "close_time": market.get("close_time") or market.get("expiration_time"),
-                    "status": market.get("status"),
-                    "url": f"https://kalshi.com/markets/{ticker}",
-                    "regulatory_domain": _classify_market_domain(title),
-                })
-
-            cursor = data.get("cursor")
-            if not cursor:
-                break
-            pages_fetched += 1
-
-        # Also fetch events directly for known regulatory series
-        for series in KALSHI_REGULATORY_SERIES[:4]:  # limit API calls
-            events_data = await self._get(
-                "/events",
-                params={"series_ticker": series, "limit": 20, "status": "open"},
-            )
-            if not events_data:
-                continue
-            for event in (events_data.get("events") or []):
-                for market in (event.get("markets") or []):
-                    ticker = market.get("ticker") or ""
-                    if ticker in seen_tickers:
+        # --- Strategy 2: Scan Economics/Financials/Politics events with strict filter ---
+        strict_keywords = [
+            "fed fund", "fomc", "interest rate", "rate cut", "rate hike",
+            "inflation", "cpi", "gdp", "recession", "unemployment",
+            "tariff", "trade war", "sanctions", "sec ", "cftc",
+            "crypto regulation", "stablecoin", "genius act", "bitcoin etf",
+            "market structure", "fincen", "enforcement action",
+        ]
+        for category in ["Economics", "Financials", "Politics"]:
+            data = await self._get("/events", params={"limit": 100, "status": "open"})
+            if data:
+                for event in data.get("events", []):
+                    evt_cat = event.get("category", "")
+                    if evt_cat not in ("Economics", "Financials", "Politics"):
                         continue
-                    seen_tickers.add(ticker)
-                    title = market.get("title") or event.get("title") or ""
-                    yes_price_cents = market.get("yes_ask") or market.get("yes_bid") or 50
-                    yes_price = yes_price_cents / 100.0
-                    markets.append({
-                        "platform": "kalshi",
-                        "title": title,
-                        "market_question": title,
-                        "ticker": ticker,
-                        "series_ticker": series,
-                        "event_ticker": event.get("event_ticker") or "",
-                        "volume_24hr": float(market.get("volume") or 0),
-                        "liquidity": float(market.get("liquidity") or 0),
-                        "yes_price": yes_price,
-                        "close_time": market.get("close_time") or event.get("close_time"),
-                        "status": market.get("status"),
-                        "url": f"https://kalshi.com/markets/{ticker}",
-                        "regulatory_domain": _classify_market_domain(title),
-                    })
+                    event_ticker = event.get("event_ticker", "")
+                    if event_ticker in seen_tickers:
+                        continue
+                    title = event.get("title", "").lower()
+                    sub = event.get("sub_title", "").lower()
+                    combined = title + " " + sub
+                    if any(kw in combined for kw in strict_keywords):
+                        seen_tickers.add(event_ticker)
+                        mdata = await self._get("/markets", params={"event_ticker": event_ticker, "limit": 20})
+                        if mdata:
+                            for market in mdata.get("markets", []):
+                                ticker = market.get("ticker", "")
+                                if ticker not in seen_tickers:
+                                    seen_tickers.add(ticker)
+                                    markets.append(self._normalize_kalshi_market(market, event))
 
-        markets.sort(key=lambda x: x["volume_24hr"], reverse=True)
+        # Cache and return
         _market_cache[cache_key] = markets
-
-        logger.info("KalshiClient: discovered %d regulatory markets", len(markets))
+        logger.info("Kalshi: found %d regulatory markets", len(markets))
         return markets
+
+    @staticmethod
+    def _normalize_kalshi_market(market: dict, event: dict | None = None) -> dict[str, Any]:
+        """Normalize a Kalshi market dict into HYDRA's common schema."""
+        ticker = market.get("ticker", "")
+        title = market.get("title") or market.get("question") or (event or {}).get("title", "")
+        series_ticker = market.get("series_ticker", "")
+        event_ticker = market.get("event_ticker") or (event or {}).get("event_ticker", "")
+        yes_price_cents = market.get("yes_ask") or market.get("yes_bid") or 50
+        yes_price = yes_price_cents / 100.0
+        return {
+            "platform": "kalshi",
+            "title": title,
+            "market_question": title,
+            "ticker": ticker,
+            "series_ticker": series_ticker,
+            "event_ticker": event_ticker,
+            "volume_24hr": float(market.get("volume") or market.get("volume_24h") or 0),
+            "liquidity": float(market.get("liquidity") or 0),
+            "yes_bid": market.get("yes_bid"),
+            "yes_ask": market.get("yes_ask"),
+            "no_bid": market.get("no_bid"),
+            "no_ask": market.get("no_ask"),
+            "yes_price": yes_price,
+            "close_time": market.get("close_time") or market.get("expiration_time"),
+            "status": market.get("status"),
+            "url": f"https://kalshi.com/markets/{ticker}",
+            "regulatory_domain": _classify_market_domain(title),
+        }
+
+    # (old get_regulatory_markets code removed — replaced above)
 
     async def get_market_details(self, ticker: str) -> dict[str, Any] | None:
         """
