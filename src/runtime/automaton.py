@@ -18,7 +18,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -26,6 +26,8 @@ from web3 import Web3
 from web3.exceptions import ContractLogicError
 
 from .lifecycle import LifecycleManager, Phase
+from .autonomous_marketing import AutonomousMarketing
+from .revenue_optimizer import RevenueOptimizer
 
 logger = logging.getLogger("hydra.automaton")
 
@@ -39,6 +41,10 @@ _STATE_DIR: Path = Path(
 STATE_FILE: Path = _STATE_DIR / "state.json"
 USDC_DECIMALS: int = 6
 HEARTBEAT_INTERVAL: int = 60  # seconds
+
+# Marketing and revenue loop intervals
+MARKETING_INTERVAL_SECONDS: int = 86400    # 24 hours
+REVENUE_REPORT_INTERVAL_SECONDS: int = 604800  # 7 days
 
 # Minimal ERC-20 ABI — only balanceOf is required
 ERC20_ABI = [
@@ -57,7 +63,7 @@ ERC20_ABI = [
 # ---------------------------------------------------------------------------
 
 
-class SurvivalTier(Enum):
+class SurvivalTier(IntEnum):
     """USDC balance tiers that govern spending behaviour."""
 
     CRITICAL = auto()   # < $100
@@ -150,6 +156,12 @@ class HydraAutomaton:
 
         # Lifecycle manager (loads phase from state.json)
         self.lifecycle: LifecycleManager = LifecycleManager()
+
+        # Marketing + revenue modules
+        self._marketing: AutonomousMarketing = AutonomousMarketing()
+        self._revenue_optimizer: RevenueOptimizer = RevenueOptimizer()
+        self._last_marketing_run: Optional[datetime] = None
+        self._last_revenue_report: Optional[datetime] = None
 
         # Load persisted state
         self._load_state()
@@ -330,9 +342,62 @@ class HydraAutomaton:
         # ---- Update automaton FSM state ------------------------------
         self._automaton_state = self._derive_automaton_state(tier, phase)
 
+        # ---- Autonomous marketing (every 24 hours) ------------------
+        if self._should_run_marketing(now):
+            asyncio.create_task(self._run_marketing_async())
+
+        # ---- Revenue report (every 7 days) ---------------------------
+        if self._should_run_revenue_report(now):
+            asyncio.create_task(self._run_revenue_report_async())
+
         # ---- Persist -------------------------------------------------
         self._last_heartbeat = now
         self._save_state()
+
+    def _should_run_marketing(self, now: datetime) -> bool:
+        """Return True if it's time to run the marketing loop."""
+        if self._last_marketing_run is None:
+            return True
+        elapsed = (now - self._last_marketing_run).total_seconds()
+        return elapsed >= MARKETING_INTERVAL_SECONDS
+
+    def _should_run_revenue_report(self, now: datetime) -> bool:
+        """Return True if it's time to generate a revenue report."""
+        if self._last_revenue_report is None:
+            return True
+        elapsed = (now - self._last_revenue_report).total_seconds()
+        return elapsed >= REVENUE_REPORT_INTERVAL_SECONDS
+
+    async def _run_marketing_async(self) -> None:
+        """Run the autonomous marketing loop in a background task."""
+        now = datetime.now(timezone.utc)
+        logger.info("[AUTOMATON] Running autonomous marketing loop at %s", now.isoformat())
+        try:
+            results = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: self._marketing.run_autonomous_marketing_loop()
+            )
+            self._last_marketing_run = now
+            logger.info("[AUTOMATON] Marketing loop completed. Results: %s", results)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("[AUTOMATON] Marketing loop failed: %s", exc, exc_info=True)
+
+    async def _run_revenue_report_async(self) -> None:
+        """Generate the weekly revenue report in a background task."""
+        now = datetime.now(timezone.utc)
+        logger.info("[AUTOMATON] Generating weekly revenue report at %s", now.isoformat())
+        try:
+            report = await asyncio.get_event_loop().run_in_executor(
+                None,
+                self._revenue_optimizer.generate_weekly_report
+            )
+            self._last_revenue_report = now
+            logger.info(
+                "[AUTOMATON] Revenue report generated (%d chars)",
+                len(report),
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("[AUTOMATON] Revenue report failed: %s", exc, exc_info=True)
 
     def _derive_automaton_state(
         self, tier: SurvivalTier, phase: Phase

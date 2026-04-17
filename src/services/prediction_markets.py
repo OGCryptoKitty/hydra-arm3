@@ -55,18 +55,53 @@ _event_cache: TTLCache = TTLCache(maxsize=50, ttl=300)
 # ─────────────────────────────────────────────────────────────
 
 REGULATORY_KEYWORDS = [
-    "sec", "cftc", "fed", "federal reserve", "fomc", "fincen", "occ", "cfpb",
-    "crypto", "bitcoin", "ethereum", "stablecoin", "defi",
-    "regulation", "regulatory", "legislation", "law", "bill", "act",
-    "enforcement", "lawsuit", "settlement", "ruling", "ruling",
-    "interest rate", "rate hike", "rate cut", "basis points",
-    "genius act", "clarity act", "fit21", "market structure",
-    "etf", "spot etf", "approval", "reject",
-    "securities", "commodity", "derivatives",
-    "congress", "senate", "house", "president",
-    "scotus", "supreme court", "court",
-    "ban", "restriction", "license", "charter",
-    "bank", "banking", "fdic", "fintech",
+    # Fed / monetary policy
+    "fed fund", "fomc", "interest rate", "rate cut", "rate hike", "federal reserve",
+    # Macro economic indicators
+    "inflation", "cpi", "pce", "gdp", "recession", "unemployment", "jobs report",
+    # Trade / sanctions
+    "tariff", "trade war", "trade deal", "sanctions", "ofac",
+    # SEC / securities regulation
+    "sec enforcement", "sec charges", "sec sues", "sec action", "sec settlement",
+    "sec order", "sec investigation", "securities fraud", "insider trading",
+    "etf approval", "etf denied", "spot etf",
+    # CFTC / derivatives
+    "cftc", "commodity futures", "derivatives regulation",
+    # Crypto regulation
+    "crypto regulation", "stablecoin", "genius act", "fit21", "clarity act",
+    "market structure bill", "digital asset legislation", "bitcoin etf",
+    "ethereum etf", "crypto bill", "senate crypto", "house crypto",
+    # Bitcoin/Ethereum only if tied to regulation context (handled in filter fn)
+    # FinCEN / AML
+    "fincen", "anti-money", "bank secrecy", "aml", "bsa compliance",
+    # Treasury / fiscal
+    "treasury", "debt ceiling", "government shutdown",
+    # Generic regulatory
+    "executive order", "deregulation", "rulemaking",
+]
+
+# Non-regulatory topics that should be EXCLUDED even if they match other keywords
+_EXCLUSION_PATTERNS = [
+    # Sports / entertainment
+    r"\bnba\b", r"\bnfl\b", r"\bmlb\b", r"\bnhl\b", r"\bsoccer\b",
+    r"\bsuper bowl\b", r"\bworld cup\b", r"\boscars?\b", r"\bgrammy\b",
+    r"\bboxing\b", r"\bwrestl\b", r"\bmma\b", r"\bufc\b",
+    # Pure politics (elections, candidates) without regulatory context
+    r"\b(?:win|wins|winning|winner|elected|election|vote|votes|voting|ballot|primary|nominee|nomination|nominate)\b.*\b(?:president|senate race|congress|governor|mayor|democrat|republican|biden|trump|harris|desantis|newsom)\b",
+    r"\b(?:president|senate race|congress|governor|mayor)\b.*\b(?:win|wins|elected|election|vote|ballot|primary|nominee)\b",
+    r"\b2028 (?:president|election|primary|nominee|dem|rep)\b",
+    r"\b2026 (?:midterm|election|senate|congress)\b",
+    r"\bpresidential (?:election|primary|race|nominee|candidate)\b",
+    # Entertainment / celebrity
+    r"\bactor\b", r"\bactress\b", r"\bsinger\b", r"\bband\b",
+    r"\balbum\b", r"\bmovie\b", r"\bfilm\b", r"\btelevision\b",
+    r"\b(?:elon musk|spacex|tesla)\b",
+    # Non-regulatory crypto (price predictions, company events)
+    r"\b(?:will|price|reach|above|below|hit)\s+(?:\$|usd)?\d",
+    r"\bcoinbase (?:ipo|stock|shares)\b",
+    r"\bmicrostrategy\b",
+    r"\bkraken (?:ipo|stock)\b",
+    r"\bripple (?:ipo|stock)\b",
 ]
 
 # Tag IDs on Polymarket for regulatory/political markets
@@ -94,10 +129,27 @@ KALSHI_REGULATORY_CATEGORIES = [
 ]
 
 
-def _matches_regulatory(text: str) -> bool:
-    """Return True if text matches any regulatory keyword."""
+def _matches_regulatory(text: str, strict: bool = True) -> bool:
+    """Return True if text matches any regulatory keyword and passes exclusion filters.
+
+    Parameters
+    ----------
+    text : str
+        The market title + description to check.
+    strict : bool
+        If True, also check _EXCLUSION_PATTERNS to eliminate non-regulatory content.
+        Default True — use strict mode for market discovery.
+    """
     text_lower = text.lower()
-    return any(kw in text_lower for kw in REGULATORY_KEYWORDS)
+    # Must match at least one regulatory keyword
+    if not any(kw in text_lower for kw in REGULATORY_KEYWORDS):
+        return False
+    # Must not match any exclusion pattern
+    if strict:
+        for pattern in _EXCLUSION_PATTERNS:
+            if re.search(pattern, text_lower):
+                return False
+    return True
 
 
 def _cache_key(*parts: Any) -> str:
@@ -339,19 +391,103 @@ _REGULATORY_DOMAIN_PROFILES: dict[str, dict[str, Any]] = {
 }
 
 
-def _classify_market_domain(title: str, description: str = "") -> str | None:
-    """Classify a market into a HYDRA regulatory domain."""
+# Extended domain classification keywords — covers ALL target domains
+_DOMAIN_KEYWORDS: dict[str, list[str]] = {
+    "fed_monetary": [
+        "federal reserve", "fed reserve", "fomc", "fed fund", "interest rate",
+        "rate cut", "rate hike", "rate pause", "rate hold", "basis points",
+        "monetary policy", "quantitative", "powell", "fed chair", "fed meeting",
+        "open market committee", "fed decision", "fed announcement",
+    ],
+    "sec_enforcement": [
+        "sec enforcement", "sec charges", "sec sues", "sec action", "sec settlement",
+        "sec order", "sec investigation", "sec files", "sec wins", "sec loses",
+        "securities fraud", "insider trading", "securities law", "sec ruling",
+        "sec approves", "sec denies", "sec rejects", "sec approve",
+        "etf approval", "etf denied", "etf rejected", "spot etf",
+        "etf approved", "etf launch", "bitcoin etf", "ethereum etf",
+        "sec chair", "atkins", "gensler",
+    ],
+    "cftc_derivatives": [
+        "cftc", "commodity futures", "derivatives regulation", "cftc ruling",
+        "cftc enforcement", "cftc approval", "cftc action", "cftc charges",
+        "designated contract market", "dcm", "swap dealer", "prediction market cftc",
+        "kalshi cftc", "event contract", "cftc rule",
+    ],
+    "crypto_regulation": [
+        "crypto regulation", "crypto bill", "crypto law", "crypto legislation",
+        "stablecoin", "genius act", "fit21", "clarity act", "digital asset bill",
+        "market structure bill", "crypto market structure", "senate crypto",
+        "house crypto", "congress crypto", "digital asset legislation",
+        "bitcoin legislation", "ethereum legislation", "defi regulation",
+        "crypto framework", "crypto policy", "web3 legislation",
+        "virtual currency regulation", "fincen crypto",
+        "bitcoin", "ethereum", "crypto", "digital asset",
+    ],
+    "trade_tariff": [
+        "tariff", "trade war", "trade deal", "trade policy", "sanctions",
+        "ofac", "trade agreement", "import duty", "export control",
+        "trade deficit", "trade surplus", "wto", "usmca", "nafta",
+        "china tariff", "steel tariff", "aluminum tariff",
+        "blockade", "embargo", "china taiwan", "geopolitical",
+    ],
+    "macro_economic": [
+        "inflation", "cpi", "pce", "gdp", "recession", "unemployment",
+        "jobs report", "nonfarm payroll", "labor market", "consumer price",
+        "producer price", "economic growth", "economic data", "ism",
+        "retail sales", "housing data", "fed inflation", "core inflation",
+        "stagflation", "soft landing", "hard landing", "economic indicator",
+    ],
+    "legislation": [
+        "debt ceiling", "government shutdown", "budget deal", "continuing resolution",
+        "appropriations", "reconciliation bill", "fincen", "anti-money laundering",
+        "bank secrecy act", "aml", "bsa", "treasury department",
+        "executive order", "deregulation", "financial regulation bill",
+        "dodd-frank", "banking regulation", "fdic rule", "occ rule",
+    ],
+}
+
+# Map old profile names to new domain names for backwards compatibility
+_DOMAIN_PROFILE_ALIAS: dict[str, str] = {
+    "fed_rate": "fed_monetary",
+    "crypto_legislation": "crypto_regulation",
+    "bank_failure": "macro_economic",
+    "crypto_etf": "sec_enforcement",
+    "scotus_legal": "legislation",
+}
+
+
+def _classify_market_domain(title: str, description: str = "") -> str:
+    """
+    Classify a market into a HYDRA regulatory domain.
+
+    Returns one of:
+      "fed_monetary", "sec_enforcement", "cftc_derivatives",
+      "crypto_regulation", "trade_tariff", "macro_economic",
+      "legislation", or "unknown"
+
+    The domain is determined by keyword frequency across title + description.
+    """
     combined = (title + " " + description).lower()
-    best_match: str | None = None
+    best_match: str = "unknown"
     best_score = 0
 
-    for domain, profile in _REGULATORY_DOMAIN_PROFILES.items():
-        score = sum(1 for kw in profile["keywords"] if kw in combined)
+    for domain, keywords in _DOMAIN_KEYWORDS.items():
+        score = sum(1 for kw in keywords if kw in combined)
         if score > best_score:
             best_score = score
             best_match = domain
 
-    return best_match if best_score >= 1 else None
+    # Fallback: use _REGULATORY_DOMAIN_PROFILES for domains not in _DOMAIN_KEYWORDS
+    if best_score == 0:
+        for domain, profile in _REGULATORY_DOMAIN_PROFILES.items():
+            score = sum(1 for kw in profile["keywords"] if kw in combined)
+            if score > best_score:
+                best_score = score
+                # Map to canonical domain name
+                best_match = _DOMAIN_PROFILE_ALIAS.get(domain, domain)
+
+    return best_match if best_score >= 1 else "unknown"
 
 
 def _generate_hydra_analysis(
@@ -645,11 +781,26 @@ class PolymarketClient:
 
     async def get_regulatory_markets(self) -> list[dict[str, Any]]:
         """
-        Fetch active Polymarket events tagged with regulation/politics/crypto/legislation.
+        Fetch active Polymarket events that are strictly regulatory/economic in nature.
+
+        Only returns markets about:
+        - Federal Reserve / FOMC / monetary policy / interest rates
+        - SEC enforcement / ETF approvals / securities regulation
+        - CFTC rulings / derivatives regulation
+        - Crypto regulation / stablecoin legislation / market structure bills
+        - Tariffs / trade policy / sanctions / OFAC
+        - Macro indicators: CPI, PCE, GDP, unemployment, recession
+        - FinCEN / AML / BSA
+        - Congressional legislation on financial/economic topics
+
+        Does NOT return general politics, sports, entertainment, or
+        non-regulatory crypto price markets.
 
         Returns structured list of markets with title, slug, volume_24hr, liquidity,
-        outcome_prices, condition_id, end_date.
+        outcome_prices, condition_id, end_date, end_date_iso, description, tags.
         """
+        import json as _json
+
         cache_key = "poly_regulatory_markets"
         if cache_key in _market_cache:
             return _market_cache[cache_key]
@@ -657,27 +808,7 @@ class PolymarketClient:
         markets: list[dict[str, Any]] = []
         seen_condition_ids: set[str] = set()
 
-        # Strategy 1: Search for high-volume active events with regulatory keywords
-        search_queries = [
-            "SEC regulation", "CFTC", "Federal Reserve", "Fed rate",
-            "crypto legislation", "stablecoin", "GENIUS Act",
-        ]
-
-        async def search_batch(query: str) -> list[dict[str, Any]]:
-            data = await self._get(
-                self.GAMMA_BASE,
-                "/public-search",
-                params={"q": query, "limit": 20},
-            )
-            results = []
-            if isinstance(data, dict):
-                for item in data.get("events", []) or []:
-                    results.append(("event", item))
-                for item in data.get("markets", []) or []:
-                    results.append(("market", item))
-            return results
-
-        # Strategy 2: Fetch recent active events by volume and filter
+        # Fetch active events sorted by volume — get top 200 to have enough to filter
         events_data = await self._get(
             self.GAMMA_BASE,
             "/events",
@@ -686,7 +817,7 @@ class PolymarketClient:
                 "closed": "false",
                 "order": "volume_24hr",
                 "ascending": "false",
-                "limit": 100,
+                "limit": 200,
             },
         )
 
@@ -697,32 +828,49 @@ class PolymarketClient:
             raw_events.extend(events_data.get("events", events_data.get("data", [])) or [])
 
         for event in raw_events:
-            title = event.get("title", "") or event.get("question", "")
+            title = (event.get("title") or event.get("question") or "").strip()
+            description = (event.get("description") or "").strip()
             slug = event.get("slug", "")
 
-            if not _matches_regulatory(title + " " + slug):
+            # STRICT: check title + description against regulatory keywords
+            # and apply exclusion patterns
+            if not _matches_regulatory(title + " " + description, strict=True):
                 continue
+
+            # Extract tag slugs for additional context
+            tag_slugs = [t.get("slug", "") for t in (event.get("tags") or [])]
 
             # Each event may have multiple markets (outcomes)
             for market in (event.get("markets") or []):
                 cid = market.get("conditionId") or market.get("condition_id")
                 if not cid or cid in seen_condition_ids:
                     continue
+                # Skip already-closed individual markets (event.active=true but market closed)
+                if market.get("closed") and not market.get("active"):
+                    continue
                 seen_condition_ids.add(cid)
 
+                market_question = (market.get("question") or title).strip()
+                market_desc = (market.get("description") or description).strip()
+
+                # Double-check the specific market question also passes filter
+                if not _matches_regulatory(market_question + " " + market_desc, strict=True):
+                    continue
+
+                # Parse outcome prices
                 outcome_prices_raw = market.get("outcomePrices") or market.get("outcome_prices") or "[]"
                 try:
-                    import json as _json
                     if isinstance(outcome_prices_raw, str):
                         outcome_prices = _json.loads(outcome_prices_raw)
                     else:
                         outcome_prices = outcome_prices_raw
+                    outcome_prices = [float(p) for p in outcome_prices]
                 except Exception:
                     outcome_prices = []
 
+                # Parse outcomes
                 outcomes_raw = market.get("outcomes") or "[]"
                 try:
-                    import json as _json
                     if isinstance(outcomes_raw, str):
                         outcomes = _json.loads(outcomes_raw)
                     else:
@@ -730,66 +878,48 @@ class PolymarketClient:
                 except Exception:
                     outcomes = ["Yes", "No"]
 
+                # Extract volume + liquidity (prefer CLOB fields when available)
+                vol_24hr = float(
+                    market.get("volume24hr") or
+                    event.get("volume24hr") or
+                    market.get("volume24hrClob") or
+                    0
+                )
+                liquidity = float(
+                    market.get("liquidity") or
+                    market.get("liquidityNum") or
+                    market.get("liquidityClob") or
+                    0
+                )
+
                 markets.append({
                     "platform": "polymarket",
                     "title": title,
-                    "market_question": market.get("question") or title,
+                    "market_question": market_question,
+                    "description": market_desc[:500] if market_desc else "",
                     "slug": slug,
                     "market_slug": market.get("slug") or slug,
-                    "volume_24hr": float(event.get("volume24hr") or market.get("volume24hr") or 0),
-                    "liquidity": float(market.get("liquidity") or 0),
+                    "volume_24hr": vol_24hr,
+                    "liquidity": liquidity,
                     "outcomes": outcomes,
                     "outcome_prices": outcome_prices,
                     "condition_id": cid,
                     "end_date": event.get("endDate") or market.get("endDate"),
+                    "end_date_iso": market.get("endDateIso") or event.get("endDateIso"),
+                    "active": market.get("active", True),
                     "url": f"https://polymarket.com/event/{slug}",
-                    "regulatory_domain": _classify_market_domain(title),
+                    "tags": tag_slugs,
+                    "regulatory_domain": _classify_market_domain(market_question, market_desc),
                 })
 
-        # Also run keyword searches to catch markets not in top-100 by volume
-        search_results = await asyncio.gather(
-            *[search_batch(q) for q in search_queries[:4]],  # limit to 4 parallel requests
-            return_exceptions=True,
-        )
-        for batch in search_results:
-            if isinstance(batch, Exception):
-                continue
-            for item_type, item in batch:
-                if item_type == "market":
-                    cid = item.get("conditionId") or item.get("condition_id")
-                    if not cid or cid in seen_condition_ids:
-                        continue
-                    seen_condition_ids.add(cid)
-                    title = item.get("question") or item.get("title") or ""
-                    if not _matches_regulatory(title):
-                        continue
-                    outcome_prices_raw = item.get("outcomePrices") or "[]"
-                    try:
-                        import json as _json
-                        outcome_prices = _json.loads(outcome_prices_raw) if isinstance(outcome_prices_raw, str) else outcome_prices_raw
-                    except Exception:
-                        outcome_prices = []
-                    markets.append({
-                        "platform": "polymarket",
-                        "title": title,
-                        "market_question": title,
-                        "slug": item.get("slug") or item.get("market_slug") or "",
-                        "market_slug": item.get("slug") or "",
-                        "volume_24hr": float(item.get("volume24hr") or item.get("volumeNum") or 0),
-                        "liquidity": float(item.get("liquidity") or 0),
-                        "outcomes": ["Yes", "No"],
-                        "outcome_prices": outcome_prices,
-                        "condition_id": cid,
-                        "end_date": item.get("endDate") or item.get("end_date_iso"),
-                        "url": f"https://polymarket.com/market/{item.get('slug', cid)}",
-                        "regulatory_domain": _classify_market_domain(title),
-                    })
-
-        # Sort by volume descending
+        # Sort by 24h volume descending
         markets.sort(key=lambda x: x["volume_24hr"], reverse=True)
         _market_cache[cache_key] = markets
 
-        logger.info("PolymarketClient: discovered %d regulatory markets", len(markets))
+        logger.info(
+            "PolymarketClient: discovered %d regulatory markets (filtered from %d raw events)",
+            len(markets), len(raw_events),
+        )
         return markets
 
     async def get_market_details(self, condition_id: str) -> dict[str, Any] | None:
@@ -958,10 +1088,14 @@ class KalshiClient:
 
     async def get_regulatory_markets(self) -> list[dict[str, Any]]:
         """
-        Fetch Kalshi events/markets related to regulation.
+        Fetch Kalshi events/markets strictly related to regulation and economic policy.
 
-        Filters for: Fed rate, SEC, CFTC, crypto, legislation markets.
-        Uses public GET /events and /markets endpoints.
+        Strategy:
+          1. Fetch known regulatory series directly (KXFED, etc.) — always regulatory
+          2. Fetch events with category="Economics" server-side filtered — always economic
+          3. Fetch events with category="Financials" server-side filtered
+          4. For "Politics" category: only include if title/subtitle passes strict keyword filter
+          5. Skip all other categories (Sports, Entertainment, etc.)
         """
         cache_key = "kalshi_regulatory_markets"
         if cache_key in _market_cache:
@@ -969,120 +1103,110 @@ class KalshiClient:
 
         markets: list[dict[str, Any]] = []
         seen_tickers: set[str] = set()
+        seen_event_tickers: set[str] = set()
 
-        # Fetch active markets, paginated
-        cursor = None
-        pages_fetched = 0
-        max_pages = 5  # limit to prevent excessive API calls
+        async def _fetch_markets_for_event(event: dict) -> None:
+            """Fetch and add markets for a single Kalshi event."""
+            event_ticker = event.get("event_ticker", "")
+            if not event_ticker or event_ticker in seen_event_tickers:
+                return
+            seen_event_tickers.add(event_ticker)
+            mdata = await self._get("/markets", params={"event_ticker": event_ticker, "limit": 50, "status": "open"})
+            if mdata:
+                for market in mdata.get("markets", []):
+                    ticker = market.get("ticker", "")
+                    if ticker and ticker not in seen_tickers:
+                        seen_tickers.add(ticker)
+                        markets.append(self._normalize_kalshi_market(market, event))
 
-        while pages_fetched < max_pages:
-            params: dict[str, Any] = {"limit": 200, "status": "open"}
-            if cursor:
-                params["cursor"] = cursor
-
-            data = await self._get("/markets", params=params)
-            if not data:
-                break
-
-            batch = data.get("markets", [])
-            if not batch:
-                break
-
-            for market in batch:
-                ticker = market.get("ticker") or ""
-                if ticker in seen_tickers:
-                    continue
-
-                title = (
-                    market.get("title") or
-                    market.get("question") or
-                    market.get("subtitle") or
-                    ""
-                )
-                series_ticker = market.get("series_ticker") or ""
-                event_ticker = market.get("event_ticker") or ""
-
-                # Check if matches regulatory keywords OR is in a known regulatory series
-                is_regulatory = (
-                    _matches_regulatory(title + " " + series_ticker + " " + event_ticker)
-                    or any(
-                        series_ticker.upper().startswith(s) or event_ticker.upper().startswith(s)
-                        for s in KALSHI_REGULATORY_SERIES
-                    )
-                )
-
-                if not is_regulatory:
-                    continue
-
-                seen_tickers.add(ticker)
-
-                # Extract yes/no prices (Kalshi uses cents: 0-99)
-                yes_price_cents = market.get("yes_ask") or market.get("yes_bid") or 50
-                yes_price = yes_price_cents / 100.0
-
-                markets.append({
-                    "platform": "kalshi",
-                    "title": title,
-                    "market_question": title,
-                    "ticker": ticker,
-                    "series_ticker": series_ticker,
-                    "event_ticker": event_ticker,
-                    "volume_24hr": float(market.get("volume") or market.get("volume_24h") or 0),
-                    "liquidity": float(market.get("liquidity") or 0),
-                    "yes_bid": market.get("yes_bid"),
-                    "yes_ask": market.get("yes_ask"),
-                    "no_bid": market.get("no_bid"),
-                    "no_ask": market.get("no_ask"),
-                    "yes_price": yes_price,
-                    "close_time": market.get("close_time") or market.get("expiration_time"),
-                    "status": market.get("status"),
-                    "url": f"https://kalshi.com/markets/{ticker}",
-                    "regulatory_domain": _classify_market_domain(title),
-                })
-
-            cursor = data.get("cursor")
-            if not cursor:
-                break
-            pages_fetched += 1
-
-        # Also fetch events directly for known regulatory series
-        for series in KALSHI_REGULATORY_SERIES[:4]:  # limit API calls
-            events_data = await self._get(
+        # --- Strategy 1: Fetch known regulatory series directly ---
+        # These are always regulatory — no keyword filter needed
+        for series in KALSHI_REGULATORY_SERIES:
+            data = await self._get(
                 "/events",
-                params={"series_ticker": series, "limit": 20, "status": "open"},
+                params={"limit": 50, "status": "open", "series_ticker": series},
             )
-            if not events_data:
-                continue
-            for event in (events_data.get("events") or []):
-                for market in (event.get("markets") or []):
-                    ticker = market.get("ticker") or ""
-                    if ticker in seen_tickers:
-                        continue
-                    seen_tickers.add(ticker)
-                    title = market.get("title") or event.get("title") or ""
-                    yes_price_cents = market.get("yes_ask") or market.get("yes_bid") or 50
-                    yes_price = yes_price_cents / 100.0
-                    markets.append({
-                        "platform": "kalshi",
-                        "title": title,
-                        "market_question": title,
-                        "ticker": ticker,
-                        "series_ticker": series,
-                        "event_ticker": event.get("event_ticker") or "",
-                        "volume_24hr": float(market.get("volume") or 0),
-                        "liquidity": float(market.get("liquidity") or 0),
-                        "yes_price": yes_price,
-                        "close_time": market.get("close_time") or event.get("close_time"),
-                        "status": market.get("status"),
-                        "url": f"https://kalshi.com/markets/{ticker}",
-                        "regulatory_domain": _classify_market_domain(title),
-                    })
+            if data:
+                for event in data.get("events", []):
+                    await _fetch_markets_for_event(event)
 
-        markets.sort(key=lambda x: x["volume_24hr"], reverse=True)
+        # --- Strategy 2: Fetch Economics category — all are economic/macro ---
+        # Pass category server-side to reduce payload size
+        for category in ("Economics", "Financials"):
+            data = await self._get(
+                "/events",
+                params={"limit": 200, "status": "open", "category": category},
+            )
+            if data:
+                for event in data.get("events", []):
+                    # Economics and Financials events are inherently relevant
+                    # but still apply keyword check to exclude edge cases like
+                    # "Who will win the Economics Nobel Prize"
+                    title = (event.get("title") or "").strip()
+                    sub = (event.get("sub_title") or "").strip()
+                    combined = title + " " + sub
+                    if _matches_regulatory(combined, strict=True):
+                        await _fetch_markets_for_event(event)
+                    elif category == "Economics" and any(kw in combined.lower() for kw in [
+                        "rate", "inflation", "gdp", "cpi", "pce", "unemployment", "jobs",
+                        "recession", "deficit", "debt", "federal reserve", "fomc",
+                        "tariff", "trade", "treasury",
+                    ]):
+                        # Economics-specific looser match for clearly economic events
+                        await _fetch_markets_for_event(event)
+
+        # --- Strategy 3: Politics category — STRICT keyword filter only ---
+        data = await self._get(
+            "/events",
+            params={"limit": 200, "status": "open", "category": "Politics"},
+        )
+        if data:
+            for event in data.get("events", []):
+                title = (event.get("title") or "").strip()
+                sub = (event.get("sub_title") or "").strip()
+                combined = title + " " + sub
+                # Very strict: must match regulatory keyword AND not be a pure election market
+                if _matches_regulatory(combined, strict=True):
+                    await _fetch_markets_for_event(event)
+
+        # Cache and return
         _market_cache[cache_key] = markets
-
-        logger.info("KalshiClient: discovered %d regulatory markets", len(markets))
+        logger.info(
+            "Kalshi: found %d regulatory markets across %d events",
+            len(markets), len(seen_event_tickers),
+        )
         return markets
+
+    @staticmethod
+    def _normalize_kalshi_market(market: dict, event: dict | None = None) -> dict[str, Any]:
+        """Normalize a Kalshi market dict into HYDRA's common schema."""
+        ticker = market.get("ticker", "")
+        title = market.get("title") or market.get("question") or (event or {}).get("title", "")
+        series_ticker = market.get("series_ticker", "")
+        event_ticker = market.get("event_ticker") or (event or {}).get("event_ticker", "")
+        yes_price_cents = market.get("yes_ask") or market.get("yes_bid") or 50
+        yes_price = yes_price_cents / 100.0
+        return {
+            "platform": "kalshi",
+            "title": title,
+            "market_question": title,
+            "ticker": ticker,
+            "series_ticker": series_ticker,
+            "event_ticker": event_ticker,
+            "volume_24hr": float(market.get("volume") or market.get("volume_24h") or 0),
+            "liquidity": float(market.get("liquidity") or 0),
+            "yes_bid": market.get("yes_bid"),
+            "yes_ask": market.get("yes_ask"),
+            "no_bid": market.get("no_bid"),
+            "no_ask": market.get("no_ask"),
+            "yes_price": yes_price,
+            "close_time": market.get("close_time") or market.get("expiration_time"),
+            "status": market.get("status"),
+            "url": f"https://kalshi.com/markets/{ticker}",
+            "regulatory_domain": _classify_market_domain(title),
+        }
+
+    # (old get_regulatory_markets code removed — replaced above)
 
     async def get_market_details(self, ticker: str) -> dict[str, Any] | None:
         """

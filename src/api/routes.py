@@ -4,10 +4,10 @@ HYDRA Arm 3 — API Routes
 Endpoints:
   GET  /health                    — free
   GET  /pricing                   — free
-  POST /v1/regulatory/scan        — $1.00 USDC (x402)
-  POST /v1/regulatory/changes     — $0.50 USDC (x402)
-  POST /v1/regulatory/jurisdiction — $2.00 USDC (x402)
-  POST /v1/regulatory/query       — $0.50 USDC (x402)
+  POST /v1/regulatory/scan        — $2.00 USDC (x402)
+  POST /v1/regulatory/changes     — $1.00 USDC (x402)
+  POST /v1/regulatory/jurisdiction — $3.00 USDC (x402)
+  POST /v1/regulatory/query       — $1.00 USDC (x402)
 
 The x402 payment flow is handled entirely by X402PaymentMiddleware.
 These route handlers assume payment has already been verified.
@@ -113,11 +113,11 @@ async def get_pricing() -> PricingResponse:
     "/v1/regulatory/scan",
     response_model=RegulatoryScenResponse,
     tags=["Regulatory Intelligence"],
-    summary="Regulatory Risk Scan ($1.00 USDC)",
+    summary="Regulatory Risk Scan ($2.00 USDC)",
     description=(
         "Analyzes a business description against all applicable regulatory frameworks. "
         "Returns risk score, applicable regulations, compliance gaps, and priority actions. "
-        "**Requires x402 payment of $1.00 USDC on Base.**"
+        "**Requires x402 payment of $2.00 USDC on Base.**"
     ),
 )
 async def regulatory_scan(
@@ -127,7 +127,7 @@ async def regulatory_scan(
     """
     Perform a comprehensive regulatory risk scan.
 
-    Payment: $1.00 USDC via X-Payment-Proof header.
+    Payment: $2.00 USDC via X-Payment-Proof header.
     """
     logger.info(
         "Regulatory scan: jurisdiction=%s description_length=%d",
@@ -151,11 +151,11 @@ async def regulatory_scan(
     "/v1/regulatory/changes",
     response_model=RegulatoryChangesResponse,
     tags=["Regulatory Intelligence"],
-    summary="Recent Regulatory Changes ($0.50 USDC)",
+    summary="Recent Regulatory Changes ($1.00 USDC)",
     description=(
         "Fetches recent regulatory changes, proposed rules, and enforcement actions from "
         "official RSS feeds of SEC, CFTC, FinCEN, OCC, and CFPB. Results are cached for 1 hour. "
-        "**Requires x402 payment of $0.50 USDC on Base.**"
+        "**Requires x402 payment of $1.00 USDC on Base.**"
     ),
 )
 async def regulatory_changes(
@@ -165,7 +165,7 @@ async def regulatory_changes(
     """
     Fetch recent regulatory changes from official agency feeds.
 
-    Payment: $0.50 USDC via X-Payment-Proof header.
+    Payment: $1.00 USDC via X-Payment-Proof header.
     """
     agency_name = request_body.agency.value
     days = request_body.days
@@ -210,12 +210,12 @@ async def regulatory_changes(
     "/v1/regulatory/jurisdiction",
     response_model=JurisdictionComparisonResponse,
     tags=["Regulatory Intelligence"],
-    summary="Jurisdiction Comparison ($2.00 USDC)",
+    summary="Jurisdiction Comparison ($3.00 USDC)",
     description=(
         "Compares regulatory requirements across US states and international jurisdictions "
         "for a specific business type (crypto, fintech, securities, banking). "
         "Includes friendliness scores, key advantages/risks, and incorporation details. "
-        "**Requires x402 payment of $2.00 USDC on Base.**"
+        "**Requires x402 payment of $3.00 USDC on Base.**"
     ),
 )
 async def jurisdiction_comparison(
@@ -226,7 +226,7 @@ async def jurisdiction_comparison(
     Compare regulatory requirements across jurisdictions.
 
     Supported jurisdictions: WY, DE, NV, NY, TX, EU, UK, SG
-    Payment: $2.00 USDC via X-Payment-Proof header.
+    Payment: $3.00 USDC via X-Payment-Proof header.
     """
     logger.info(
         "Jurisdiction comparison: jurisdictions=%s business_type=%s",
@@ -253,11 +253,11 @@ async def jurisdiction_comparison(
     "/v1/regulatory/query",
     response_model=RegulatoryQueryResponse,
     tags=["Regulatory Intelligence"],
-    summary="Regulatory Q&A ($0.50 USDC)",
+    summary="Regulatory Q&A ($1.00 USDC)",
     description=(
         "Answers natural-language questions about regulatory requirements using a structured "
         "knowledge base covering SEC, CFTC, FinCEN, state regulators, and international frameworks. "
-        "**Requires x402 payment of $0.50 USDC on Base.**"
+        "**Requires x402 payment of $1.00 USDC on Base.**"
     ),
 )
 async def regulatory_query(
@@ -269,7 +269,7 @@ async def regulatory_query(
 
     Topics covered: securities law, derivatives, AML/BSA, money transmission, cryptocurrency,
     jurisdiction comparison, investment funds, data privacy.
-    Payment: $0.50 USDC via X-Payment-Proof header.
+    Payment: $1.00 USDC via X-Payment-Proof header.
     """
     logger.info(
         "Regulatory query: question_length=%d",

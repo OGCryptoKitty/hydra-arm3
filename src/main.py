@@ -291,9 +291,39 @@ app.include_router(system_router, prefix="")
 # Static files and landing page
 # ─────────────────────────────────────────────────────────────
 
+import json as _json
 import os as _os
 
-# Serve .well-known directory for x402 service discovery
+# FIX: Explicit route for x402 discovery manifest — StaticFiles mount is unreliable
+# on Render. This explicit route always works regardless of static file serving.
+@app.get("/.well-known/x402.json", include_in_schema=False)
+async def x402_discovery():
+    """Serve x402 service discovery manifest."""
+    manifest_path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", ".well-known", "x402.json",
+    )
+    try:
+        with open(manifest_path) as f:
+            return _json.load(f)
+    except FileNotFoundError:
+        logger.warning("x402 manifest not found at %s — using inline fallback", manifest_path)
+        return {
+            "name": "HYDRA Regulatory Intelligence",
+            "url": "https://hydra-api-nlnj.onrender.com",
+            "payment": {
+                "network": "base",
+                "chain_id": 8453,
+                "token": "USDC",
+                "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141",
+            },
+            "docs": "https://hydra-api-nlnj.onrender.com/docs",
+            "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
+        }
+
+
+# Serve .well-known directory for x402 service discovery (backup static mount)
 _static_dir = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "static")
 _well_known_dir = _os.path.join(_static_dir, ".well-known")
 if _os.path.exists(_well_known_dir):
@@ -303,7 +333,7 @@ else:
     logger.warning(".well-known directory not found at %s — x402 discovery manifest unavailable", _well_known_dir)
 
 
-# Serve landing page at root (overrides the JSON root in routes.py)
+# Serve landing page at root — MUST come after static mount to avoid route conflict
 @app.get("/", response_class=FileResponse, include_in_schema=False, tags=["System"])
 async def landing_page() -> FileResponse:
     """Serve the HYDRA HTML landing page at the root URL."""
