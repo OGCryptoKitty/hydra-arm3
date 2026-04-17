@@ -981,11 +981,13 @@ async def get_chainlink_oracle_data(
             numeric_value = int(float(percentages[0]) * 100) if percentages else 5000  # 50% default
             result_type = "percentage_basis_points"
         else:
-            # Default: hash-based synthetic numeric (deterministic for same query)
-            import hashlib
-            hash_val = int(hashlib.md5(request_body.data_request.encode()).hexdigest()[:8], 16)  # noqa: S324
-            numeric_value = hash_val % 10000  # 0-9999 range
-            result_type = "synthetic_hash"
+            confidence = getattr(qa_result, "confidence", None)
+            if confidence is not None:
+                numeric_value = int(float(confidence) * 100)
+                result_type = "confidence_basis_points"
+            else:
+                numeric_value = 5000
+                result_type = "default_neutral"
 
         data_point = {
             "jobRunID": request_body.job_run_id,
