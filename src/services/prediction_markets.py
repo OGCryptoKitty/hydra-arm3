@@ -422,12 +422,14 @@ _DOMAIN_KEYWORDS: dict[str, list[str]] = {
         "bitcoin legislation", "ethereum legislation", "defi regulation",
         "crypto framework", "crypto policy", "web3 legislation",
         "virtual currency regulation", "fincen crypto",
+        "bitcoin", "ethereum", "crypto", "digital asset",
     ],
     "trade_tariff": [
         "tariff", "trade war", "trade deal", "trade policy", "sanctions",
         "ofac", "trade agreement", "import duty", "export control",
         "trade deficit", "trade surplus", "wto", "usmca", "nafta",
         "china tariff", "steel tariff", "aluminum tariff",
+        "blockade", "embargo", "china taiwan", "geopolitical",
     ],
     "macro_economic": [
         "inflation", "cpi", "pce", "gdp", "recession", "unemployment",
