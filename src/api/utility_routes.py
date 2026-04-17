@@ -18,6 +18,7 @@ from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
+from cachetools import TTLCache
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -29,6 +30,9 @@ logger = logging.getLogger(__name__)
 utility_router = APIRouter(tags=["Utility Data Services"])
 
 _http_client: httpx.AsyncClient | None = None
+
+_price_cache: TTLCache = TTLCache(maxsize=200, ttl=30)
+_gas_cache: TTLCache = TTLCache(maxsize=1, ttl=12)
 
 
 async def _get_client() -> httpx.AsyncClient:
@@ -64,7 +68,7 @@ async def utility_index():
                 "path": "/v1/util/crypto/price",
                 "method": "GET",
                 "price_usdc": "0.001",
-                "description": "Token price in USD. Supports any CoinGecko-listed token.",
+                "description": "Token price in USD. Supports any CoinGecko-listed token. Cached 30s.",
             },
             {
                 "path": "/v1/util/rss",
@@ -77,6 +81,24 @@ async def utility_index():
                 "method": "GET",
                 "price_usdc": "0.001",
                 "description": "Wallet ETH + USDC balance on Base L2.",
+            },
+            {
+                "path": "/v1/util/gas",
+                "method": "GET",
+                "price_usdc": "0.001",
+                "description": "Base L2 gas prices + estimated costs for transfers, swaps, mints. Cached per block.",
+            },
+            {
+                "path": "/v1/util/tx",
+                "method": "GET",
+                "price_usdc": "0.001",
+                "description": "Transaction receipt lookup — status, gas used, block number.",
+            },
+            {
+                "path": "/v1/batch",
+                "method": "POST",
+                "price_usdc": "0.01",
+                "description": "Batch up to 5 utility calls in one request. Saves gas vs individual payments.",
             },
         ],
         "payment_protocol": "x402",
@@ -195,6 +217,13 @@ async def crypto_price(
     client = await _get_client()
     start = time.monotonic()
 
+    cache_key = f"{token.lower().strip()}:{vs_currency.lower().strip()}"
+    cached = _price_cache.get(cache_key)
+    if cached is not None:
+        cached["elapsed_ms"] = 0
+        cached["cached"] = True
+        return cached
+
     try:
         resp = await client.get(
             "https://api.coingecko.com/api/v3/simple/price",
@@ -228,7 +257,7 @@ async def crypto_price(
         })
 
     vs = vs_currency.lower().strip()
-    return {
+    result = {
         "token": token.lower().strip(),
         "currency": vs,
         "price": token_data.get(vs),
@@ -237,7 +266,10 @@ async def crypto_price(
         "volume_24h": token_data.get(f"{vs}_24h_vol"),
         "source": "coingecko",
         "elapsed_ms": round((time.monotonic() - start) * 1000),
+        "cached": False,
     }
+    _price_cache[cache_key] = result
+    return result
 
 
 # ─────────────────────────────────────────────────────────────
@@ -396,3 +428,190 @@ async def crypto_balance(
 
     result["elapsed_ms"] = round((time.monotonic() - start) * 1000)
     return result
+
+
+# ─────────────────────────────────────────────────────────────
+# 5. Gas Prices — $0.001/call
+# ─────────────────────────────────────────────────────────────
+
+@utility_router.get("/v1/util/gas", tags=["Utility Data Services"])
+async def gas_prices():
+    """
+    Current gas prices on Base L2 with estimated costs for common operations.
+    $0.001 USDC per call. Cached per block (~12s).
+    """
+    from web3 import Web3
+
+    cached = _gas_cache.get("gas")
+    if cached is not None:
+        cached["cached"] = True
+        return cached
+
+    start = time.monotonic()
+
+    try:
+        w3 = Web3(Web3.HTTPProvider(BASE_RPC_URL))
+        block = w3.eth.get_block("latest")
+        gas_price_wei = w3.eth.gas_price
+        base_fee = block.get("baseFeePerGas", 0)
+        gas_price_gwei = float(Web3.from_wei(gas_price_wei, "gwei"))
+        base_fee_gwei = float(Web3.from_wei(base_fee, "gwei"))
+        eth_price = None
+        try:
+            client = await _get_client()
+            resp = await client.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": "ethereum", "vs_currencies": "usd"},
+            )
+            if resp.status_code == 200:
+                eth_price = resp.json().get("ethereum", {}).get("usd")
+        except Exception:
+            pass
+
+        estimates = {}
+        gas_units = {"eth_transfer": 21_000, "erc20_transfer": 65_000, "swap": 150_000, "nft_mint": 100_000}
+        for op, gas in gas_units.items():
+            cost_eth = float(Web3.from_wei(gas_price_wei * gas, "ether"))
+            estimates[op] = {
+                "gas_units": gas,
+                "cost_eth": f"{cost_eth:.8f}",
+                "cost_usd": f"${cost_eth * eth_price:.4f}" if eth_price else None,
+            }
+
+        result = {
+            "network": "base",
+            "chain_id": 8453,
+            "block_number": block["number"],
+            "gas_price_gwei": round(gas_price_gwei, 6),
+            "base_fee_gwei": round(base_fee_gwei, 6),
+            "eth_price_usd": eth_price,
+            "estimates": estimates,
+            "elapsed_ms": round((time.monotonic() - start) * 1000),
+            "cached": False,
+        }
+        _gas_cache["gas"] = result
+        return result
+    except Exception as exc:
+        return JSONResponse(status_code=502, content={
+            "error": "RPC error",
+            "detail": str(exc)[:200],
+        })
+
+
+# ─────────────────────────────────────────────────────────────
+# 6. Transaction Status — $0.001/call
+# ─────────────────────────────────────────────────────────────
+
+@utility_router.get("/v1/util/tx", tags=["Utility Data Services"])
+async def tx_status(
+    tx_hash: str = Query(..., description="Transaction hash (0x-prefixed)"),
+):
+    """
+    Look up a transaction receipt on Base L2. $0.001 USDC per call.
+    Returns confirmation status, gas used, block number, and log count.
+    """
+    from web3 import Web3
+
+    start = time.monotonic()
+
+    if not tx_hash.startswith("0x") or len(tx_hash) != 66:
+        return JSONResponse(status_code=422, content={
+            "error": "Invalid transaction hash",
+            "detail": "Must be a 0x-prefixed 64-character hex string.",
+        })
+
+    try:
+        w3 = Web3(Web3.HTTPProvider(BASE_RPC_URL))
+        receipt = w3.eth.get_transaction_receipt(tx_hash)
+    except Exception:
+        return JSONResponse(content={
+            "tx_hash": tx_hash,
+            "status": "not_found",
+            "detail": "Transaction not found or not yet confirmed.",
+            "network": "base",
+            "elapsed_ms": round((time.monotonic() - start) * 1000),
+        })
+
+    return {
+        "tx_hash": tx_hash,
+        "status": "success" if receipt.get("status") == 1 else "reverted",
+        "block_number": receipt.get("blockNumber"),
+        "gas_used": receipt.get("gasUsed"),
+        "effective_gas_price": str(receipt.get("effectiveGasPrice", 0)),
+        "from": receipt.get("from"),
+        "to": receipt.get("to"),
+        "contract_address": receipt.get("contractAddress"),
+        "log_count": len(receipt.get("logs", [])),
+        "network": "base",
+        "chain_id": 8453,
+        "elapsed_ms": round((time.monotonic() - start) * 1000),
+    }
+
+
+# ─────────────────────────────────────────────────────────────
+# 7. Batch Utility Calls — $0.01/call
+# ─────────────────────────────────────────────────────────────
+
+class BatchItem(BaseModel):
+    endpoint: str = Field(..., description="Utility endpoint path (e.g., /v1/util/crypto/price)")
+    params: dict = Field(default_factory=dict, description="Query parameters or request body fields")
+
+
+class BatchRequest(BaseModel):
+    requests: list[BatchItem] = Field(..., min_length=1, max_length=5, description="Up to 5 utility calls per batch")
+
+
+_BATCHABLE = {
+    "/v1/util/crypto/price",
+    "/v1/util/crypto/balance",
+    "/v1/util/gas",
+    "/v1/util/tx",
+}
+
+
+@utility_router.post("/v1/batch", tags=["Utility Data Services"])
+async def batch_utility(req: BatchRequest):
+    """
+    Execute up to 5 utility calls in a single request. $0.01 USDC.
+    Saves gas costs vs individual x402 payments (one on-chain tx instead of five).
+    Supports: /v1/util/crypto/price, /v1/util/crypto/balance, /v1/util/gas, /v1/util/tx.
+    """
+    start = time.monotonic()
+    results = []
+
+    for item in req.requests:
+        if item.endpoint not in _BATCHABLE:
+            results.append({"endpoint": item.endpoint, "error": f"Not batchable. Supported: {sorted(_BATCHABLE)}"})
+            continue
+
+        try:
+            if item.endpoint == "/v1/util/crypto/price":
+                data = await crypto_price(
+                    token=item.params.get("token", "ethereum"),
+                    vs_currency=item.params.get("vs_currency", "usd"),
+                )
+            elif item.endpoint == "/v1/util/crypto/balance":
+                addr = item.params.get("address", "")
+                data = await crypto_balance(
+                    address=addr,
+                    include_usdc=item.params.get("include_usdc", True),
+                )
+            elif item.endpoint == "/v1/util/gas":
+                data = await gas_prices()
+            elif item.endpoint == "/v1/util/tx":
+                data = await tx_status(tx_hash=item.params.get("tx_hash", ""))
+            else:
+                data = {"error": "Unknown endpoint"}
+
+            if hasattr(data, "body"):
+                import json as _json
+                data = _json.loads(data.body)
+            results.append({"endpoint": item.endpoint, "data": data})
+        except Exception as exc:
+            results.append({"endpoint": item.endpoint, "error": str(exc)[:200]})
+
+    return {
+        "batch_size": len(results),
+        "results": results,
+        "elapsed_ms": round((time.monotonic() - start) * 1000),
+    }

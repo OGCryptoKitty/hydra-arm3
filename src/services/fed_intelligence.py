@@ -29,8 +29,11 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import httpx
+from cachetools import TTLCache
 
 logger = logging.getLogger(__name__)
+
+_fed_rss_cache: TTLCache = TTLCache(maxsize=2, ttl=3600)
 
 # ─────────────────────────────────────────────────────────────
 # FOMC Calendar 2026
@@ -426,10 +429,13 @@ class FedIntelligenceEngine:
             "hydra_basis_points": bp_estimate,
             "confidence": confidence,
             "reasoning": " ".join(reasoning_parts),
-            "data_as_of": "March 2026",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "baseline_data_as_of": "March 2026",
+            "live_fed_activity": self.fetch_recent_fed_activity(),
             "source_urls": [
                 "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
-                "https://www.federalreserve.gov/monetarypolicy/files/fomcprojtabl20260319.pdf",
+                "https://www.federalreserve.gov/feeds/press_monetary.xml",
+                "https://www.federalreserve.gov/feeds/speeches.xml",
                 "https://www.bls.gov/cpi/",
                 "https://www.bea.gov/data/personal-consumption-expenditures-price-index",
                 "https://www.bls.gov/news.release/empsit.nr0.htm",
@@ -464,41 +470,79 @@ class FedIntelligenceEngine:
             ),
         }
 
+    def fetch_recent_fed_activity(self) -> dict[str, Any]:
+        """
+        Fetch live data from Federal Reserve RSS feeds.
+        Runs on every call (cached 1 hour). Returns recent monetary policy
+        press releases and Fed governor speeches.
+        """
+        cached = _fed_rss_cache.get("fed_activity")
+        if cached is not None:
+            return cached
+
+        result: dict[str, Any] = {
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "monetary_policy": [],
+            "speeches": [],
+            "sources_reached": [],
+            "sources_failed": [],
+        }
+
+        feeds = [
+            ("monetary_policy", "https://www.federalreserve.gov/feeds/press_monetary.xml"),
+            ("speeches", "https://www.federalreserve.gov/feeds/speeches.xml"),
+        ]
+
+        try:
+            import feedparser
+        except ImportError:
+            logger.warning("feedparser not available — live Fed data disabled")
+            return result
+
+        for feed_type, url in feeds:
+            try:
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.get(url, headers={"User-Agent": "HYDRA-Fed-Intelligence/1.0"})
+                    resp.raise_for_status()
+
+                feed = feedparser.parse(resp.text)
+                entries = []
+                for entry in feed.entries[:10]:
+                    entries.append({
+                        "title": entry.get("title", ""),
+                        "link": entry.get("link", ""),
+                        "published": entry.get("published", entry.get("updated", "")),
+                        "summary": entry.get("summary", "")[:300],
+                    })
+                result[feed_type] = entries
+                result["sources_reached"].append(url)
+                logger.info("Fed RSS fetched: %s — %d entries", feed_type, len(entries))
+            except Exception as exc:
+                result["sources_failed"].append({"url": url, "error": str(exc)[:100]})
+                logger.warning("Fed RSS fetch failed for %s: %s", feed_type, exc)
+
+        _fed_rss_cache["fed_activity"] = result
+        return result
+
     def _attempt_live_fed_fetch(self) -> dict[str, Any] | None:
         """
         Attempt to fetch the latest FOMC press release from the Fed RSS feed.
         Returns parsed decision dict on success, None on failure.
         """
-        try:
-            url = "https://www.federalreserve.gov/feeds/press_monetary.xml"
-            with httpx.Client(timeout=8.0) as client:
-                resp = client.get(url, headers={"User-Agent": "HYDRA-Fed-Intelligence/1.0"})
-                resp.raise_for_status()
-                text = resp.text
-
-            # Look for most recent FOMC statement link
-            import re
-            # Find the first <link> after a title containing "Federal Reserve issues FOMC statement"
-            pattern = r"Federal Reserve issues FOMC statement.*?<link>(https?://[^<]+)</link>"
-            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-
-            if match:
-                statement_url = match.group(1).strip()
-                logger.info("Found live FOMC statement URL: %s", statement_url)
-                # Return a live indicator — full parsing would require NLP
+        activity = self.fetch_recent_fed_activity()
+        for item in activity.get("monetary_policy", []):
+            title = item.get("title", "").lower()
+            if "fomc statement" in title or "federal funds rate" in title:
+                logger.info("Found live FOMC statement: %s", item.get("link"))
                 return {
                     **self._last_decision,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "is_live": True,
-                    "live_statement_url": statement_url,
-                    "note": (
-                        "Live FOMC statement detected. Statement URL included. "
-                        "Full automated parsing is in progress."
-                    ),
+                    "live_statement_url": item.get("link", ""),
+                    "live_title": item.get("title", ""),
+                    "live_published": item.get("published", ""),
+                    "note": "Live FOMC statement detected from Federal Reserve RSS feed.",
                 }
-        except Exception as exc:
-            logger.warning("Live Fed fetch failed: %s", exc)
-
         return None
 
     def _generate_decision_timestamp(self) -> str:

@@ -32,7 +32,10 @@
     {"path": "/v1/util/scrape", "method": "POST", "price": "0.005", "description": "Web scrape — URL to clean structured text"},
     {"path": "/v1/util/crypto/price", "method": "GET", "price": "0.001", "description": "Token price lookup with 24h change and market cap"},
     {"path": "/v1/util/rss", "method": "POST", "price": "0.002", "description": "RSS/Atom feed to structured JSON"},
-    {"path": "/v1/util/crypto/balance", "method": "GET", "price": "0.001", "description": "Wallet ETH and USDC balance on Base L2"}
+    {"path": "/v1/util/crypto/balance", "method": "GET", "price": "0.001", "description": "Wallet ETH and USDC balance on Base L2"},
+    {"path": "/v1/util/gas", "method": "GET", "price": "0.001", "description": "Base L2 gas prices with estimated costs for transfers, swaps, mints"},
+    {"path": "/v1/util/tx", "method": "GET", "price": "0.001", "description": "Transaction receipt lookup — status, gas used, block number"},
+    {"path": "/v1/batch", "method": "POST", "price": "0.01", "description": "Batch up to 5 utility calls in one request — saves gas vs individual payments"}
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",

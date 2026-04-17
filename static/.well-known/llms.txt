@@ -1,0 +1,56 @@
+# HYDRA Regulatory Intelligence
+
+> Real-time regulatory intelligence for prediction markets. 22 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
+
+HYDRA monitors SEC, CFTC, Federal Reserve, FinCEN, OCC, and CFPB regulatory activity and translates it into actionable signals for prediction market trading, oracle resolution, and compliance analysis.
+
+## Payment
+
+All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 8453) to wallet `0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141`. Include the transaction hash in the `X-Payment-Proof` header, or use a standard x402 client that handles payment automatically.
+
+## Endpoints
+
+### Free (no payment required)
+- `GET /health` — Service health and automaton status
+- `GET /pricing` — Full pricing table for all endpoints
+- `GET /v1/markets` — Active regulatory prediction markets on Polymarket and Kalshi
+- `GET /v1/util` — Utility service discovery listing
+- `GET /docs` — Interactive OpenAPI documentation
+- `GET /openapi.json` — Machine-readable OpenAPI spec
+
+### Agent Utility Tier ($0.001 - $0.01 USDC)
+- `POST /v1/util/scrape` ($0.005) — URL to clean structured text. HTML parsed, scripts removed.
+- `GET /v1/util/crypto/price?token=ETH` ($0.001) — Token price, 24h change, market cap, volume. Cached 30s.
+- `POST /v1/util/rss` ($0.002) — RSS/Atom feed URL to structured JSON entries.
+- `GET /v1/util/crypto/balance?address=0x...` ($0.001) — ETH and USDC balance on Base L2.
+- `GET /v1/util/gas` ($0.001) — Base L2 gas prices with cost estimates for transfers, swaps, mints. Cached per block.
+- `GET /v1/util/tx?tx_hash=0x...` ($0.001) — Transaction receipt lookup — status, gas used, block number.
+- `POST /v1/batch` ($0.01) — Batch up to 5 utility calls in one request. Saves gas vs individual x402 payments.
+
+### Micro Tier ($0.10 - $0.50 USDC)
+- `GET /v1/markets/feed` ($0.10) — Last 10 regulatory events matched to prediction markets.
+- `POST /v1/markets/events` ($0.50) — Classified regulatory events by agency and market impact.
+
+### Standard Tier ($1.00 - $5.00 USDC)
+- `POST /v1/regulatory/scan` ($2.00) — Full regulatory risk scan with scored impact assessment.
+- `POST /v1/regulatory/changes` ($1.00) — Recent regulatory changes classified by agency.
+- `POST /v1/regulatory/jurisdiction` ($3.00) — Jurisdiction comparison with compliance costs.
+- `POST /v1/regulatory/query` ($1.00) — Regulatory Q&A with statutory citations.
+- `POST /v1/markets/signal/{market_id}` ($2.00) — Scored signal for one prediction market.
+- `POST /v1/markets/signals` ($5.00) — Bulk scored signals for all regulatory markets.
+- `POST /v1/fed/signal` ($5.00) — Pre-FOMC signal with rate probability model.
+- `POST /v1/oracle/uma` ($5.00) — UMA Optimistic Oracle assertion data.
+- `POST /v1/oracle/chainlink` ($5.00) — Chainlink External Adapter response.
+
+### Premium Tier ($10.00 - $50.00 USDC)
+- `POST /v1/markets/alpha` ($10.00) — Alpha report with edge analysis, Kelly sizing, trade verdict.
+- `POST /v1/markets/resolution` ($25.00) — Resolution verdict for prediction market settlement.
+- `POST /v1/fed/decision` ($25.00) — Real-time FOMC decision classification within 30 seconds.
+- `POST /v1/fed/resolution` ($50.00) — FOMC resolution verdict with full evidence chain for oracle submission.
+
+## Integration
+
+- **OpenAPI**: `https://hydra-api-nlnj.onrender.com/openapi.json`
+- **x402 Manifest**: `https://hydra-api-nlnj.onrender.com/.well-known/x402.json`
+- **MCP Server**: `https://hydra-api-nlnj.onrender.com/mcp` (Model Context Protocol)
+- **Interactive Docs**: `https://hydra-api-nlnj.onrender.com/docs`

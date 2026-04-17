@@ -154,6 +154,21 @@ PRICING: dict[str, dict] = {
         "description": "Wallet balance on Base L2 — ETH and USDC balance for any address.",
         "amount_base_units": 1_000,
     },
+    "/v1/util/gas": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Base L2 gas prices — current gas price, base fee, estimated costs for transfers/swaps/mints.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/util/tx": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Transaction receipt lookup — confirmation status, gas used, block number, log count.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/batch": {
+        "amount_usdc": Decimal("0.01"),
+        "description": "Batch up to 5 utility calls in one request. Saves gas costs vs individual x402 payments.",
+        "amount_base_units": 10_000,
+    },
 }
 
 # ─────────────────────────────────────────────────────────────

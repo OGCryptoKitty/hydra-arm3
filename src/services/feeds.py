@@ -87,6 +87,30 @@ FEED_REGISTRY: dict[str, list[dict[str, str]]] = {
             "label": "CFPB Newsroom",
         },
     ],
+    "FederalReserve": [
+        {
+            "url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+            "item_type": "monetary_policy",
+            "label": "Federal Reserve Monetary Policy",
+        },
+        {
+            "url": "https://www.federalreserve.gov/feeds/press_bcreg.xml",
+            "item_type": "banking_regulation",
+            "label": "Federal Reserve Banking Regulation",
+        },
+        {
+            "url": "https://www.federalreserve.gov/feeds/speeches.xml",
+            "item_type": "speech",
+            "label": "Federal Reserve Speeches",
+        },
+    ],
+    "Treasury": [
+        {
+            "url": "https://home.treasury.gov/system/files/feed/press.xml",
+            "item_type": "press_release",
+            "label": "U.S. Treasury Press Releases",
+        },
+    ],
 }
 
 # ─────────────────────────────────────────────────────────────
