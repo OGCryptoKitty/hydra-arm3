@@ -118,7 +118,11 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
 
         required_amount = pricing["amount_base_units"]
 
-        # ── Check for payment proof header ───────────────────
+        # ── If standard x402 X-PAYMENT header is present, defer to CDP middleware ──
+        if request.headers.get("X-PAYMENT") or request.headers.get("x-payment"):
+            return await call_next(request)
+
+        # ── Check for legacy payment proof header ────────────
         proof_header = request.headers.get("X-Payment-Proof") or request.headers.get("x-payment-proof")
 
         if not proof_header:

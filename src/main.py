@@ -47,6 +47,7 @@ from src.runtime.lifecycle import LifecycleManager
 from src.runtime.remittance import RemittanceManager
 from src.runtime.transaction_log import TransactionLog
 from src.x402.middleware import X402PaymentMiddleware
+from src.x402.cdp_facilitator import add_cdp_middleware
 
 # ─────────────────────────────────────────────────────────────
 # Logging Configuration
@@ -241,6 +242,8 @@ app.add_middleware(
         "Content-Type",
         "Accept",
         "Authorization",
+        "X-PAYMENT",
+        "X-PAYMENT-RESPONSE",
         "X-Payment-Proof",
         "X-Payment-Required",
         "X-Payment-Amount",
@@ -253,6 +256,8 @@ app.add_middleware(
         "X-Payment-Tx",
     ],
     expose_headers=[
+        "PAYMENT-REQUIRED",
+        "X-PAYMENT-RESPONSE",
         "X-Payment-Required",
         "X-Payment-Amount",
         "X-Payment-Address",
@@ -266,8 +271,17 @@ app.add_middleware(
     ],
 )
 
-# 2. x402 Payment Middleware — intercepts paid endpoints
+# 2. HYDRA custom x402 middleware — handles X-Payment-Proof (direct tx hash)
 app.add_middleware(X402PaymentMiddleware)
+
+# 3. CDP facilitator middleware — handles standard X-PAYMENT header
+#    Auto-registers HYDRA on Bazaar, x402list.fun, and x402search.
+#    Gracefully degrades if x402 SDK is not installed.
+_cdp_enabled = add_cdp_middleware(app)
+if _cdp_enabled:
+    logger.info("CDP facilitator middleware active — HYDRA discoverable via x402 Bazaar")
+else:
+    logger.info("CDP middleware not available — using custom X-Payment-Proof flow only")
 
 
 # ─────────────────────────────────────────────────────────────

@@ -2,12 +2,15 @@
   "name": "HYDRA Regulatory Intelligence",
   "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Polymarket/Kalshi signal generation. Oracle resolution data for UMA and Chainlink.",
   "url": "https://hydra-api-nlnj.onrender.com",
+  "x402Version": 1,
   "payment": {
-    "network": "base",
+    "network": "eip155:8453",
     "chain_id": 8453,
     "token": "USDC",
     "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
+    "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141",
+    "scheme": "exact",
+    "facilitator": "https://x402.org/facilitator"
   },
   "endpoints": [
     {"path": "/v1/markets", "method": "GET", "price": "free", "description": "Active regulatory prediction markets across Polymarket and Kalshi"},
