@@ -80,6 +80,18 @@ DISCOVERY_ENDPOINTS = [
             "description": "x402 regulatory intelligence API — prediction market signals, FOMC data, oracle feeds",
         },
     },
+    {
+        "name": "mpp_dev",
+        "url": "https://mpp.dev/api/services/register",
+        "method": "POST",
+        "payload": {
+            "url": HYDRA_BASE_URL,
+            "name": "HYDRA Regulatory Intelligence",
+            "description": "19 paid API endpoints — regulatory signals, FOMC data, oracle feeds, web scraping. $0.001-$50 per call.",
+            "protocols": ["mpp", "x402"],
+            "openapi_url": HYDRA_OPENAPI,
+        },
+    },
 ]
 
 

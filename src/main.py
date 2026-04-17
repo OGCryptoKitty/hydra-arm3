@@ -49,6 +49,7 @@ from src.runtime.remittance import RemittanceManager
 from src.runtime.transaction_log import TransactionLog
 from src.x402.middleware import X402PaymentMiddleware
 from src.x402.cdp_facilitator import add_cdp_middleware
+from src.x402.mpp_integration import add_mpp_middleware, get_mpp_status
 
 # ─────────────────────────────────────────────────────────────
 # Logging Configuration
@@ -283,6 +284,15 @@ if _cdp_enabled:
     logger.info("CDP facilitator middleware active — HYDRA discoverable via x402 Bazaar")
 else:
     logger.info("CDP middleware not available — using custom X-Payment-Proof flow only")
+
+# 4. MPP (Machine Payments Protocol) middleware — handles Authorization: Payment header
+#    Session-based micropayments via Stripe/Tempo. Coexists with x402.
+#    Gracefully degrades if pympp is not installed.
+_mpp_enabled = add_mpp_middleware(app)
+if _mpp_enabled:
+    logger.info("MPP middleware active — HYDRA discoverable via mpp.dev directory")
+else:
+    logger.info("MPP middleware not available — using x402 payment flows only")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -521,9 +531,10 @@ async def full_status(request: Request) -> JSONResponse:
         "automaton": automaton_status or None,
         "capitalism_models": {
             "x402_micropayments": {"status": "LIVE", "endpoints": len(settings.PRICING)},
+            "mpp_micropayments": get_mpp_status(),
             "treasury_yield": {"status": "ARMED", "protocol": "Aave V3 Base", "trigger": "balance > $500"},
             "autonomous_marketing": {"status": "ARMED", "interval": "24h"},
-            "agent_discovery": {"status": "ARMED", "channels": ["x402scan", "x402_index", "cdp_bazaar"]},
+            "agent_discovery": {"status": "ARMED", "channels": ["x402scan", "x402_index", "402_index", "cdp_bazaar", "glama", "smithery"]},
             "revenue_optimization": {"status": "ARMED", "interval": "7d"},
             "data_licensing": {"status": "DESIGNED", "tiers": ["per-call (live)", "subscription (planned)"]},
             "oracle_service": {"status": "LIVE", "protocols": ["UMA", "Chainlink"]},
