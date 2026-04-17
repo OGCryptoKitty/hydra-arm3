@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "server": {
+    "name": "HYDRA Regulatory Intelligence",
+    "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 19 paid tools from $0.001 USDC.",
+    "url": "https://hydra-api-nlnj.onrender.com/mcp",
+    "transport": "streamable-http"
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": false,
+    "prompts": false
+  },
+  "payment": {
+    "protocol": "x402",
+    "network": "Base L2 (chain 8453)",
+    "token": "USDC",
+    "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141",
+    "price_range": "$0.001 - $50.00 USDC per tool call"
+  },
+  "tools": [
+    {"name": "scrape_url", "description": "Convert a URL to clean structured text ($0.005)", "endpoint": "/v1/util/scrape"},
+    {"name": "crypto_price", "description": "Token price with 24h change and market cap ($0.001)", "endpoint": "/v1/util/crypto/price"},
+    {"name": "parse_rss", "description": "Parse RSS/Atom feed to structured JSON ($0.002)", "endpoint": "/v1/util/rss"},
+    {"name": "wallet_balance", "description": "ETH and USDC balance on Base L2 ($0.001)", "endpoint": "/v1/util/crypto/balance"},
+    {"name": "market_feed", "description": "Last 10 regulatory events for prediction markets ($0.10)", "endpoint": "/v1/markets/feed"},
+    {"name": "market_events", "description": "Classified regulatory events by agency ($0.50)", "endpoint": "/v1/markets/events"},
+    {"name": "market_signal", "description": "Scored regulatory signal for one market ($2.00)", "endpoint": "/v1/markets/signal/{market_id}"},
+    {"name": "market_signals", "description": "Bulk scored signals for all markets ($5.00)", "endpoint": "/v1/markets/signals"},
+    {"name": "alpha_report", "description": "Premium alpha with Kelly sizing and trade verdict ($10.00)", "endpoint": "/v1/markets/alpha"},
+    {"name": "regulatory_scan", "description": "Full regulatory risk scan ($2.00)", "endpoint": "/v1/regulatory/scan"},
+    {"name": "regulatory_changes", "description": "Recent classified regulatory changes ($1.00)", "endpoint": "/v1/regulatory/changes"},
+    {"name": "regulatory_jurisdiction", "description": "Jurisdiction comparison with cost modeling ($3.00)", "endpoint": "/v1/regulatory/jurisdiction"},
+    {"name": "regulatory_query", "description": "Regulatory Q&A with statutory citations ($1.00)", "endpoint": "/v1/regulatory/query"},
+    {"name": "fed_signal", "description": "Pre-FOMC signal with rate probabilities ($5.00)", "endpoint": "/v1/fed/signal"},
+    {"name": "fed_decision", "description": "Real-time FOMC decision classification ($25.00)", "endpoint": "/v1/fed/decision"},
+    {"name": "fed_resolution", "description": "FOMC resolution verdict for oracle submission ($50.00)", "endpoint": "/v1/fed/resolution"},
+    {"name": "oracle_uma", "description": "UMA Optimistic Oracle assertion data ($5.00)", "endpoint": "/v1/oracle/uma"},
+    {"name": "oracle_chainlink", "description": "Chainlink External Adapter response ($5.00)", "endpoint": "/v1/oracle/chainlink"},
+    {"name": "market_resolution", "description": "Resolution verdict for market settlement ($25.00)", "endpoint": "/v1/markets/resolution"}
+  ],
+  "discovery": {
+    "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
+    "x402_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
+    "agents_json": "https://hydra-api-nlnj.onrender.com/.well-known/agents.json",
+    "docs": "https://hydra-api-nlnj.onrender.com/docs"
+  },
+  "tags": ["regulatory", "prediction-markets", "oracle", "x402", "defi"]
+}

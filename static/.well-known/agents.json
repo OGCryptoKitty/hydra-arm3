@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0",
+  "name": "HYDRA Regulatory Intelligence",
+  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 19 paid API endpoints from $0.001 USDC via x402 on Base L2.",
+  "url": "https://hydra-api-nlnj.onrender.com",
+  "logo": null,
+  "contact_email": null,
+  "legal_info_url": null,
+  "capabilities": {
+    "payment_protocols": ["x402", "mpp"],
+    "payment_network": "Base L2 (chain 8453)",
+    "payment_token": "USDC",
+    "authentication": "x402 (USDC payment proof)",
+    "output_formats": ["application/json"],
+    "streaming": false,
+    "mcp_server": "https://hydra-api-nlnj.onrender.com/mcp"
+  },
+  "discovery": {
+    "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
+    "x402_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
+    "mcp_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/mcp.json",
+    "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
+    "docs": "https://hydra-api-nlnj.onrender.com/docs"
+  },
+  "workflows": [
+    {
+      "id": "regulatory-scan",
+      "name": "Regulatory Risk Scan",
+      "description": "Analyze a business against all applicable regulatory frameworks with scored impact assessment.",
+      "endpoint": "POST /v1/regulatory/scan",
+      "price_usdc": "2.00",
+      "input": {"type": "object", "properties": {"query": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "market-signal",
+      "name": "Prediction Market Signal",
+      "description": "Get HYDRA's scored regulatory probability and expected price impact for a specific prediction market.",
+      "endpoint": "POST /v1/markets/signal/{market_id}",
+      "price_usdc": "2.00",
+      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "alpha-report",
+      "name": "Alpha Report",
+      "description": "Premium alpha report with regulatory probability, edge vs market price, Kelly sizing, entry price, and trade verdict.",
+      "endpoint": "POST /v1/markets/alpha",
+      "price_usdc": "10.00",
+      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "fomc-decision",
+      "name": "FOMC Decision Classification",
+      "description": "Real-time FOMC decision classification (HOLD/CUT/HIKE + basis points) within 30 seconds of release.",
+      "endpoint": "POST /v1/fed/decision",
+      "price_usdc": "25.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "web-scrape",
+      "name": "Web Scrape",
+      "description": "Convert any URL to clean structured text. High-volume agent utility.",
+      "endpoint": "POST /v1/util/scrape",
+      "price_usdc": "0.005",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "token-price",
+      "name": "Token Price Lookup",
+      "description": "Current price, 24h change, market cap, and volume for any listed cryptocurrency.",
+      "endpoint": "GET /v1/util/crypto/price?token={token}",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"token": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "rss-parse",
+      "name": "RSS Feed Parser",
+      "description": "Parse any RSS or Atom feed URL into structured JSON entries.",
+      "endpoint": "POST /v1/util/rss",
+      "price_usdc": "0.002",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "wallet-balance",
+      "name": "Wallet Balance",
+      "description": "ETH and USDC balance for any address on Base L2.",
+      "endpoint": "GET /v1/util/crypto/balance?address={address}",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"address": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "uma-oracle",
+      "name": "UMA Oracle Assertion",
+      "description": "UMA Optimistic Oracle assertion data with evidence chain for regulatory market resolution.",
+      "endpoint": "POST /v1/oracle/uma",
+      "price_usdc": "5.00",
+      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
+      "output": {"type": "object"}
+    }
+  ],
+  "tags": ["regulatory", "prediction-markets", "polymarket", "kalshi", "fed", "sec", "cftc", "oracle", "uma", "chainlink", "x402", "mcp", "defi"]
+}

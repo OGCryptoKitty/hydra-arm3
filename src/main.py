@@ -52,6 +52,16 @@ from src.x402.cdp_facilitator import add_cdp_middleware
 from src.x402.mpp_integration import add_mpp_middleware, get_mpp_status
 
 # ─────────────────────────────────────────────────────────────
+# MCP Server — exposes all endpoints as MCP tools for 300+ AI clients
+# ─────────────────────────────────────────────────────────────
+
+try:
+    from fastapi_mcp import FastApiMcp
+    _mcp_available = True
+except ImportError:
+    _mcp_available = False
+
+# ─────────────────────────────────────────────────────────────
 # Logging Configuration
 # ─────────────────────────────────────────────────────────────
 
@@ -231,6 +241,29 @@ app = FastAPI(
 
 
 # ─────────────────────────────────────────────────────────────
+# MCP Server Mount — all FastAPI endpoints become MCP tools
+# ─────────────────────────────────────────────────────────────
+
+if _mcp_available:
+    try:
+        mcp_server = FastApiMcp(
+            app,
+            name="HYDRA Regulatory Intelligence",
+            description=(
+                "Real-time regulatory intelligence for prediction markets. "
+                "SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. "
+                "19 paid tools from $0.001 USDC via x402 on Base L2."
+            ),
+        )
+        mcp_server.mount()
+        logger.info("MCP server mounted at /mcp — all endpoints exposed as MCP tools")
+    except Exception as exc:
+        logger.warning("FastAPI-MCP mount failed: %s — MCP disabled", exc)
+else:
+    logger.info("fastapi-mcp not installed — MCP server disabled")
+
+
+# ─────────────────────────────────────────────────────────────
 # Middleware Stack (order matters — added last = runs first)
 # ─────────────────────────────────────────────────────────────
 
@@ -349,6 +382,46 @@ async def x402_discovery():
             "docs": "https://hydra-api-nlnj.onrender.com/docs",
             "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
         }
+
+
+@app.get("/.well-known/llms.txt", include_in_schema=False)
+async def llms_txt():
+    """Serve llms.txt agent SEO manifest."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", ".well-known", "llms.txt",
+    )
+    if _os.path.exists(path):
+        return FileResponse(path, media_type="text/plain")
+    return JSONResponse(status_code=404, content={"error": "llms.txt not found"})
+
+
+@app.get("/.well-known/agents.json", include_in_schema=False)
+async def agents_json():
+    """Serve agents.json workflow discovery manifest."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", ".well-known", "agents.json",
+    )
+    try:
+        with open(path) as f:
+            return _json.load(f)
+    except FileNotFoundError:
+        return JSONResponse(status_code=404, content={"error": "agents.json not found"})
+
+
+@app.get("/.well-known/mcp.json", include_in_schema=False)
+async def mcp_json():
+    """Serve MCP discovery manifest."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", ".well-known", "mcp.json",
+    )
+    try:
+        with open(path) as f:
+            return _json.load(f)
+    except FileNotFoundError:
+        return JSONResponse(status_code=404, content={"error": "mcp.json not found"})
 
 
 # Serve .well-known directory for x402 service discovery (backup static mount)
@@ -549,7 +622,12 @@ async def full_status(request: Request) -> JSONResponse:
             "facilitator": "https://x402.org/facilitator",
         },
         "discovery": {
-            "manifest": "/.well-known/x402.json",
+            "x402_manifest": "/.well-known/x402.json",
+            "mcp_manifest": "/.well-known/mcp.json",
+            "agents_json": "/.well-known/agents.json",
+            "llms_txt": "/.well-known/llms.txt",
+            "mcp_server": "/mcp",
+            "openapi": "/openapi.json",
             "docs": "/docs",
             "pricing": "/pricing",
         },
