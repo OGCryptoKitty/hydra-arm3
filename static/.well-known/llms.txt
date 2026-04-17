@@ -1,6 +1,6 @@
 # HYDRA Regulatory Intelligence
 
-> Real-time regulatory intelligence for prediction markets. 19 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
+> Real-time regulatory intelligence for prediction markets. 22 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
 
 HYDRA monitors SEC, CFTC, Federal Reserve, FinCEN, OCC, and CFPB regulatory activity and translates it into actionable signals for prediction market trading, oracle resolution, and compliance analysis.
 
@@ -18,11 +18,14 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `GET /docs` — Interactive OpenAPI documentation
 - `GET /openapi.json` — Machine-readable OpenAPI spec
 
-### Agent Utility Tier ($0.001 - $0.005 USDC)
+### Agent Utility Tier ($0.001 - $0.01 USDC)
 - `POST /v1/util/scrape` ($0.005) — URL to clean structured text. HTML parsed, scripts removed.
-- `GET /v1/util/crypto/price?token=ETH` ($0.001) — Token price, 24h change, market cap, volume.
+- `GET /v1/util/crypto/price?token=ETH` ($0.001) — Token price, 24h change, market cap, volume. Cached 30s.
 - `POST /v1/util/rss` ($0.002) — RSS/Atom feed URL to structured JSON entries.
 - `GET /v1/util/crypto/balance?address=0x...` ($0.001) — ETH and USDC balance on Base L2.
+- `GET /v1/util/gas` ($0.001) — Base L2 gas prices with cost estimates for transfers, swaps, mints. Cached per block.
+- `GET /v1/util/tx?tx_hash=0x...` ($0.001) — Transaction receipt lookup — status, gas used, block number.
+- `POST /v1/batch` ($0.01) — Batch up to 5 utility calls in one request. Saves gas vs individual x402 payments.
 
 ### Micro Tier ($0.10 - $0.50 USDC)
 - `GET /v1/markets/feed` ($0.10) — Last 10 regulatory events matched to prediction markets.

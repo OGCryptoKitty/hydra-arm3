@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "server": {
     "name": "HYDRA Regulatory Intelligence",
-    "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 19 paid tools from $0.001 USDC.",
+    "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 22 paid tools from $0.001 USDC.",
     "url": "https://hydra-api-nlnj.onrender.com/mcp",
     "transport": "streamable-http"
   },
@@ -38,7 +38,10 @@
     {"name": "fed_resolution", "description": "FOMC resolution verdict for oracle submission ($50.00)", "endpoint": "/v1/fed/resolution"},
     {"name": "oracle_uma", "description": "UMA Optimistic Oracle assertion data ($5.00)", "endpoint": "/v1/oracle/uma"},
     {"name": "oracle_chainlink", "description": "Chainlink External Adapter response ($5.00)", "endpoint": "/v1/oracle/chainlink"},
-    {"name": "market_resolution", "description": "Resolution verdict for market settlement ($25.00)", "endpoint": "/v1/markets/resolution"}
+    {"name": "market_resolution", "description": "Resolution verdict for market settlement ($25.00)", "endpoint": "/v1/markets/resolution"},
+    {"name": "gas_prices", "description": "Base L2 gas prices with cost estimates for transfers, swaps, mints ($0.001)", "endpoint": "/v1/util/gas"},
+    {"name": "tx_status", "description": "Transaction receipt lookup — status, gas used, block number ($0.001)", "endpoint": "/v1/util/tx"},
+    {"name": "batch_utility", "description": "Batch up to 5 utility calls in one request — saves gas ($0.01)", "endpoint": "/v1/batch"}
   ],
   "discovery": {
     "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "HYDRA Regulatory Intelligence",
-  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 19 paid API endpoints from $0.001 USDC via x402 on Base L2.",
+  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 22 paid API endpoints from $0.001 USDC via x402 on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "logo": null,
   "contact_email": null,
@@ -102,6 +102,33 @@
       "endpoint": "POST /v1/oracle/uma",
       "price_usdc": "5.00",
       "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "gas-prices",
+      "name": "Gas Prices",
+      "description": "Current Base L2 gas prices with estimated costs for ETH transfers, ERC-20 transfers, swaps, and NFT mints.",
+      "endpoint": "GET /v1/util/gas",
+      "price_usdc": "0.001",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "tx-status",
+      "name": "Transaction Status",
+      "description": "Look up a transaction receipt on Base L2 — confirmation status, gas used, block number.",
+      "endpoint": "GET /v1/util/tx?tx_hash={tx_hash}",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"tx_hash": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "batch-utility",
+      "name": "Batch Utility Calls",
+      "description": "Execute up to 5 utility endpoint calls in a single request. Saves gas costs vs individual x402 payments.",
+      "endpoint": "POST /v1/batch",
+      "price_usdc": "0.01",
+      "input": {"type": "object", "properties": {"requests": {"type": "array", "items": {"type": "object", "properties": {"endpoint": {"type": "string"}, "params": {"type": "object"}}}}}},
       "output": {"type": "object"}
     }
   ],

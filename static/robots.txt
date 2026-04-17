@@ -3,12 +3,14 @@ Allow: /
 Allow: /docs
 Allow: /pricing
 Allow: /health
+Allow: /status
 Allow: /openapi.json
 Allow: /.well-known/
+Allow: /v1/markets
 Allow: /v1/markets/discovery
 Allow: /v1/markets/pricing
-Allow: /v1/fed/calendar
-Allow: /v1/markets/sample
+Allow: /v1/util
 Allow: /apis.json
+Allow: /mcp
 
 Sitemap: https://hydra-api-nlnj.onrender.com/sitemap.xml

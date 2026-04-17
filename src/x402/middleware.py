@@ -276,6 +276,9 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         headers = {
             # ── Standard x402 protocol header ────────────────────
             "PAYMENT-REQUIRED": x402_header,
+            # ── Multi-protocol payment discovery ─────────────────
+            "WWW-Authenticate": 'Payment realm="HYDRA Regulatory Intelligence", charset="UTF-8"',
+            "Accept-Payment": "x402, mpp, x-payment-proof",
             # ── HYDRA custom headers (backward compatibility) ────
             "X-Payment-Required": "true",
             "X-Payment-Amount": str(pricing["amount_base_units"]),
@@ -286,7 +289,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
             "X-Payment-Endpoint": path,
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Expose-Headers": (
-                "PAYMENT-REQUIRED, "
+                "PAYMENT-REQUIRED, WWW-Authenticate, Accept-Payment, "
                 "X-Payment-Required, X-Payment-Amount, X-Payment-Address, "
                 "X-Payment-Network, X-Payment-Token, X-Payment-Chain-Id, "
                 "X-Payment-Endpoint, X-Payment-Verified, X-Payment-Tx"

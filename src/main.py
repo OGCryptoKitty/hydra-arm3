@@ -424,6 +424,44 @@ async def mcp_json():
         return JSONResponse(status_code=404, content={"error": "mcp.json not found"})
 
 
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt():
+    """Serve robots.txt for crawler discovery."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", "robots.txt",
+    )
+    if _os.path.exists(path):
+        return FileResponse(path, media_type="text/plain")
+    return JSONResponse(status_code=404, content={"error": "robots.txt not found"})
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_xml():
+    """Serve XML sitemap for crawler discovery."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", "sitemap.xml",
+    )
+    if _os.path.exists(path):
+        return FileResponse(path, media_type="application/xml")
+    return JSONResponse(status_code=404, content={"error": "sitemap.xml not found"})
+
+
+@app.get("/apis.json", include_in_schema=False)
+async def apis_json():
+    """Serve apis.json for API directory discovery."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", "apis.json",
+    )
+    try:
+        with open(path) as f:
+            return _json.load(f)
+    except FileNotFoundError:
+        return JSONResponse(status_code=404, content={"error": "apis.json not found"})
+
+
 # Serve .well-known directory for x402 service discovery (backup static mount)
 _static_dir = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "static")
 _well_known_dir = _os.path.join(_static_dir, ".well-known")
@@ -660,6 +698,9 @@ async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
                 "GET  /v1/util/crypto/price        ($0.001 USDC)",
                 "POST /v1/util/rss                 ($0.002 USDC)",
                 "GET  /v1/util/crypto/balance      ($0.001 USDC)",
+                "GET  /v1/util/gas                 ($0.001 USDC)",
+                "GET  /v1/util/tx                  ($0.001 USDC)",
+                "POST /v1/batch                    ($0.01  USDC)",
             ],
             "docs": "/docs",
         },
