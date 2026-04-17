@@ -49,6 +49,8 @@ def build_cdp_route_configs() -> dict[str, Any]:
 
     method_map = {
         "/v1/markets/feed": "GET",
+        "/v1/util/crypto/price": "GET",
+        "/v1/util/crypto/balance": "GET",
     }
 
     for path, pricing_info in PRICING.items():

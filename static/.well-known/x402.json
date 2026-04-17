@@ -28,7 +28,11 @@
     {"path": "/v1/regulatory/scan", "method": "POST", "price": "2.00", "description": "Full regulatory risk scan against all applicable frameworks"},
     {"path": "/v1/regulatory/changes", "method": "POST", "price": "1.00", "description": "Recent regulatory changes classified by agency and impact"},
     {"path": "/v1/regulatory/jurisdiction", "method": "POST", "price": "3.00", "description": "Jurisdiction comparison with compliance cost modeling"},
-    {"path": "/v1/regulatory/query", "method": "POST", "price": "1.00", "description": "Regulatory Q&A with statutory citations"}
+    {"path": "/v1/regulatory/query", "method": "POST", "price": "1.00", "description": "Regulatory Q&A with statutory citations"},
+    {"path": "/v1/util/scrape", "method": "POST", "price": "0.005", "description": "Web scrape — URL to clean structured text"},
+    {"path": "/v1/util/crypto/price", "method": "GET", "price": "0.001", "description": "Token price lookup with 24h change and market cap"},
+    {"path": "/v1/util/rss", "method": "POST", "price": "0.002", "description": "RSS/Atom feed to structured JSON"},
+    {"path": "/v1/util/crypto/balance", "method": "GET", "price": "0.001", "description": "Wallet ETH and USDC balance on Base L2"}
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",

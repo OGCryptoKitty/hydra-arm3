@@ -133,6 +133,27 @@ PRICING: dict[str, dict] = {
         "description": "Professional resolution verdict — HYDRA's authoritative assessment of how a prediction market should resolve, with evidence chain and confidence score",
         "amount_base_units": 25_000_000,
     },
+    # ── High-Volume Utility Services (agent-optimized pricing) ──
+    "/v1/util/scrape": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "Web scrape — URL to clean structured text. HTML parsed, scripts removed. High-volume agent utility.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/util/crypto/price": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Token price lookup — current price, 24h change, market cap, volume for any listed token.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/util/rss": {
+        "amount_usdc": Decimal("0.002"),
+        "description": "RSS/Atom feed parser — feed URL to structured JSON with parsed entries and metadata.",
+        "amount_base_units": 2_000,
+    },
+    "/v1/util/crypto/balance": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Wallet balance on Base L2 — ETH and USDC balance for any address.",
+        "amount_base_units": 1_000,
+    },
 }
 
 # ─────────────────────────────────────────────────────────────

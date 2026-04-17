@@ -41,6 +41,7 @@ from src.api.routes import router
 from src.api.prediction_routes import prediction_router
 from src.api.system_routes import system_router
 from src.api.fed_routes import fed_router
+from src.api.utility_routes import utility_router
 from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -297,6 +298,9 @@ app.include_router(prediction_router)
 # Fed Decision Package endpoints
 app.include_router(fed_router)
 
+# High-volume utility data services
+app.include_router(utility_router)
+
 # System management endpoints (prefix="" — routes already carry /system/ prefix)
 app.include_router(system_router, prefix="")
 
@@ -510,17 +514,17 @@ async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
             "available_endpoints": [
                 "GET  /health",
                 "GET  /pricing",
-                "POST /v1/regulatory/scan         ($1.00 USDC)",
-                "POST /v1/regulatory/changes      ($0.50 USDC)",
-                "POST /v1/regulatory/jurisdiction ($2.00 USDC)",
-                "POST /v1/regulatory/query        ($0.50 USDC)",
-                "--- System (localhost/bearer token) ---",
-                "POST /system/wallet",
-                "GET  /system/remittance/status",
-                "POST /system/remittance/execute",
-                "GET  /system/transactions",
-                "GET  /system/status",
-                "POST /system/shutdown",
+                "POST /v1/regulatory/scan          ($2.00 USDC)",
+                "POST /v1/regulatory/changes       ($1.00 USDC)",
+                "POST /v1/regulatory/jurisdiction  ($3.00 USDC)",
+                "POST /v1/regulatory/query         ($1.00 USDC)",
+                "GET  /v1/markets                  (free)",
+                "POST /v1/markets/signals          ($5.00 USDC)",
+                "POST /v1/markets/alpha            ($10.00 USDC)",
+                "POST /v1/util/scrape              ($0.005 USDC)",
+                "GET  /v1/util/crypto/price        ($0.001 USDC)",
+                "POST /v1/util/rss                 ($0.002 USDC)",
+                "GET  /v1/util/crypto/balance      ($0.001 USDC)",
             ],
             "docs": "/docs",
         },
