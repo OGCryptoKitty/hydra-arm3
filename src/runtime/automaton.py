@@ -379,7 +379,7 @@ class HydraAutomaton:
         return elapsed >= REVENUE_REPORT_INTERVAL_SECONDS
 
     async def _run_marketing_async(self) -> None:
-        """Run the autonomous marketing loop in a background task."""
+        """Run the autonomous marketing loop and discovery registration."""
         now = datetime.now(timezone.utc)
         logger.info("[AUTOMATON] Running autonomous marketing loop at %s", now.isoformat())
         try:
@@ -391,6 +391,13 @@ class HydraAutomaton:
             logger.info("[AUTOMATON] Marketing loop completed. Results: %s", results)
         except Exception as exc:  # noqa: BLE001
             logger.error("[AUTOMATON] Marketing loop failed: %s", exc, exc_info=True)
+
+        try:
+            from .agent_discovery import register_with_discovery_services
+            discovery_results = await register_with_discovery_services()
+            logger.info("[AUTOMATON] Discovery registration: %s", discovery_results)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("[AUTOMATON] Discovery registration skipped: %s", exc)
 
     async def _run_revenue_report_async(self) -> None:
         """Generate the weekly revenue report in a background task."""

@@ -499,6 +499,52 @@ async def revenue_metrics(request: Request) -> JSONResponse:
     })
 
 
+@app.get("/status", tags=["System"], include_in_schema=True)
+async def full_status(request: Request) -> JSONResponse:
+    """
+    Complete HYDRA automaton status — treasury, yield, lifecycle,
+    discovery, and all capitalism model states. No payment required.
+    """
+    automaton_status: dict = {}
+    try:
+        automaton = getattr(request.app.state, "automaton", None)
+        if automaton is None:
+            from src.runtime.automaton import get_automaton
+            automaton = get_automaton()
+        automaton_status = automaton.get_status()
+    except Exception:
+        pass
+
+    return JSONResponse(content={
+        "name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "automaton": automaton_status or None,
+        "capitalism_models": {
+            "x402_micropayments": {"status": "LIVE", "endpoints": len(settings.PRICING)},
+            "treasury_yield": {"status": "ARMED", "protocol": "Aave V3 Base", "trigger": "balance > $500"},
+            "autonomous_marketing": {"status": "ARMED", "interval": "24h"},
+            "agent_discovery": {"status": "ARMED", "channels": ["x402scan", "x402_index", "cdp_bazaar"]},
+            "revenue_optimization": {"status": "ARMED", "interval": "7d"},
+            "data_licensing": {"status": "DESIGNED", "tiers": ["per-call (live)", "subscription (planned)"]},
+            "oracle_service": {"status": "LIVE", "protocols": ["UMA", "Chainlink"]},
+            "entity_formation": {"status": "DESIGNED", "trigger": "balance > $3000"},
+            "auto_remittance": {"status": "ARMED", "trigger": "balance > $5000", "reserve": "$500"},
+        },
+        "payment": {
+            "protocol": "x402",
+            "network": "Base L2 (chain 8453)",
+            "token": "USDC",
+            "wallet": settings.WALLET_ADDRESS,
+            "facilitator": "https://x402.org/facilitator",
+        },
+        "discovery": {
+            "manifest": "/.well-known/x402.json",
+            "docs": "/docs",
+            "pricing": "/pricing",
+        },
+    })
+
+
 # ─────────────────────────────────────────────────────────────
 # Global Exception Handlers
 # ─────────────────────────────────────────────────────────────
