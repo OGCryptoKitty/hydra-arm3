@@ -28,6 +28,7 @@ from web3.exceptions import ContractLogicError
 from .lifecycle import LifecycleManager, Phase
 from .autonomous_marketing import AutonomousMarketing
 from .revenue_optimizer import RevenueOptimizer
+from .treasury_yield import TreasuryYieldManager
 
 logger = logging.getLogger("hydra.automaton")
 
@@ -160,6 +161,11 @@ class HydraAutomaton:
         # Marketing + revenue modules
         self._marketing: AutonomousMarketing = AutonomousMarketing()
         self._revenue_optimizer: RevenueOptimizer = RevenueOptimizer()
+        self._treasury_yield: TreasuryYieldManager = TreasuryYieldManager(
+            w3=self.w3,
+            wallet_address=self.wallet_address,
+            private_key=self._private_key,
+        )
         self._last_marketing_run: Optional[datetime] = None
         self._last_revenue_report: Optional[datetime] = None
 
@@ -328,6 +334,10 @@ class HydraAutomaton:
         if tier >= SurvivalTier.SURPLUS and self.receiving_wallet:
             await self._remittance_check(balance)
 
+        # ---- Treasury yield: deposit excess USDC to Aave ----------------
+        if tier >= SurvivalTier.VIABLE:
+            await self._yield_check(balance)
+
         # ---- Lifecycle transition check ------------------------------
         entity_formed: bool = self.lifecycle.current_phase >= Phase.OPERATING
         self.lifecycle.check_transition(
@@ -444,14 +454,47 @@ class HydraAutomaton:
             # Non-critical — if ping fails, service is either starting up or shutting down
             pass
 
+    async def _yield_check(self, balance: Decimal) -> None:
+        """
+        Check if excess USDC should be deposited into Aave for yield.
+
+        Only runs when treasury is VIABLE ($500+). Maintains operating
+        reserve and only deposits amounts above the minimum threshold.
+        """
+        try:
+            depositable = self._treasury_yield.get_depositable_amount(balance)
+            if depositable > 0:
+                logger.info(
+                    "YIELD: $%s USDC available for Aave deposit (balance=$%s, reserve=$500)",
+                    f"{depositable:.2f}", f"{balance:.2f}",
+                )
+                tx_hash = await self._treasury_yield.deposit_to_aave(depositable)
+                if tx_hash:
+                    logger.info("YIELD: Deposit successful — earning Aave yield on $%s USDC", f"{depositable:.2f}")
+        except Exception as exc:
+            logger.error("YIELD: Deposit check failed (non-fatal): %s", exc)
+
     async def _remittance_check(self, balance: Decimal) -> None:
         """
         Auto-execute remittance when balance exceeds threshold
         and a receiving wallet is configured.
 
+        If funds are deposited in Aave, withdraws them first.
         Fully autonomous — no human confirmation required.
         All payments are FINAL. USDC on Base L2 has no clawback mechanism.
         """
+        try:
+            aave_balance = self._treasury_yield.get_aave_balance()
+            if aave_balance > Decimal("1"):
+                logger.info(
+                    "REMITTANCE: Withdrawing $%s USDC from Aave before remittance...",
+                    f"{aave_balance:.2f}",
+                )
+                await self._treasury_yield.withdraw_from_aave()
+                balance = await self.get_usdc_balance()
+        except Exception as exc:
+            logger.warning("REMITTANCE: Aave withdrawal failed (%s) — proceeding with wallet balance", exc)
+
         try:
             from src.runtime.remittance import RemittanceManager
             rm = RemittanceManager(
@@ -542,6 +585,11 @@ class HydraAutomaton:
             automaton_state, wallet_address, receiving_wallet.
         """
         tier = self.get_survival_tier(self._cached_balance)
+        yield_status = {}
+        try:
+            yield_status = self._treasury_yield.get_yield_status()
+        except Exception:
+            pass
         return {
             "wallet_address": self.wallet_address,
             "balance_usdc": str(self._cached_balance),
@@ -553,6 +601,7 @@ class HydraAutomaton:
                 self._last_heartbeat.isoformat() if self._last_heartbeat else None
             ),
             "receiving_wallet": self.receiving_wallet,
+            "treasury_yield": yield_status or None,
         }
 
     # ------------------------------------------------------------------
