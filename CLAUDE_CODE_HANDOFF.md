@@ -7,7 +7,7 @@
 
 | Resource | Details |
 |---|---|
-| **GitHub repo** | github.com/OGCryptoKitty/hydra-arm3 (private) |
+| **GitHub repo** | github.com/OGCryptoKitty/hydra-arm3 (public) |
 | **Live API** | https://hydra-api-nlnj.onrender.com |
 | **Hosting** | Render.com — service name `hydra-api-nlnj` |
 | **Render account** | Connected to OGCryptoKitty GitHub |
@@ -30,24 +30,11 @@ The owner authorizes Claude Code to make all necessary code changes, push to Git
 - Or filter by checking if event title/subtitle contains: `fed`, `rate`, `sec`, `cftc`, `regulation`, `crypto`, `stablecoin`, `legislation`, `tariff`, `sanctions`, `fomc`, `inflation`, `cpi`, `gdp`
 - Kalshi's API base: `https://api.elections.kalshi.com/trade-api/v2`
 
-### FIX 2 — SurvivalTier Enum Comparison Crashes Heartbeat [MODERATE]
-**File:** `src/runtime/automaton.py`
-**Problem:** `TypeError: '>=' not supported between instances of 'SurvivalTier' and 'SurvivalTier'` on every heartbeat cycle.
-**Fix:** Change `class SurvivalTier(Enum)` to `class SurvivalTier(IntEnum)` and import `from enum import IntEnum`. Also check `Phase` enum in `src/runtime/lifecycle.py` for same issue.
+### FIX 2 — SurvivalTier Enum Comparison [FIXED]
+**Status:** Both `SurvivalTier` (automaton.py) and `Phase` (lifecycle.py) are now `IntEnum`.
 
-### FIX 3 — x402 Discovery Manifest Not Serving [CRITICAL for discovery]
-**File:** `src/main.py`
-**Problem:** `GET /.well-known/x402.json` returns 404. The `StaticFiles` mount isn't working.
-**Fix option A:** Add an explicit route:
-```python
-@app.get("/.well-known/x402.json", include_in_schema=False)
-async def x402_manifest():
-    import json
-    manifest_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", ".well-known", "x402.json")
-    with open(manifest_path) as f:
-        return json.load(f)
-```
-**Fix option B:** Ensure `static/` directory is included in Render build and StaticFiles mount path is correct.
+### FIX 3 — x402 Discovery Manifest [FIXED]
+**Status:** Explicit routes added for all `.well-known` files — x402.json, mcp.json, agents.json, llms.txt, ai-plugin.json.
 
 ### FIX 4 — Render Running Old Code [URGENT]
 **Problem:** Live Render instance shows old pricing (regulatory/scan at $0.50) in error messages. Latest git commit not deployed.
@@ -60,30 +47,11 @@ async def x402_manifest():
 - Key: `WALLET_PRIVATE_KEY`
 - Value: the private key from `wallet.json` (locally at `/home/user/workspace/hydra-bootstrap/wallet.json`)
 
-### FIX 6 — Replay Attack: In-Memory Cache Cleared on Restart [SECURITY]
-**File:** `src/x402/middleware.py`
-**Problem:** Used tx-hash cache lives in memory only. Render free tier restarts frequently. After restart, a used payment tx hash could be replayed.
-**Fix:** Persist the used-tx cache to a file:
-```python
-import json, os
-REPLAY_CACHE_FILE = "/tmp/hydra_used_txhashes.json"
+### FIX 6 — Replay Attack Cache Persistence [FIXED]
+**Status:** Replay cache now persists to `/tmp/hydra_used_txhashes.json`. Loads on startup, saves on each new tx verification.
 
-def load_replay_cache():
-    try:
-        with open(REPLAY_CACHE_FILE) as f:
-            return set(json.load(f))
-    except:
-        return set()
-
-def save_replay_cache(cache: set):
-    with open(REPLAY_CACHE_FILE, 'w') as f:
-        json.dump(list(cache), f)
-```
-
-### FIX 7 — Cleanup Dead Code Files [MINOR]
-Delete these files that are stale patches, not active modules:
-- `src/main_update_patch.py`
-- `src/api/prediction_routes_integration.py`
+### FIX 7 — Dead Code Files [FIXED]
+**Status:** `src/main_update_patch.py` and `src/api/prediction_routes_integration.py` already deleted.
 
 ---
 
@@ -142,10 +110,17 @@ hydra-arm3/
 
 ---
 
-## Pricing (settings.py)
+## Pricing (settings.py) — 22 Paid Endpoints
 
 | Endpoint | Price USDC |
 |---|---|
+| `/v1/util/crypto/price` | $0.001 |
+| `/v1/util/crypto/balance` | $0.001 |
+| `/v1/util/gas` | $0.001 |
+| `/v1/util/tx` | $0.001 |
+| `/v1/util/rss` | $0.002 |
+| `/v1/util/scrape` | $0.005 |
+| `/v1/batch` | $0.01 |
 | `/v1/markets/feed` | $0.10 |
 | `/v1/markets/events` | $0.50 |
 | `/v1/regulatory/changes` | $1.00 |
@@ -162,7 +137,7 @@ hydra-arm3/
 | `/v1/fed/decision` | $25.00 |
 | `/v1/fed/resolution` | $50.00 |
 
-Free: `GET /health`, `GET /pricing`, `GET /docs`, `GET /v1/markets`, `GET /v1/markets/discovery`, `GET /v1/markets/pricing`
+Free: `GET /health`, `GET /pricing`, `GET /docs`, `GET /v1/markets`, `GET /v1/markets/discovery`, `GET /v1/markets/pricing`, `GET /v1/util`, `GET /status`, `GET /metrics`
 
 ---
 

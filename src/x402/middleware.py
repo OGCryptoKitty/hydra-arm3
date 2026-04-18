@@ -58,15 +58,51 @@ from src.x402.verify import is_valid_tx_hash, verify_usdc_payment
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────
-# In-memory replay-prevention cache
+# Replay-prevention cache (in-memory + file-backed persistence)
 # Stores: tx_hash → unix timestamp of first verification
+# File persistence survives Render restarts.
 # ─────────────────────────────────────────────────────────────
+
+_REPLAY_CACHE_FILE = "/tmp/hydra_used_txhashes.json"
 
 _used_tx_cache: TTLCache = TTLCache(maxsize=10_000, ttl=PAYMENT_CACHE_TTL)
 
 
+def _load_replay_cache() -> None:
+    """Load persisted tx hashes from disk into memory on startup."""
+    try:
+        import os
+        if not os.path.exists(_REPLAY_CACHE_FILE):
+            return
+        with open(_REPLAY_CACHE_FILE, "r") as f:
+            data = json.load(f)
+        now = time.time()
+        loaded = 0
+        for tx_hash, ts in data.items():
+            if now - ts < PAYMENT_CACHE_TTL:
+                _used_tx_cache[tx_hash] = ts
+                loaded += 1
+        if loaded:
+            logger.info("Loaded %d tx hashes from replay cache", loaded)
+    except Exception as exc:
+        logger.warning("Could not load replay cache: %s", exc)
+
+
+def _save_replay_cache() -> None:
+    """Persist current cache to disk."""
+    try:
+        with open(_REPLAY_CACHE_FILE, "w") as f:
+            json.dump(dict(_used_tx_cache), f)
+    except Exception as exc:
+        logger.debug("Could not save replay cache: %s", exc)
+
+
+_load_replay_cache()
+
+
 def _mark_tx_used(tx_hash: str) -> None:
     _used_tx_cache[tx_hash.lower()] = time.time()
+    _save_replay_cache()
 
 
 def _is_tx_used(tx_hash: str) -> bool:
