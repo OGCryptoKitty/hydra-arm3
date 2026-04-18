@@ -29,26 +29,34 @@ MARKETING_LOG = Path("/home/user/workspace/hydra-bootstrap/marketing_log.jsonl")
 
 # Current pricing (USDC)
 CURRENT_PRICING = {
-    "/v1/markets/feed": Decimal("0.05"),
-    "/v1/markets/signal/{market_id}": Decimal("0.10"),
-    "/v1/markets/events": Decimal("0.15"),
-    "/v1/markets/signals": Decimal("0.25"),
-    "/v1/regulatory/query": Decimal("0.50"),
-    "/v1/regulatory/changes": Decimal("0.50"),
-    "/v1/oracle/uma": Decimal("0.50"),
-    "/v1/oracle/chainlink": Decimal("0.50"),
-    "/v1/regulatory/scan": Decimal("1.00"),
-    "/v1/markets/resolution": Decimal("1.00"),
-    "/v1/markets/alpha": Decimal("2.00"),
-    "/v1/regulatory/jurisdiction": Decimal("2.00"),
+    "/v1/util/crypto/price": Decimal("0.001"),
+    "/v1/util/crypto/balance": Decimal("0.001"),
+    "/v1/util/gas": Decimal("0.001"),
+    "/v1/util/tx": Decimal("0.001"),
+    "/v1/util/rss": Decimal("0.002"),
+    "/v1/util/scrape": Decimal("0.005"),
+    "/v1/batch": Decimal("0.01"),
+    "/v1/markets/feed": Decimal("0.10"),
+    "/v1/markets/events": Decimal("0.50"),
+    "/v1/regulatory/changes": Decimal("1.00"),
+    "/v1/regulatory/query": Decimal("1.00"),
+    "/v1/markets/signal/{market_id}": Decimal("2.00"),
+    "/v1/regulatory/scan": Decimal("2.00"),
+    "/v1/regulatory/jurisdiction": Decimal("3.00"),
     "/v1/fed/signal": Decimal("5.00"),
+    "/v1/markets/signals": Decimal("5.00"),
+    "/v1/oracle/uma": Decimal("5.00"),
+    "/v1/oracle/chainlink": Decimal("5.00"),
+    "/v1/markets/alpha": Decimal("10.00"),
+    "/v1/markets/resolution": Decimal("25.00"),
     "/v1/fed/decision": Decimal("25.00"),
     "/v1/fed/resolution": Decimal("50.00"),
 }
 
 # High-value endpoint categories
-HIGH_VALUE_ENDPOINTS = {"/v1/fed/decision", "/v1/fed/resolution", "/v1/markets/alpha"}
+HIGH_VALUE_ENDPOINTS = {"/v1/fed/decision", "/v1/fed/resolution", "/v1/markets/alpha", "/v1/markets/resolution"}
 SIGNAL_ENDPOINTS = {"/v1/markets/signals", "/v1/markets/signal/{market_id}", "/v1/markets/feed"}
+UTILITY_ENDPOINTS = {"/v1/util/scrape", "/v1/util/crypto/price", "/v1/util/rss", "/v1/util/crypto/balance", "/v1/util/gas", "/v1/util/tx", "/v1/batch"}
 ORACLE_ENDPOINTS = {"/v1/oracle/uma", "/v1/oracle/chainlink", "/v1/markets/resolution"}
 
 

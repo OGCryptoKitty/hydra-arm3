@@ -57,7 +57,7 @@ DISCOVERY_ENDPOINTS = [
             "manifest": HYDRA_MANIFEST,
             "protocol": "x402",
             "name": "HYDRA Regulatory Intelligence",
-            "description": "Real-time regulatory intelligence for prediction markets. 19 paid endpoints from $0.001.",
+            "description": "Real-time regulatory intelligence for prediction markets. 22 paid endpoints from $0.001 USDC.",
         },
     },
     {
@@ -87,7 +87,7 @@ DISCOVERY_ENDPOINTS = [
         "payload": {
             "url": HYDRA_BASE_URL,
             "name": "HYDRA Regulatory Intelligence",
-            "description": "22 paid API endpoints — regulatory signals, FOMC data, oracle feeds, web scraping. $0.001-$50 per call.",
+            "description": "22 paid API endpoints — regulatory signals, FOMC data, oracle feeds, utilities. $0.001-$50 USDC per call via x402.",
             "protocols": ["mpp", "x402"],
             "openapi_url": HYDRA_OPENAPI,
         },

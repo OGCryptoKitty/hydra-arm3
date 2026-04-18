@@ -252,7 +252,7 @@ if _mcp_available:
             description=(
                 "Real-time regulatory intelligence for prediction markets. "
                 "SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. "
-                "19 paid tools from $0.001 USDC via x402 on Base L2."
+                "22 paid tools from $0.001 USDC via x402 on Base L2."
             ),
         )
         mcp_server.mount()
@@ -422,6 +422,20 @@ async def mcp_json():
             return _json.load(f)
     except FileNotFoundError:
         return JSONResponse(status_code=404, content={"error": "mcp.json not found"})
+
+
+@app.get("/.well-known/ai-plugin.json", include_in_schema=False)
+async def ai_plugin_json():
+    """Serve OpenAI/ChatGPT plugin manifest for agent discovery."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", ".well-known", "ai-plugin.json",
+    )
+    try:
+        with open(path) as f:
+            return _json.load(f)
+    except FileNotFoundError:
+        return JSONResponse(status_code=404, content={"error": "ai-plugin.json not found"})
 
 
 @app.get("/robots.txt", include_in_schema=False)
