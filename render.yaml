@@ -2,13 +2,13 @@ services:
   - type: web
     name: hydra-api
     runtime: python
-    plan: free
+    plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 30
     healthCheckPath: /health
     envVars:
       - key: WALLET_ADDRESS
-        value: 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141
+        sync: false
       - key: BASE_RPC_URL
         value: https://mainnet.base.org
       - key: HYDRA_STATE_DIR
