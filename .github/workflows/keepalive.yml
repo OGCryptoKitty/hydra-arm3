@@ -1,0 +1,21 @@
+name: Keepalive Ping
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping /health to prevent cold start
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Hydra API health endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://hydra-api-nlnj.onrender.com/health)
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::warning::Health check returned $STATUS — service may be cold starting"
+          else
+            echo "::notice::Service is warm and responding"
+          fi
