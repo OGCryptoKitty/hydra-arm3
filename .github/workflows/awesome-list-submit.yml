@@ -20,126 +20,97 @@ jobs:
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "⚠️ GH_PAT secret not set — skipping awesome list submissions"
-            echo "Set a GitHub PAT with 'public_repo' scope as GH_PAT in repo secrets"
+            echo "GH_PAT secret not set — skipping"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
+            echo "PAT available"
           fi
 
       - name: Fork and submit to punkpeye/awesome-mcp-servers
         if: steps.check.outputs.skip == 'false'
         run: |
+          set -e
           REPO="punkpeye/awesome-mcp-servers"
-          FORK_OWNER=$(gh api user --jq '.login')
           BRANCH="add-hydra-regulatory-intelligence"
+          FORK_OWNER=$(gh api user --jq '.login')
+          echo "Authenticated as: $FORK_OWNER"
 
           # Check if PR already exists
-          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --search "HYDRA" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$EXISTING" ]; then
-            echo "✅ PR #$EXISTING already exists on $REPO — skipping"
+          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "PR #$EXISTING already exists — skipping"
             exit 0
           fi
 
-          # Fork if needed
-          gh repo fork "$REPO" --clone=false 2>/dev/null || true
-          sleep 5
+          # Fork and clone
+          gh repo fork "$REPO" --clone -- --depth 1 || true
+          cd awesome-mcp-servers || { echo "Clone failed"; exit 1; }
 
-          # Get current README from upstream
-          gh api "repos/$REPO/contents/README.md" --jq '.content' | base64 -d > /tmp/awesome-readme.md
+          # Configure git
+          git config user.name "$FORK_OWNER"
+          git config user.email "$FORK_OWNER@users.noreply.github.com"
 
-          # Find the Finance & Fintech section and add HYDRA alphabetically
+          # Create branch
+          git checkout -b "$BRANCH"
+
+          # Check if already listed
+          if grep -q "HYDRA Regulatory Intelligence" README.md; then
+            echo "HYDRA already listed — skipping"
+            exit 0
+          fi
+
+          # Add entry — append to end of file as fallback
           python3 << 'PYEOF'
           import re
 
-          with open("/tmp/awesome-readme.md", "r") as f:
+          with open("README.md", "r") as f:
               content = f.read()
 
-          entry = "- [HYDRA Regulatory Intelligence](https://github.com/OGCryptoKitty/hydra-arm3) 🐍 - Real-time SEC/CFTC/Fed regulatory risk scoring, FOMC signals, and prediction market data. 22 x402-paid endpoints on Base L2. ☁️\n"
+          entry = "- [HYDRA Regulatory Intelligence](https://github.com/OGCryptoKitty/hydra-arm3) 🐍 - Real-time SEC/CFTC/Fed regulatory risk scoring, FOMC signals, and prediction market data. 22 x402-paid endpoints on Base L2. ☁️"
 
-          if "HYDRA Regulatory Intelligence" in content:
-              print("HYDRA already listed — skipping")
-              with open("/tmp/already_listed", "w") as f:
-                  f.write("true")
-          else:
-              # Find Finance & Fintech section
-              patterns = [
-                  r"(### Finance.*?\n(?:- \[.*?\n)*)",
-                  r"(## Finance.*?\n(?:- \[.*?\n)*)",
-                  r"(#### Finance.*?\n(?:- \[.*?\n)*)",
-              ]
-              inserted = False
-              for pat in patterns:
-                  match = re.search(pat, content, re.IGNORECASE)
-                  if match:
-                      section = match.group(1)
-                      lines = section.split("\n")
-                      header = lines[0]
-                      items = [l for l in lines[1:] if l.startswith("- [")]
-                      items.append(entry.strip())
-                      items.sort(key=lambda x: x.lower())
-                      new_section = header + "\n" + "\n".join(items) + "\n"
-                      content = content.replace(section, new_section)
-                      inserted = True
-                      break
-              if not inserted:
-                  # Fallback: append before last section
-                  content = content.rstrip() + "\n\n### Finance & Fintech\n" + entry + "\n"
+          # Try Finance & Fintech section
+          patterns = [
+              r"(###?\s*Finance.*?\n(?:[-*] \[.*?\n)*)",
+              r"(###?\s*Financial.*?\n(?:[-*] \[.*?\n)*)",
+          ]
+          inserted = False
+          for pat in patterns:
+              match = re.search(pat, content, re.IGNORECASE)
+              if match:
+                  section = match.group(1)
+                  content = content.replace(section, section.rstrip("\n") + "\n" + entry + "\n")
+                  inserted = True
+                  print(f"Inserted into section matching: {pat}")
+                  break
 
-              with open("/tmp/awesome-readme.md", "w") as f:
-                  f.write(content)
-              print("Entry added successfully")
+          if not inserted:
+              content = content.rstrip() + "\n\n### Finance & Fintech\n\n" + entry + "\n"
+              print("Created new Finance & Fintech section")
+
+          with open("README.md", "w") as f:
+              f.write(content)
           PYEOF
 
-          if [ -f /tmp/already_listed ]; then
-            echo "HYDRA already in README — no PR needed"
-            exit 0
-          fi
-
-          # Push to fork branch
-          README_CONTENT=$(base64 -w 0 /tmp/awesome-readme.md)
-          CURRENT_SHA=$(gh api "repos/$FORK_OWNER/awesome-mcp-servers/contents/README.md" --jq '.sha' 2>/dev/null || echo "")
-
-          if [ -z "$CURRENT_SHA" ]; then
-            # Fork may not be ready, retry
-            sleep 10
-            CURRENT_SHA=$(gh api "repos/$FORK_OWNER/awesome-mcp-servers/contents/README.md" --jq '.sha')
-          fi
-
-          # Create branch on fork
-          DEFAULT_SHA=$(gh api "repos/$FORK_OWNER/awesome-mcp-servers/git/ref/heads/main" --jq '.object.sha' 2>/dev/null || \
-                        gh api "repos/$FORK_OWNER/awesome-mcp-servers/git/ref/heads/master" --jq '.object.sha')
-
-          gh api "repos/$FORK_OWNER/awesome-mcp-servers/git/refs" \
-            -X POST \
-            -f "ref=refs/heads/$BRANCH" \
-            -f "sha=$DEFAULT_SHA" 2>/dev/null || true
-
-          # Update README on branch
-          gh api "repos/$FORK_OWNER/awesome-mcp-servers/contents/README.md" \
-            -X PUT \
-            -f "message=Add HYDRA Regulatory Intelligence" \
-            -f "content=$README_CONTENT" \
-            -f "sha=$CURRENT_SHA" \
-            -f "branch=$BRANCH"
+          # Commit and push
+          git add README.md
+          git commit -m "Add HYDRA Regulatory Intelligence"
+          git push -u origin "$BRANCH"
 
           # Create PR
           gh pr create \
             --repo "$REPO" \
             --head "$FORK_OWNER:$BRANCH" \
-            --title "🤖🤖🤖 Add HYDRA Regulatory Intelligence" \
-            --body "$(cat <<'BODY'
-          Adds HYDRA Regulatory Intelligence MCP server to the Finance & Fintech section.
+            --title "Add HYDRA Regulatory Intelligence" \
+            --body "Adds HYDRA Regulatory Intelligence MCP server to the Finance & Fintech section.
 
-          - **Server URL:** `https://hydra-api-nlnj.onrender.com/mcp`
-          - **Transport:** Streamable HTTP
-          - **Tools:** 22 paid + 12 free (regulatory scan, FOMC signals, prediction market data, oracle feeds)
-          - **Payment:** USDC on Base via x402 protocol ($0.001-$50)
-          - **Manifest:** https://hydra-api-nlnj.onrender.com/.well-known/mcp.json
-          - **GitHub:** https://github.com/OGCryptoKitty/hydra-arm3
-          BODY
-          )"
+- **Server URL:** \`https://hydra-api-nlnj.onrender.com/mcp\`
+- **Transport:** Streamable HTTP
+- **Tools:** 22 paid + 12 free (regulatory scan, FOMC signals, prediction market data, oracle feeds)
+- **Payment:** USDC on Base via x402 protocol (\$0.001-\$50)
+- **Manifest:** https://hydra-api-nlnj.onrender.com/.well-known/mcp.json
+- **GitHub:** https://github.com/OGCryptoKitty/hydra-arm3"
 
-          echo "✅ PR submitted to $REPO"
+          echo "PR submitted to $REPO"
 
   submit-awesome-x402:
     runs-on: ubuntu-latest
@@ -159,88 +130,53 @@ jobs:
       - name: Fork and submit to xpaysh/awesome-x402
         if: steps.check.outputs.skip == 'false'
         run: |
+          set -e
           REPO="xpaysh/awesome-x402"
-          FORK_OWNER=$(gh api user --jq '.login')
           BRANCH="add-hydra-regulatory-intelligence"
+          FORK_OWNER=$(gh api user --jq '.login')
 
-          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --search "HYDRA" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$EXISTING" ]; then
-            echo "✅ PR #$EXISTING already exists on $REPO — skipping"
+          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "PR already exists — skipping"
             exit 0
           fi
 
-          gh repo fork "$REPO" --clone=false 2>/dev/null || true
-          sleep 5
+          gh repo fork "$REPO" --clone -- --depth 1 || true
+          cd awesome-x402 || { echo "Clone failed — repo may not exist"; exit 0; }
 
-          gh api "repos/$REPO/contents/README.md" --jq '.content' | base64 -d > /tmp/x402-readme.md
+          git config user.name "$FORK_OWNER"
+          git config user.email "$FORK_OWNER@users.noreply.github.com"
+          git checkout -b "$BRANCH"
 
-          python3 << 'PYEOF'
-          content = open("/tmp/x402-readme.md").read()
-          entry = "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data for AI agents. 22 paid endpoints ($0.001-$50 USDC) on Base via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))\n"
-
-          if "HYDRA Regulatory Intelligence" in content:
-              open("/tmp/x402_already_listed", "w").write("true")
-              print("Already listed")
-          else:
-              # Try to find Tools & Services or similar section
-              import re
-              patterns = [r"(## Tools.*?\n(?:- \[.*?\n)*)", r"(## Ecosystem.*?\n(?:- \[.*?\n)*)"]
-              inserted = False
-              for pat in patterns:
-                  match = re.search(pat, content, re.IGNORECASE)
-                  if match:
-                      section = match.group(1)
-                      content = content.replace(section, section.rstrip("\n") + "\n" + entry)
-                      inserted = True
-                      break
-              if not inserted:
-                  content = content.rstrip() + "\n\n## Tools & Services\n\n" + entry
-              open("/tmp/x402-readme.md", "w").write(content)
-              print("Entry added")
-          PYEOF
-
-          if [ -f /tmp/x402_already_listed ]; then
+          if grep -q "HYDRA Regulatory Intelligence" README.md; then
+            echo "Already listed — skipping"
             exit 0
           fi
 
-          README_CONTENT=$(base64 -w 0 /tmp/x402-readme.md)
-          CURRENT_SHA=$(gh api "repos/$FORK_OWNER/awesome-x402/contents/README.md" --jq '.sha' 2>/dev/null || echo "")
-          if [ -z "$CURRENT_SHA" ]; then
-            sleep 10
-            CURRENT_SHA=$(gh api "repos/$FORK_OWNER/awesome-x402/contents/README.md" --jq '.sha')
-          fi
+          ENTRY="- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data for AI agents. 22 paid endpoints (\$0.001-\$50 USDC) on Base via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))"
+          echo "" >> README.md
+          echo "$ENTRY" >> README.md
 
-          DEFAULT_SHA=$(gh api "repos/$FORK_OWNER/awesome-x402/git/ref/heads/main" --jq '.object.sha' 2>/dev/null || \
-                        gh api "repos/$FORK_OWNER/awesome-x402/git/ref/heads/master" --jq '.object.sha')
-
-          gh api "repos/$FORK_OWNER/awesome-x402/git/refs" \
-            -X POST -f "ref=refs/heads/$BRANCH" -f "sha=$DEFAULT_SHA" 2>/dev/null || true
-
-          gh api "repos/$FORK_OWNER/awesome-x402/contents/README.md" \
-            -X PUT \
-            -f "message=Add HYDRA Regulatory Intelligence" \
-            -f "content=$README_CONTENT" \
-            -f "sha=$CURRENT_SHA" \
-            -f "branch=$BRANCH"
+          git add README.md
+          git commit -m "Add HYDRA Regulatory Intelligence"
+          git push -u origin "$BRANCH"
 
           gh pr create \
             --repo "$REPO" \
             --head "$FORK_OWNER:$BRANCH" \
             --title "Add HYDRA Regulatory Intelligence" \
-            --body "$(cat <<'BODY'
-          HYDRA is a production x402 API serving 22 paid endpoints for regulatory intelligence:
-          - SEC/CFTC/Fed/FinCEN monitoring and risk scoring
-          - Prediction market signals (Polymarket, Kalshi)
-          - FOMC decision classification and rate probabilities
-          - UMA and Chainlink oracle data feeds
+            --body "HYDRA is a production x402 API serving 22 paid endpoints for regulatory intelligence.
 
-          Payment: $0.001-$50 USDC on Base (chain 8453)
-          Live: https://hydra-api-nlnj.onrender.com
-          x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json
-          BODY
-          )"
+- SEC/CFTC/Fed/FinCEN monitoring and risk scoring
+- Prediction market signals (Polymarket, Kalshi)
+- FOMC decision classification and rate probabilities
+- UMA and Chainlink oracle data feeds
 
-          echo "✅ PR submitted to $REPO"
+Payment: \$0.001-\$50 USDC on Base (chain 8453)
+Live: https://hydra-api-nlnj.onrender.com
+x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
+
+          echo "PR submitted to $REPO"
 
   submit-awesome-x402-merit:
     runs-on: ubuntu-latest
@@ -260,59 +196,36 @@ jobs:
       - name: Fork and submit to Merit-Systems/awesome-x402
         if: steps.check.outputs.skip == 'false'
         run: |
+          set -e
           REPO="Merit-Systems/awesome-x402"
-          FORK_OWNER=$(gh api user --jq '.login')
           BRANCH="add-hydra-regulatory-intelligence"
+          FORK_OWNER=$(gh api user --jq '.login')
 
-          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --search "HYDRA" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$EXISTING" ]; then
-            echo "✅ PR already exists — skipping"
+          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "PR already exists — skipping"
             exit 0
           fi
 
-          gh repo fork "$REPO" --clone=false 2>/dev/null || true
-          sleep 5
+          gh repo fork "$REPO" --clone -- --depth 1 || true
+          cd awesome-x402 || { echo "Clone failed — repo may not exist"; exit 0; }
 
-          gh api "repos/$REPO/contents/README.md" --jq '.content' | base64 -d > /tmp/merit-readme.md
+          git config user.name "$FORK_OWNER"
+          git config user.email "$FORK_OWNER@users.noreply.github.com"
+          git checkout -b "$BRANCH"
 
-          python3 << 'PYEOF'
-          content = open("/tmp/merit-readme.md").read()
-          entry = "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data for AI agents. 22 paid endpoints ($0.001-$50 USDC) on Base via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))\n"
-
-          if "HYDRA Regulatory Intelligence" in content:
-              open("/tmp/merit_already", "w").write("true")
-          else:
-              import re
-              match = re.search(r"(## (?:Ecosystem|Security|Tools).*?\n(?:- \[.*?\n)*)", content, re.IGNORECASE)
-              if match:
-                  section = match.group(1)
-                  content = content.replace(section, section.rstrip("\n") + "\n" + entry)
-              else:
-                  content = content.rstrip() + "\n\n## Ecosystem\n\n" + entry
-              open("/tmp/merit-readme.md", "w").write(content)
-          PYEOF
-
-          if [ -f /tmp/merit_already ]; then exit 0; fi
-
-          README_CONTENT=$(base64 -w 0 /tmp/merit-readme.md)
-          CURRENT_SHA=$(gh api "repos/$FORK_OWNER/awesome-x402/contents/README.md" --jq '.sha' 2>/dev/null || echo "")
-          if [ -z "$CURRENT_SHA" ]; then
-            sleep 10
-            CURRENT_SHA=$(gh api "repos/$FORK_OWNER/awesome-x402/contents/README.md" --jq '.sha')
+          if grep -q "HYDRA Regulatory Intelligence" README.md; then
+            echo "Already listed — skipping"
+            exit 0
           fi
 
-          DEFAULT_SHA=$(gh api "repos/$FORK_OWNER/awesome-x402/git/ref/heads/main" --jq '.object.sha' 2>/dev/null || \
-                        gh api "repos/$FORK_OWNER/awesome-x402/git/ref/heads/master" --jq '.object.sha')
+          ENTRY="- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data for AI agents. 22 paid endpoints (\$0.001-\$50 USDC) on Base via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))"
+          echo "" >> README.md
+          echo "$ENTRY" >> README.md
 
-          gh api "repos/$FORK_OWNER/awesome-x402/git/refs" \
-            -X POST -f "ref=refs/heads/$BRANCH" -f "sha=$DEFAULT_SHA" 2>/dev/null || true
-
-          gh api "repos/$FORK_OWNER/awesome-x402/contents/README.md" \
-            -X PUT \
-            -f "message=Add HYDRA Regulatory Intelligence" \
-            -f "content=$README_CONTENT" \
-            -f "sha=$CURRENT_SHA" \
-            -f "branch=$BRANCH"
+          git add README.md
+          git commit -m "Add HYDRA Regulatory Intelligence"
+          git push -u origin "$BRANCH"
 
           gh pr create \
             --repo "$REPO" \
@@ -320,4 +233,4 @@ jobs:
             --title "Add HYDRA Regulatory Intelligence" \
             --body "HYDRA: 22 x402-paid regulatory intelligence endpoints on Base L2. Live at https://hydra-api-nlnj.onrender.com"
 
-          echo "✅ PR submitted to $REPO"
+          echo "PR submitted to $REPO"
