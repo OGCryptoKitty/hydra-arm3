@@ -327,6 +327,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
             "x402": {
                 "version": "1.0",
                 "scheme": "exact",
+                "facilitator": "https://x402.org/facilitator",
                 "pay": {
                     "to": WALLET_ADDRESS,
                     "amount": str(pricing["amount_base_units"]),

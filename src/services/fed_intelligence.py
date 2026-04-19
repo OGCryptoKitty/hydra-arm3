@@ -11,13 +11,13 @@ Data sources used:
   - FOMC statements RSS: https://www.federalreserve.gov/feeds/press_all.xml
   - Kalshi KXFED series (attempted live; falls back to hardcoded consensus)
 
-Hardcoded MVP data (as of March 2026):
+Hardcoded MVP data (as of April 2026):
   - Fed funds target rate: 4.25–4.50%
   - Latest FOMC decision: March 19, 2026 — HOLD (unanimous)
-  - Latest CPI (Feb 2026): 2.8% YoY
-  - Core PCE (Jan 2026): 2.6% YoY
-  - Unemployment rate (Feb 2026): 4.0%
-  - GDP growth Q4 2025: 2.3% annualised
+  - Latest CPI (Mar 2026): 2.7% YoY
+  - Core PCE (Feb 2026): 2.5% YoY
+  - Unemployment rate (Mar 2026): 4.1%
+  - GDP growth Q1 2026: 2.0% annualised (advance estimate)
   - Dot plot median 2026 year-end: 4.125% (implies one 25 bp cut in 2026)
 """
 
@@ -53,7 +53,7 @@ FOMC_2026_MEETINGS: list[tuple[date, date, date]] = [
 ]
 
 # ─────────────────────────────────────────────────────────────
-# Hardcoded MVP Economic Data (March 2026)
+# Hardcoded MVP Economic Data (April 2026)
 # ─────────────────────────────────────────────────────────────
 
 _CURRENT_RATE_LOW: float = 4.25
@@ -88,116 +88,118 @@ _LAST_DECISION: dict[str, Any] = {
 _ECONOMIC_INDICATORS: list[dict[str, Any]] = [
     {
         "indicator": "CPI (YoY)",
-        "value": "2.8%",
-        "period": "February 2026",
+        "value": "2.7%",
+        "period": "March 2026",
         "trend": "declining",
-        "implication": "Inflation trending toward 2% target but still above. Slight dovish signal.",
+        "implication": "Inflation continuing gradual descent toward 2% target. Seventh consecutive month of declines. Moderately dovish signal.",
         "source": "Bureau of Labor Statistics",
     },
     {
         "indicator": "Core PCE (YoY)",
-        "value": "2.6%",
-        "period": "January 2026",
+        "value": "2.5%",
+        "period": "February 2026",
         "trend": "declining",
         "implication": (
-            "Fed's preferred inflation measure at 2.6%, 60 bp above target. "
-            "Suggests caution on rate cuts — progress is real but incomplete."
+            "Fed's preferred inflation measure at 2.5%, 50 bp above target. "
+            "Progress accelerating but insufficient for near-term easing."
         ),
         "source": "Bureau of Economic Analysis",
     },
     {
         "indicator": "Unemployment Rate",
-        "value": "4.0%",
-        "period": "February 2026",
-        "trend": "stable",
+        "value": "4.1%",
+        "period": "March 2026",
+        "trend": "slightly rising",
         "implication": (
-            "Labor market remains solid. No recession signal. "
-            "No urgency for emergency rate cuts."
+            "Labor market softening gradually. Unemployment ticking up from 4.0% "
+            "adds marginal dovish pressure but remains historically low."
         ),
         "source": "Bureau of Labor Statistics",
     },
     {
         "indicator": "Nonfarm Payrolls (MoM)",
-        "value": "+143K",
-        "period": "February 2026",
+        "value": "+156K",
+        "period": "March 2026",
         "trend": "moderating",
         "implication": (
-            "Job growth has moderated from 2024 pace but remains above breakeven (~100K). "
-            "Labor market is cooling gradually — consistent with soft landing."
+            "Job growth modestly above breakeven (~100K). Consistent with gradual "
+            "labor market cooling. No urgency for policy intervention."
         ),
         "source": "Bureau of Labor Statistics",
     },
     {
         "indicator": "GDP Growth (annualised)",
-        "value": "2.3%",
-        "period": "Q4 2025",
-        "trend": "stable",
+        "value": "2.0%",
+        "period": "Q1 2026 (advance)",
+        "trend": "decelerating",
         "implication": (
-            "Economy growing above potential (estimated 1.8%). No recession risk. "
-            "Removes urgency for policy stimulus."
+            "Growth slowing toward potential (estimated 1.8%). Tariff uncertainty "
+            "weighing on business investment. Not recessionary but losing momentum."
         ),
         "source": "Bureau of Economic Analysis",
     },
     {
         "indicator": "10Y Treasury Yield",
-        "value": "4.42%",
-        "period": "March 2026",
-        "trend": "elevated",
+        "value": "4.35%",
+        "period": "April 2026",
+        "trend": "moderating",
         "implication": (
-            "Long-end yields elevated relative to Fed funds rate, signalling market "
-            "expectations of persistent higher-for-longer rates."
+            "Long-end yields easing slightly as growth decelerates. Spread to fed funds "
+            "rate narrowing, consistent with market pricing one cut by year-end."
         ),
         "source": "U.S. Treasury",
     },
 ]
 
-# Fed governor speech analysis (recent 60 days as of March 2026)
+# Fed governor speech analysis (recent 60 days as of April 2026)
 _FED_SPEECH_ANALYSIS: dict[str, Any] = {
-    "overall_tone": "neutral-to-hawkish",
+    "overall_tone": "neutral",
     "recent_speeches": [
         {
             "speaker": "Jerome Powell (Chair)",
-            "date": "February 2026",
+            "date": "March 2026",
             "tone": "neutral",
             "key_message": (
-                "Policy is well positioned. We do not need to be in a hurry to adjust "
-                "the policy rate. Data dependence remains paramount."
+                "March FOMC press conference: policy is well positioned, seeing encouraging "
+                "inflation progress but need sustained evidence. Data dependence remains paramount."
             ),
         },
         {
             "speaker": "John Williams (NY Fed)",
-            "date": "February 2026",
+            "date": "April 2026",
             "tone": "neutral",
             "key_message": (
-                "Monetary policy is restrictive and appropriate given current conditions. "
-                "Sees inflation continuing to gradually decline toward 2% target."
+                "Economy in a good place. Inflation trajectory encouraging but we need to see "
+                "more data before adjusting stance. Labor market rebalancing proceeding smoothly."
             ),
         },
         {
             "speaker": "Christopher Waller (Governor)",
-            "date": "March 2026",
+            "date": "April 2026",
             "tone": "hawkish",
             "key_message": (
-                "In no rush to cut rates. Tariff uncertainty adds upside inflation risk. "
-                "Would need multiple months of better inflation data before supporting cuts."
+                "Tariff impacts still uncertain and could reignite inflation. Not ready to support "
+                "rate cuts until Q3 at earliest. Need more evidence inflation sustainably at 2%."
             ),
         },
         {
             "speaker": "Adriana Kugler (Governor)",
-            "date": "March 2026",
+            "date": "April 2026",
             "tone": "dovish",
             "key_message": (
-                "Labor market cooling gradually as intended. Inflation progress encouraging. "
-                "Open to further easing if data cooperate."
+                "Disinflation progress now clearly on track. Core PCE at 2.5% approaching target. "
+                "Labor market softening warrants attention. Open to discussing easing timeline."
             ),
         },
     ],
     "summary": (
-        "The dominant Fed voice in early 2026 is patient and data-dependent. "
-        "Chair Powell has signalled no urgency to cut, citing still-elevated inflation "
-        "and solid labor market. Hawkish dissent (Waller) focuses on tariff pass-through "
-        "risk. Dovish voices are present but a minority. Net tone: neutral-to-hawkish, "
-        "consistent with an extended pause through mid-2026."
+        "The Fed in April 2026 is increasingly balanced between hawks and doves. "
+        "Chair Powell maintains data-dependent neutrality. Improving inflation data (CPI 2.7%, "
+        "Core PCE 2.5%) has shifted the tone from hawkish to genuinely neutral. Waller remains "
+        "the key hawk citing tariff risks. Kugler leads the dovish wing with emphasis on labor "
+        "market softening. Net tone: neutral, with the balance tilting gradually toward dovish "
+        "as inflation converges. May FOMC expected to hold, but market pricing for a September "
+        "cut is building."
     ),
 }
 
@@ -397,12 +399,12 @@ class FedIntelligenceEngine:
             f"Core PCE at {_ECONOMIC_INDICATORS[1]['value']} and CPI at {_ECONOMIC_INDICATORS[0]['value']} "
             f"remain above the 2% target, giving the Committee little reason to ease policy imminently.",
             f"The labor market is solid with unemployment at {_ECONOMIC_INDICATORS[2]['value']} and payrolls "
-            f"still growing at +143K/month — no recessionary signal that would justify an emergency cut.",
+            f"still growing at +156K/month — no recessionary signal that would justify an emergency cut.",
             f"Fed Chair Powell and the majority of governors have characterised policy as 'well positioned,' "
             f"signalling patience. Governor Waller has explicitly flagged tariff pass-through as an upside "
             f"inflation risk.",
-            f"The March 2026 dot plot median projects only one 25 bp cut in 2026, most likely in Q4, "
-            f"implying continued HOLD through mid-year meetings.",
+            f"The March 2026 dot plot median projects only one 25 bp cut in 2026, most likely in "
+            f"September or December. Market pricing for a September cut is building as inflation converges.",
         ]
         if bp_estimate > 0:
             reasoning_parts.append(
@@ -430,7 +432,7 @@ class FedIntelligenceEngine:
             "confidence": confidence,
             "reasoning": " ".join(reasoning_parts),
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "baseline_data_as_of": "March 2026",
+            "baseline_data_as_of": "April 2026",
             "live_fed_activity": self.fetch_recent_fed_activity(),
             "source_urls": [
                 "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",

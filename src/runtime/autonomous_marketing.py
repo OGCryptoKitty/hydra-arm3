@@ -34,9 +34,8 @@ logger = logging.getLogger("hydra.marketing")
 # ---------------------------------------------------------------------------
 
 HYDRA_API_BASE = "https://hydra-api-nlnj.onrender.com"
-# GitHub API via the Perplexity proxy (required for token auth to work)
-GITHUB_API_BASE = "https://git-agent-proxy.perplexity.ai/api/v3"
-GITHUB_GRAPHQL_URL = "https://git-agent-proxy.perplexity.ai/api/graphql"
+GITHUB_API_BASE = os.environ.get("GITHUB_API_BASE", "https://api.github.com")
+GITHUB_GRAPHQL_URL = os.environ.get("GITHUB_GRAPHQL_URL", "https://api.github.com/graphql")
 GITHUB_USER = "OGCryptoKitty"
 HYDRA_REPO = "OGCryptoKitty/hydra-arm3"
 DEV_TO_API_KEY = os.environ.get("DEV_TO_API_KEY", "")
