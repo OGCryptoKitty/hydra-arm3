@@ -1,0 +1,87 @@
+{
+  "name": "HYDRA Regulatory Intelligence",
+  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 22 paid endpoints from $0.001 USDC via x402 on Base L2.",
+  "url": "https://hydra-api-nlnj.onrender.com",
+  "version": "1.0.0",
+  "protocol": "a2a",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "authentication": {
+    "schemes": ["x402"]
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "regulatory-scan",
+      "name": "Regulatory Risk Scan",
+      "description": "Analyze a business against all applicable US regulatory frameworks with scored impact assessment. $2.00 USDC.",
+      "tags": ["regulatory", "compliance", "risk"],
+      "examples": ["Scan my DeFi lending protocol for SEC/CFTC exposure"]
+    },
+    {
+      "id": "market-signals",
+      "name": "Prediction Market Signals",
+      "description": "Scored regulatory signals for all active Polymarket and Kalshi prediction markets. $5.00 USDC.",
+      "tags": ["prediction-markets", "polymarket", "kalshi", "trading"],
+      "examples": ["Get signals for all regulatory prediction markets"]
+    },
+    {
+      "id": "fed-signal",
+      "name": "FOMC Pre-Decision Signal",
+      "description": "Pre-FOMC signal with rate probabilities, speech analysis, and economic indicators. $5.00 USDC.",
+      "tags": ["fed", "fomc", "interest-rates", "monetary-policy"],
+      "examples": ["What are the rate probabilities for the next FOMC meeting?"]
+    },
+    {
+      "id": "oracle-uma",
+      "name": "UMA Oracle Assertion Data",
+      "description": "UMA Optimistic Oracle assertion data with evidence chain for prediction market resolution. $5.00 USDC.",
+      "tags": ["oracle", "uma", "resolution"],
+      "examples": ["Get UMA assertion data for FOMC rate hold market"]
+    },
+    {
+      "id": "web-scrape",
+      "name": "Web Scrape",
+      "description": "Convert any URL to clean structured text. $0.005 USDC.",
+      "tags": ["utility", "scraping"],
+      "examples": ["Scrape https://sec.gov/news for latest filings"]
+    },
+    {
+      "id": "crypto-price",
+      "name": "Token Price",
+      "description": "Current price, 24h change, market cap for any listed token. $0.001 USDC.",
+      "tags": ["utility", "crypto", "price"],
+      "examples": ["Get ETH price"]
+    },
+    {
+      "id": "gas-prices",
+      "name": "Base L2 Gas Prices",
+      "description": "Current gas prices with cost estimates for transfers, swaps, mints. $0.001 USDC.",
+      "tags": ["utility", "gas", "base"],
+      "examples": ["What are current Base gas prices?"]
+    }
+  ],
+  "payment": {
+    "protocol": "x402",
+    "network": "eip155:8453",
+    "token": "USDC",
+    "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "payTo": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141",
+    "priceRange": "$0.001 - $50.00 USDC"
+  },
+  "provider": {
+    "organization": "HYDRA",
+    "url": "https://github.com/OGCryptoKitty/hydra-arm3"
+  },
+  "links": {
+    "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
+    "docs": "https://hydra-api-nlnj.onrender.com/docs",
+    "x402Manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
+    "mcpManifest": "https://hydra-api-nlnj.onrender.com/.well-known/mcp.json",
+    "mcpServer": "https://hydra-api-nlnj.onrender.com/mcp"
+  }
+}

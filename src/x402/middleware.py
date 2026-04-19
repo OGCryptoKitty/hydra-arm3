@@ -57,6 +57,46 @@ from src.x402.verify import is_valid_tx_hash, verify_usdc_payment
 
 logger = logging.getLogger(__name__)
 
+
+def _get_sample_response(path: str) -> dict | None:
+    """Return a truncated sample of what a paid response looks like."""
+    samples = {
+        "/v1/util/gas": {
+            "_note": "SAMPLE — pay to get live data",
+            "gas_price_gwei": "0.005",
+            "base_fee_gwei": "0.004",
+            "estimated_costs": {"transfer": "$0.001", "swap": "$0.003", "mint": "$0.005"},
+        },
+        "/v1/util/crypto/price": {
+            "_note": "SAMPLE — pay to get live data",
+            "token": "ETH",
+            "price_usd": "3,450.00",
+            "change_24h": "+2.1%",
+        },
+        "/v1/markets/feed": {
+            "_note": "SAMPLE — pay to get full feed",
+            "events": [{"title": "SEC Commissioner speech on crypto ETFs", "agency": "SEC", "matched_markets": 3}],
+            "total_events": "10 (truncated)",
+        },
+        "/v1/regulatory/scan": {
+            "_note": "SAMPLE — pay to get full scan",
+            "overall_risk_level": "HIGH",
+            "applicable_regulations": ["Securities Act 1933", "Howey Test", "FinCEN MSB Registration"],
+            "total_regulations": "12 (truncated)",
+        },
+        "/v1/fed/signal": {
+            "_note": "SAMPLE — pay to get full signal",
+            "rate_probability": {"hold": 0.87, "cut": 0.11, "hike": 0.02},
+            "next_fomc": "2026-05-07",
+        },
+    }
+    if path in samples:
+        return samples[path]
+    for prefix in ("/v1/util/", "/v1/markets/signal"):
+        if path.startswith(prefix) and prefix.rstrip("/") in samples:
+            return samples[prefix.rstrip("/")]
+    return {"_note": "Pay to access this endpoint", "description": "Full response available after x402 payment"}
+
 # ─────────────────────────────────────────────────────────────
 # Replay-prevention cache (in-memory + file-backed persistence)
 # Stores: tx_hash → unix timestamp of first verification
@@ -263,6 +303,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
     @staticmethod
     def _payment_required_response(path: str, pricing: dict) -> JSONResponse:
         """Return a standards-compliant 402 Payment Required response."""
+        sample = _get_sample_response(path)
         body = {
             "error": "Payment Required",
             "message": (
@@ -271,6 +312,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
                 f"to the wallet address, then retry with your transaction hash in the "
                 f"X-Payment-Proof header."
             ),
+            "sample_response": sample,
             "payment": {
                 "amount_usdc": str(pricing["amount_usdc"]),
                 "amount_base_units": pricing["amount_base_units"],

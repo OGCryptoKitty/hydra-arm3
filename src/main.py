@@ -427,6 +427,20 @@ async def mcp_json():
         return JSONResponse(status_code=404, content={"error": "mcp.json not found"})
 
 
+@app.get("/.well-known/agent.json", include_in_schema=False)
+async def a2a_agent_card():
+    """Serve Google A2A Agent Card for agent-to-agent discovery."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", ".well-known", "agent.json",
+    )
+    try:
+        with open(path) as f:
+            return _json.load(f)
+    except FileNotFoundError:
+        return JSONResponse(status_code=404, content={"error": "agent.json not found"})
+
+
 @app.get("/.well-known/ai-plugin.json", include_in_schema=False)
 async def ai_plugin_json():
     """Serve OpenAI/ChatGPT plugin manifest for agent discovery."""

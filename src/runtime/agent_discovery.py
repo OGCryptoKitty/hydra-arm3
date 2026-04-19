@@ -37,70 +37,51 @@ HYDRA_OPENAPI = f"{HYDRA_BASE_URL}/openapi.json"
 
 DISCOVERY_ENDPOINTS = [
     {
-        "name": "x402scan",
-        "url": "https://x402scan.com/api/submit",
-        "method": "POST",
-        "payload": {"url": HYDRA_BASE_URL},
-    },
-    {
-        "name": "x402_index",
-        "url": "https://x402-index.com/api/register",
-        "method": "POST",
-        "payload": {"url": HYDRA_BASE_URL, "manifest": HYDRA_MANIFEST},
-    },
-    {
-        "name": "402_index",
-        "url": "https://402index.com/api/submit",
+        "name": "x402_org_registry",
+        "url": "https://x402.org/api/services",
         "method": "POST",
         "payload": {
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
-            "protocol": "x402",
             "name": "HYDRA Regulatory Intelligence",
-            "description": "Real-time regulatory intelligence for prediction markets. 22 paid endpoints from $0.001 USDC.",
+            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
         },
     },
     {
-        "name": "glama_mcp",
-        "url": "https://glama.ai/api/mcp/servers",
+        "name": "x402scan",
+        "url": "https://x402scan.com/api/submit",
+        "method": "POST",
+        "payload": {"url": HYDRA_BASE_URL, "manifest": HYDRA_MANIFEST},
+    },
+    {
+        "name": "mcp_so",
+        "url": "https://mcp.so/api/servers",
         "method": "POST",
         "payload": {
-            "url": HYDRA_BASE_URL,
+            "url": f"{HYDRA_BASE_URL}/mcp",
             "name": "HYDRA Regulatory Intelligence",
+            "description": "x402-paid regulatory intelligence MCP server. SEC/CFTC/Fed monitoring, prediction market signals, oracle data.",
             "openapi_url": HYDRA_OPENAPI,
+            "transport": "streamable-http",
         },
     },
-    {
-        "name": "smithery",
-        "url": "https://smithery.ai/api/servers/register",
-        "method": "POST",
-        "payload": {
-            "url": HYDRA_BASE_URL,
-            "name": "hydra-regulatory-intelligence",
-            "description": "x402 regulatory intelligence API — prediction market signals, FOMC data, oracle feeds",
-        },
-    },
-    {
-        "name": "mpp_dev",
-        "url": "https://mpp.dev/api/services/register",
-        "method": "POST",
-        "payload": {
-            "url": HYDRA_BASE_URL,
-            "name": "HYDRA Regulatory Intelligence",
-            "description": "22 paid API endpoints — regulatory signals, FOMC data, oracle feeds, utilities. $0.001-$50 USDC per call via x402.",
-            "protocols": ["mpp", "x402"],
-            "openapi_url": HYDRA_OPENAPI,
-        },
-    },
+]
+
+SELF_VERIFICATION_ENDPOINTS = [
+    f"{HYDRA_BASE_URL}/.well-known/x402.json",
+    f"{HYDRA_BASE_URL}/.well-known/agent.json",
+    f"{HYDRA_BASE_URL}/.well-known/mcp.json",
+    f"{HYDRA_BASE_URL}/.well-known/llms.txt",
+    f"{HYDRA_BASE_URL}/openapi.json",
+    f"{HYDRA_BASE_URL}/health",
 ]
 
 
 async def register_with_discovery_services() -> dict[str, Any]:
     """
-    Attempt to register HYDRA with all known x402 discovery services.
+    Register HYDRA with x402 discovery services and verify self-hosted manifests.
 
-    Returns a dict of service_name → result. Failures are non-fatal
-    (services may not exist yet or may have different APIs).
+    Returns a dict of service_name → result. Failures are non-fatal.
     """
     results: dict[str, Any] = {}
 
@@ -122,6 +103,14 @@ async def register_with_discovery_services() -> dict[str, Any]:
             except httpx.RequestError as exc:
                 results[name] = {"status": "unreachable", "success": False, "error": str(type(exc).__name__)}
                 logger.debug("Discovery service %s unreachable: %s", name, exc)
+
+        for url in SELF_VERIFICATION_ENDPOINTS:
+            ep_name = url.split("onrender.com")[-1]
+            try:
+                resp = await client.get(url)
+                results[f"self:{ep_name}"] = {"status": resp.status_code, "ok": resp.status_code == 200}
+            except Exception as exc:
+                results[f"self:{ep_name}"] = {"status": "error", "ok": False}
 
         try:
             manifest_resp = await client.get(f"{HYDRA_BASE_URL}/.well-known/x402.json")
