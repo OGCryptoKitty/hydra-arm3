@@ -83,6 +83,9 @@
     "docs": "https://hydra-api-nlnj.onrender.com/docs",
     "x402Manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
     "mcpManifest": "https://hydra-api-nlnj.onrender.com/.well-known/mcp.json",
-    "mcpServer": "https://hydra-api-nlnj.onrender.com/mcp"
+    "mcpServer": "https://hydra-api-nlnj.onrender.com/mcp",
+    "aiPlugin": "https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json",
+    "llmsTxt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
+    "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml"
   }
 }

@@ -21,21 +21,25 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               names: [
+                'mcp-server',
+                'mcp',
+                'model-context-protocol',
+                'x402',
                 'prediction-markets',
                 'polymarket',
                 'kalshi',
-                'regulatory-api',
-                'x402-payments',
+                'regulatory-intelligence',
                 'usdc',
                 'base-l2',
                 'fomc',
                 'defi-oracle',
-                'ai-powered',
                 'micropayments',
-                'regulatory-intelligence',
-                'federal-reserve',
                 'uma-oracle',
-                'chainlink'
+                'chainlink',
+                'a2a',
+                'agent-to-agent',
+                'fastapi',
+                'regulatory-api'
               ]
             });
             console.log('Repository topics set successfully');

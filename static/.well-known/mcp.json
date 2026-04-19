@@ -46,7 +46,11 @@
   "discovery": {
     "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
     "x402_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
+    "a2a_agent_card": "https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json",
+    "ai_plugin": "https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json",
     "agents_json": "https://hydra-api-nlnj.onrender.com/.well-known/agents.json",
+    "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
+    "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml",
     "docs": "https://hydra-api-nlnj.onrender.com/docs"
   },
   "tags": ["regulatory", "prediction-markets", "oracle", "x402", "defi"]

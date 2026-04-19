@@ -50,7 +50,11 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 
 ## Integration
 
+- **MCP Server**: `https://hydra-api-nlnj.onrender.com/mcp` (Model Context Protocol, streamable HTTP)
 - **OpenAPI**: `https://hydra-api-nlnj.onrender.com/openapi.json`
 - **x402 Manifest**: `https://hydra-api-nlnj.onrender.com/.well-known/x402.json`
-- **MCP Server**: `https://hydra-api-nlnj.onrender.com/mcp` (Model Context Protocol)
+- **A2A Agent Card**: `https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json` (Google A2A v0.3)
+- **AI Plugin**: `https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json`
+- **MCP Manifest**: `https://hydra-api-nlnj.onrender.com/.well-known/mcp.json`
 - **Interactive Docs**: `https://hydra-api-nlnj.onrender.com/docs`
+- **GitHub**: `https://github.com/OGCryptoKitty/hydra-arm3`

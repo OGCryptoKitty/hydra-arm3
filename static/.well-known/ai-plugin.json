@@ -3,7 +3,7 @@
   "name_for_human": "HYDRA Regulatory Intelligence",
   "name_for_model": "hydra_regulatory",
   "description_for_human": "AI-powered regulatory analysis for prediction market traders. Real-time FOMC signals, SEC enforcement tracking, and regulatory event feeds.",
-  "description_for_model": "Access regulatory intelligence for prediction markets. Use /v1/markets/discovery (free) to see all tracked markets, /v1/fed/calendar (free) for FOMC dates, /v1/markets/sample (free) for sample signal data. Paid endpoints require USDC payment on Base L2 via x402 protocol — call any paid endpoint to receive payment instructions in the 402 response.",
+  "description_for_model": "Access regulatory intelligence for prediction markets. Use /v1/markets (free) to list active regulatory markets, /v1/markets/discovery (free) to see all tracked markets and onboarding steps, /pricing (free) for full pricing table. Paid endpoints require USDC payment on Base L2 via x402 protocol — call any paid endpoint to receive payment instructions in the 402 response. MCP server available at /mcp for tool-based access.",
   "auth": {
     "type": "none"
   },
