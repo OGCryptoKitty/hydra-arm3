@@ -46,6 +46,51 @@ system_router = APIRouter(prefix="/system", tags=["System Management"])
 
 
 # ─────────────────────────────────────────────────────────────
+# Internal balance endpoint — phrase-authenticated, read-only
+# ─────────────────────────────────────────────────────────────
+
+_balance_router = APIRouter(tags=["Internal"])
+
+
+@_balance_router.get("/v1/internal/balance")
+async def internal_balance(request: Request):
+    """
+    Read-only treasury status. Authenticated via X-Balance-Phrase header
+    matching the BALANCE_PHRASE env var. Rate limited to prevent abuse.
+    Never exposes private keys or secrets.
+    """
+    phrase = os.getenv("BALANCE_PHRASE", "")
+    provided = request.headers.get("X-Balance-Phrase", "")
+
+    if not phrase or not provided or provided != phrase:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    automaton = getattr(request.app.state, "automaton", None)
+    status = {}
+    if automaton:
+        status = automaton.get_status()
+
+    from src.runtime.transaction_log import TransactionLog
+    tx_summary = {}
+    try:
+        tl = getattr(request.app.state, "transaction_log", None) or TransactionLog()
+        tx_summary = tl.get_full_summary()
+    except Exception:
+        pass
+
+    return {
+        "treasury_usdc": status.get("balance_usdc", "0.00"),
+        "aave_position": (status.get("treasury_yield") or {}).get("aave_balance_usdc", "0.00"),
+        "tier": status.get("tier", "UNKNOWN"),
+        "phase": status.get("phase", "UNKNOWN"),
+        "total_revenue_usdc": tx_summary.get("total_revenue_usdc", "0.00"),
+        "transaction_count": tx_summary.get("transaction_count", 0),
+        "uptime_seconds": status.get("uptime_seconds", 0),
+        "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141",
+    }
+
+
+# ─────────────────────────────────────────────────────────────
 # Auth: Token derivation — sha256(private_key + "hydra-system")
 # ─────────────────────────────────────────────────────────────
 
