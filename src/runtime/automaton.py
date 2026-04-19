@@ -393,9 +393,11 @@ class HydraAutomaton:
             logger.error("[AUTOMATON] Marketing loop failed: %s", exc, exc_info=True)
 
         try:
-            from .agent_discovery import register_with_discovery_services
+            from .agent_discovery import register_with_discovery_services, ping_search_engines
             discovery_results = await register_with_discovery_services()
             logger.info("[AUTOMATON] Discovery registration: %s", discovery_results)
+            ping_results = await ping_search_engines()
+            logger.info("[AUTOMATON] Search engine pings: %s", ping_results)
         except Exception as exc:  # noqa: BLE001
             logger.debug("[AUTOMATON] Discovery registration skipped: %s", exc)
 

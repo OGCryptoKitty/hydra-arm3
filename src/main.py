@@ -428,8 +428,9 @@ async def mcp_json():
 
 
 @app.get("/.well-known/agent.json", include_in_schema=False)
+@app.get("/.well-known/agent-card.json", include_in_schema=False)
 async def a2a_agent_card():
-    """Serve Google A2A Agent Card for agent-to-agent discovery."""
+    """Serve Google A2A Agent Card at both legacy and v0.3 spec paths."""
     path = _os.path.join(
         _os.path.dirname(_os.path.dirname(__file__)),
         "static", ".well-known", "agent.json",

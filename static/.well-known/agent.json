@@ -4,6 +4,7 @@
   "url": "https://hydra-api-nlnj.onrender.com",
   "version": "1.0.0",
   "protocol": "a2a",
+  "protocolVersion": "0.3.0",
   "capabilities": {
     "streaming": false,
     "pushNotifications": false,

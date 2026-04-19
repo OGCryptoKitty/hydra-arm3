@@ -1,25 +1,31 @@
 """
-HYDRA Arm 3 — Agent Discovery & Registration
+HYDRA Arm 3 — Agent Discovery & Distribution Engine
 
-Autonomous registration with ALL known AI agent discovery services.
-Runs on startup and every 24 hours to ensure HYDRA is discoverable
-by AI agents across every major directory and protocol.
+Autonomous registration and discovery maximization. Runs every 24 hours
+via HydraAutomaton heartbeat. Zero human involvement.
 
-Discovery channels (zero API keys, HTTP-only):
+Distribution channels:
   x402 ecosystem:
-    - x402 Bazaar (Coinbase CDP) — auto-catalog via facilitator on first payment
-    - x402scan.com — open x402 crawler/registry
-    - x402-index — autonomous x402 service indexer
-    - 402 Index — largest paid API directory (15,000+ endpoints, L402+x402+MPP)
-  MCP directories:
-    - Glama (21,500+ MCP servers)
-    - Smithery (7,000+ MCP servers)
-    - MCP.so (19,700+ servers)
-  Agent marketplaces:
-    - Fetch.ai Agentverse (2.7M registered agents)
+    - x402.org registry — official Linux Foundation x402 registry
+    - x402scan.com — open x402 crawler
+    - x402list.fun — community x402 directory
+    - x402-list.com — x402 service listing
+  MCP directories (auto-indexed from GitHub repo):
+    - Glama (auto-indexes from README.md MCP metadata)
+    - Smithery (auto-indexes from smithery.yaml in repo root)
+    - mcp.so — community-submitted MCP servers
+  Agent discovery protocols:
+    - Google A2A — /.well-known/agent.json
+    - MCP — /.well-known/mcp.json
+    - x402 — /.well-known/x402.json
+    - llms.txt — /.well-known/llms.txt
+    - AI Plugin — /.well-known/ai-plugin.json
+  Search engine pinging:
+    - Google sitemap ping
+    - Bing IndexNow
+    - Yandex sitemap ping
   Self-verification:
-    - /.well-known/x402.json manifest check
-    - /docs OpenAPI spec availability
+    - All 8 discovery manifests verified on each cycle
 """
 
 from __future__ import annotations
@@ -65,13 +71,38 @@ DISCOVERY_ENDPOINTS = [
             "transport": "streamable-http",
         },
     },
+    {
+        "name": "x402list_fun",
+        "url": "https://x402list.fun/api/submit",
+        "method": "POST",
+        "payload": {"url": HYDRA_BASE_URL, "manifest": HYDRA_MANIFEST},
+    },
+    {
+        "name": "x402_list_com",
+        "url": "https://x402-list.com/api/submit",
+        "method": "POST",
+        "payload": {"url": HYDRA_BASE_URL, "manifest": HYDRA_MANIFEST},
+    },
+    {
+        "name": "the402_ai",
+        "url": "https://the402.ai/v1/register",
+        "method": "POST",
+        "payload": {
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "name": "HYDRA Regulatory Intelligence",
+            "category": "Intelligence",
+        },
+    },
 ]
 
 SELF_VERIFICATION_ENDPOINTS = [
     f"{HYDRA_BASE_URL}/.well-known/x402.json",
     f"{HYDRA_BASE_URL}/.well-known/agent.json",
+    f"{HYDRA_BASE_URL}/.well-known/agent-card.json",
     f"{HYDRA_BASE_URL}/.well-known/mcp.json",
     f"{HYDRA_BASE_URL}/.well-known/llms.txt",
+    f"{HYDRA_BASE_URL}/.well-known/ai-plugin.json",
     f"{HYDRA_BASE_URL}/openapi.json",
     f"{HYDRA_BASE_URL}/health",
 ]
@@ -125,23 +156,55 @@ async def register_with_discovery_services() -> dict[str, Any]:
     return results
 
 
+async def ping_search_engines() -> dict[str, Any]:
+    """
+    Notify search engines that HYDRA's sitemap and OpenAPI spec exist.
+    Google and Bing will crawl and index these URLs.
+    """
+    results: dict[str, Any] = {}
+    sitemap_url = f"{HYDRA_BASE_URL}/sitemap.xml"
+    openapi_url = f"{HYDRA_BASE_URL}/openapi.json"
+
+    ping_targets = [
+        ("google_sitemap", f"https://www.google.com/ping?sitemap={sitemap_url}"),
+        ("bing_sitemap", f"https://www.bing.com/ping?sitemap={sitemap_url}"),
+        ("yandex_sitemap", f"https://webmaster.yandex.com/ping?sitemap={sitemap_url}"),
+    ]
+
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        for name, url in ping_targets:
+            try:
+                resp = await client.get(url)
+                results[name] = {"status": resp.status_code, "ok": resp.status_code < 400}
+                logger.info("Search engine ping %s: HTTP %d", name, resp.status_code)
+            except Exception as exc:
+                results[name] = {"status": "error", "ok": False}
+                logger.debug("Search engine ping %s failed: %s", name, exc)
+
+    return results
+
+
 async def verify_deployment_health() -> dict[str, Any]:
     """
-    Verify HYDRA is live and responding correctly on Render.
-    Checks health, pricing, and free discovery endpoints.
+    Verify HYDRA is live and all discovery manifests are serving.
     """
     checks: dict[str, Any] = {}
 
     async with httpx.AsyncClient(timeout=15.0) as client:
-        for endpoint in ["/health", "/pricing", "/v1/markets", "/v1/util", "/.well-known/x402.json"]:
+        for endpoint in SELF_VERIFICATION_ENDPOINTS + [
+            f"{HYDRA_BASE_URL}/v1/markets",
+            f"{HYDRA_BASE_URL}/pricing",
+            f"{HYDRA_BASE_URL}/mcp",
+        ]:
+            ep_name = endpoint.split("onrender.com")[-1] if "onrender.com" in endpoint else endpoint
             try:
-                resp = await client.get(f"{HYDRA_BASE_URL}{endpoint}")
-                checks[endpoint] = {
+                resp = await client.get(endpoint)
+                checks[ep_name] = {
                     "status": resp.status_code,
                     "ok": resp.status_code == 200,
                     "size_bytes": len(resp.content),
                 }
             except Exception as exc:
-                checks[endpoint] = {"status": "error", "ok": False, "error": str(exc)[:100]}
+                checks[ep_name] = {"status": "error", "ok": False, "error": str(exc)[:100]}
 
     return checks

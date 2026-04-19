@@ -6,6 +6,53 @@ Production-ready regulatory intelligence API. Pay-per-use in **USDC on Base** vi
 
 **Live:** [hydra-api-nlnj.onrender.com](https://hydra-api-nlnj.onrender.com) | **Docs:** [/docs](https://hydra-api-nlnj.onrender.com/docs) | **x402 Discovery:** [/.well-known/x402.json](https://hydra-api-nlnj.onrender.com/.well-known/x402.json)
 
+## MCP Server
+
+HYDRA exposes all 22 paid + 12 free endpoints as MCP tools via [Model Context Protocol](https://modelcontextprotocol.io).
+
+**Server URL:** `https://hydra-api-nlnj.onrender.com/mcp`
+**Transport:** Streamable HTTP
+**Manifest:** [/.well-known/mcp.json](https://hydra-api-nlnj.onrender.com/.well-known/mcp.json)
+
+```json
+{
+  "mcpServers": {
+    "hydra": {
+      "url": "https://hydra-api-nlnj.onrender.com/mcp"
+    }
+  }
+}
+```
+
+### MCP Tools (22 paid + 12 free)
+
+| Tool | Price | Description |
+|------|-------|-------------|
+| `crypto_price` | $0.001 | Token price, 24h change, market cap |
+| `gas_prices` | $0.001 | Base L2 gas prices with cost estimates |
+| `wallet_balance` | $0.001 | ETH and USDC balance on Base |
+| `tx_status` | $0.001 | Transaction receipt lookup |
+| `parse_rss` | $0.002 | RSS/Atom feed to structured JSON |
+| `scrape_url` | $0.005 | URL to clean structured text |
+| `batch_utility` | $0.01 | Batch up to 5 utility calls |
+| `market_feed` | $0.10 | Last 10 regulatory events for prediction markets |
+| `market_events` | $0.50 | Classified regulatory events by agency |
+| `regulatory_changes` | $1.00 | Recent classified regulatory changes |
+| `regulatory_query` | $1.00 | Regulatory Q&A with statutory citations |
+| `regulatory_scan` | $2.00 | Full regulatory risk scan |
+| `market_signal` | $2.00 | Scored regulatory signal for one market |
+| `regulatory_jurisdiction` | $3.00 | Jurisdiction comparison with cost modeling |
+| `fed_signal` | $5.00 | Pre-FOMC signal with rate probabilities |
+| `market_signals` | $5.00 | Bulk scored signals for all markets |
+| `oracle_uma` | $5.00 | UMA Optimistic Oracle assertion data |
+| `oracle_chainlink` | $5.00 | Chainlink External Adapter response |
+| `alpha_report` | $10.00 | Premium alpha with Kelly sizing |
+| `fed_decision` | $25.00 | Real-time FOMC decision classification |
+| `market_resolution` | $25.00 | Resolution verdict for market settlement |
+| `fed_resolution` | $50.00 | FOMC resolution verdict for oracle submission |
+
+Payment: USDC on Base (chain 8453) via x402 protocol.
+
 ## Endpoints &amp; Pricing
 
 ### Regulatory Intelligence
@@ -135,10 +182,17 @@ docker-compose up
 
 ## Discovery
 
-- **AI Plugins**: `/.well-known/ai-plugin.json` (ChatGPT, Claude, Copilot)
-- **x402 Protocol**: `/.well-known/x402.json`
-- **OpenAPI**: `/openapi.json`
-- **APIs.json**: `/static/apis.json`
+| Protocol | URL |
+|----------|-----|
+| **x402 Manifest** | [`/.well-known/x402.json`](https://hydra-api-nlnj.onrender.com/.well-known/x402.json) |
+| **MCP Manifest** | [`/.well-known/mcp.json`](https://hydra-api-nlnj.onrender.com/.well-known/mcp.json) |
+| **MCP Server** | [`/mcp`](https://hydra-api-nlnj.onrender.com/mcp) |
+| **A2A Agent Card** | [`/.well-known/agent.json`](https://hydra-api-nlnj.onrender.com/.well-known/agent.json) |
+| **LLMs.txt** | [`/.well-known/llms.txt`](https://hydra-api-nlnj.onrender.com/.well-known/llms.txt) |
+| **AI Plugin** | [`/.well-known/ai-plugin.json`](https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json) |
+| **OpenAPI** | [`/openapi.json`](https://hydra-api-nlnj.onrender.com/openapi.json) |
+| **APIs.json** | [`/apis.json`](https://hydra-api-nlnj.onrender.com/apis.json) |
+| **Sitemap** | [`/sitemap.xml`](https://hydra-api-nlnj.onrender.com/sitemap.xml) |
 
 ## License
 
