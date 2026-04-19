@@ -31,25 +31,21 @@ jobs:
           BRANCH="add-hydra-regulatory-intelligence"
           FORK_OWNER=$(gh api user --jq '.login')
 
-          # Skip if PR exists
           EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq 'length' 2>/dev/null || echo "0")
           if [ "$EXISTING" != "0" ]; then
             echo "PR already exists — skipping"
             exit 0
           fi
 
-          # Fork
           gh repo fork "$REPO" --clone=false 2>/dev/null || echo "Fork exists or created"
           sleep 10
 
-          # Clone the fork
           git clone "https://x-access-token:${GH_TOKEN}@github.com/${FORK_OWNER}/awesome-mcp-servers.git" --depth 1
           cd awesome-mcp-servers
 
           git config user.name "$FORK_OWNER"
           git config user.email "${FORK_OWNER}@users.noreply.github.com"
 
-          # Sync fork with upstream
           git remote add upstream "https://github.com/${REPO}.git"
           git fetch upstream --depth 1
           DEFAULT_BRANCH=$(git remote show upstream | grep 'HEAD branch' | awk '{print $NF}')
@@ -62,25 +58,21 @@ jobs:
             exit 0
           fi
 
-          # Add entry
           python3 << 'PYEOF'
           import re
           with open("README.md") as f:
               content = f.read()
-
-          entry = "- [HYDRA Regulatory Intelligence](https://github.com/OGCryptoKitty/hydra-arm3) 🐍 - Real-time SEC/CFTC/Fed regulatory risk scoring, FOMC signals, and prediction market data. 22 x402-paid endpoints on Base L2. ☁️"
-
+          entry = "- [HYDRA Regulatory Intelligence](https://github.com/OGCryptoKitty/hydra-arm3) - Real-time SEC/CFTC/Fed regulatory risk scoring, FOMC signals, and prediction market data. 22 x402-paid endpoints on Base L2."
           for pat in [r"(###?\s*Finance[^\n]*\n(?:[-*] \[.*\n)*)", r"(###?\s*Financial[^\n]*\n(?:[-*] \[.*\n)*)"]:
               m = re.search(pat, content, re.IGNORECASE)
               if m:
                   section = m.group(1)
                   content = content.replace(section, section.rstrip("\n") + "\n" + entry + "\n")
-                  print(f"Inserted into existing section")
+                  print("Inserted into existing section")
                   break
           else:
               content = content.rstrip() + "\n\n### Finance & Fintech\n\n" + entry + "\n"
               print("Created new section")
-
           with open("README.md", "w") as f:
               f.write(content)
           PYEOF
@@ -89,17 +81,21 @@ jobs:
           git commit -m "Add HYDRA Regulatory Intelligence"
           git push -f origin "$BRANCH"
 
+          cat > /tmp/pr_body.txt << 'PRBODY'
+          Adds HYDRA Regulatory Intelligence MCP server to the Finance & Fintech section.
+
+          Server URL: https://hydra-api-nlnj.onrender.com/mcp
+          Transport: Streamable HTTP
+          Tools: 22 paid + 12 free (regulatory scan, FOMC signals, prediction market data, oracle feeds)
+          Payment: USDC on Base via x402 ($0.001-$50)
+          GitHub: https://github.com/OGCryptoKitty/hydra-arm3
+          PRBODY
+
           gh pr create \
             --repo "$REPO" \
             --head "$FORK_OWNER:$BRANCH" \
             --title "Add HYDRA Regulatory Intelligence" \
-            --body "Adds HYDRA Regulatory Intelligence MCP server.
-
-- **Server URL:** \`https://hydra-api-nlnj.onrender.com/mcp\`
-- **Transport:** Streamable HTTP
-- **Tools:** 22 paid + 12 free
-- **Payment:** USDC on Base via x402 (\$0.001-\$50)
-- **GitHub:** https://github.com/OGCryptoKitty/hydra-arm3"
+            --body-file /tmp/pr_body.txt
 
           echo "PR submitted to $REPO"
 
@@ -156,26 +152,25 @@ jobs:
             exit 0
           fi
 
-          ENTRY="- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data for AI agents. 22 paid endpoints (\$0.001-\$50 USDC) on Base via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))"
           echo "" >> README.md
-          echo "$ENTRY" >> README.md
+          echo "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data. 22 paid endpoints via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))" >> README.md
 
           git add README.md
           git commit -m "Add HYDRA Regulatory Intelligence"
           git push -f origin "$BRANCH"
 
+          cat > /tmp/pr_body.txt << 'PRBODY'
+          HYDRA: 22 x402-paid regulatory intelligence endpoints on Base L2.
+          SEC/CFTC/Fed/FinCEN monitoring, prediction market signals, FOMC data.
+          Live: https://hydra-api-nlnj.onrender.com
+          x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json
+          PRBODY
+
           gh pr create \
             --repo "$REPO" \
             --head "$FORK_OWNER:$BRANCH" \
             --title "Add HYDRA Regulatory Intelligence" \
-            --body "HYDRA: 22 x402-paid regulatory intelligence endpoints on Base L2.
-
-- SEC/CFTC/Fed/FinCEN monitoring and risk scoring
-- Prediction market signals (Polymarket, Kalshi)
-- FOMC decision classification and rate probabilities
-
-Live: https://hydra-api-nlnj.onrender.com
-x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
+            --body-file /tmp/pr_body.txt
 
           echo "PR submitted to $REPO"
 
@@ -232,9 +227,8 @@ x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
             exit 0
           fi
 
-          ENTRY="- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data for AI agents. 22 paid endpoints (\$0.001-\$50 USDC) on Base via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))"
           echo "" >> README.md
-          echo "$ENTRY" >> README.md
+          echo "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data. 22 paid endpoints via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))" >> README.md
 
           git add README.md
           git commit -m "Add HYDRA Regulatory Intelligence"
