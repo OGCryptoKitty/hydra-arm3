@@ -1,0 +1,43 @@
+{
+  "name": "HYDRA Regulatory Intelligence",
+  "description": "Autonomous regulatory intelligence API for prediction markets. 22 paid endpoints from $0.001 USDC via x402 on Base L2. SEC, CFTC, Fed, FinCEN monitoring with oracle data for UMA and Chainlink.",
+  "version": "1.0.0",
+  "type": "agent",
+  "service": {
+    "endpoints": {
+      "api": "https://hydra-api-nlnj.onrender.com",
+      "mcp": "https://hydra-api-nlnj.onrender.com/mcp",
+      "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
+      "docs": "https://hydra-api-nlnj.onrender.com/docs"
+    },
+    "transport": ["http", "mcp-streamable-http"]
+  },
+  "pricing": {
+    "currency": "USDC",
+    "network": "eip155:8453",
+    "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "payment_protocol": "x402",
+    "tiers": [
+      {"name": "utility", "range": "$0.001 - $0.01", "endpoints": 7},
+      {"name": "micro", "range": "$0.10 - $0.50", "endpoints": 2},
+      {"name": "standard", "range": "$1.00 - $5.00", "endpoints": 9},
+      {"name": "premium", "range": "$10.00 - $50.00", "endpoints": 4}
+    ]
+  },
+  "capabilities": [
+    "regulatory-scanning",
+    "prediction-market-signals",
+    "fed-fomc-intelligence",
+    "oracle-resolution-data",
+    "web-scraping",
+    "crypto-price-data",
+    "gas-estimation"
+  ],
+  "tags": ["regulatory", "prediction-markets", "x402", "oracle", "defi", "compliance"],
+  "links": {
+    "github": "https://github.com/OGCryptoKitty/hydra-arm3",
+    "x402_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
+    "a2a_agent_card": "https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json",
+    "mcp_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/mcp.json"
+  }
+}

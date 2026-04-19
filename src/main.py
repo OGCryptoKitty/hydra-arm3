@@ -42,6 +42,7 @@ from src.api.prediction_routes import prediction_router
 from src.api.system_routes import system_router, _balance_router
 from src.api.fed_routes import fed_router
 from src.api.utility_routes import utility_router
+from src.api.mpp import mpp_router
 from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -346,6 +347,9 @@ app.include_router(utility_router)
 
 # System management endpoints (prefix="" — routes already carry /system/ prefix)
 app.include_router(system_router, prefix="")
+
+# MPP discovery and status endpoints
+app.include_router(mpp_router)
 
 # Internal monitoring endpoint (phrase-authenticated, read-only)
 app.include_router(_balance_router)

@@ -1,0 +1,5 @@
+httpx>=0.28.0
+python-dotenv>=1.0.1
+x402-payment-harness>=1.0.1
+x402[evm]>=2.6.0
+eth-account>=0.13.0

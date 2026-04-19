@@ -48,6 +48,39 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `POST /v1/fed/decision` ($25.00) — Real-time FOMC decision classification within 30 seconds.
 - `POST /v1/fed/resolution` ($50.00) — FOMC resolution verdict with full evidence chain for oracle submission.
 
+## Payment Methods
+
+Three ways to pay for HYDRA endpoints:
+
+1. **x402 Protocol** (recommended) — Use any x402-compatible client. The server returns HTTP 402 with payment instructions. Send USDC on Base (chain 8453) to `0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141`. The x402 facilitator at `https://x402.org/facilitator` handles verification.
+2. **Direct Payment Proof** — Send USDC manually, then include the transaction hash in the `X-Payment-Proof` header.
+3. **MPP (Machine Payments Protocol)** — Session-based micropayments via Stripe/Tempo. Include `Authorization: Payment <credential>` header.
+
+## Agent Use Cases
+
+- **Prediction market trading**: Get scored regulatory signals before placing trades on Polymarket or Kalshi
+- **FOMC event trading**: Pre-decision signals with rate probabilities, real-time classification within 30 seconds of release
+- **Compliance monitoring**: Scan DeFi protocols against SEC, CFTC, FinCEN frameworks
+- **Oracle resolution**: Generate UMA Optimistic Oracle assertions or Chainlink External Adapter responses with evidence chains
+- **Regulatory research**: Q&A with statutory citations across 6 federal agencies
+- **Utility tooling**: Web scraping, crypto prices, gas estimates, RSS parsing — high-volume, low-cost agent tools
+
+## Quick Test
+
+```bash
+# 1. Check health (free)
+curl -s https://hydra-api-nlnj.onrender.com/health | python3 -m json.tool
+
+# 2. Browse prediction markets (free)
+curl -s https://hydra-api-nlnj.onrender.com/v1/markets | python3 -m json.tool
+
+# 3. View all pricing (free)
+curl -s https://hydra-api-nlnj.onrender.com/pricing | python3 -m json.tool
+
+# 4. Trigger a 402 challenge (no payment — see payment instructions in response)
+curl -s https://hydra-api-nlnj.onrender.com/v1/util/crypto/price?token=ETH
+```
+
 ## Integration
 
 - **MCP Server**: `https://hydra-api-nlnj.onrender.com/mcp` (Model Context Protocol, streamable HTTP)
@@ -56,5 +89,21 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - **A2A Agent Card**: `https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json` (Google A2A v0.3)
 - **AI Plugin**: `https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json`
 - **MCP Manifest**: `https://hydra-api-nlnj.onrender.com/.well-known/mcp.json`
+- **Agents JSON**: `https://hydra-api-nlnj.onrender.com/.well-known/agents.json`
+- **LLMs.txt**: `https://hydra-api-nlnj.onrender.com/.well-known/llms.txt`
 - **Interactive Docs**: `https://hydra-api-nlnj.onrender.com/docs`
+- **Sitemap**: `https://hydra-api-nlnj.onrender.com/sitemap.xml`
 - **GitHub**: `https://github.com/OGCryptoKitty/hydra-arm3`
+
+## MCP Client Setup
+
+```bash
+# Claude Code
+claude mcp add --transport http hydra-regulatory https://hydra-api-nlnj.onrender.com/mcp
+
+# Claude Desktop — add to claude_desktop_config.json:
+# { "mcpServers": { "hydra-regulatory": { "url": "https://hydra-api-nlnj.onrender.com/mcp" } } }
+
+# .mcp.json (project-scoped)
+# { "hydra-regulatory": { "type": "http", "url": "https://hydra-api-nlnj.onrender.com/mcp" } }
+```

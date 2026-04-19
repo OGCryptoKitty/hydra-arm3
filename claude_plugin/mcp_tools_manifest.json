@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "name": "hydra-regulatory-intelligence",
+  "description": "HYDRA Regulatory Intelligence MCP tools for Claude Desktop and Claude Code",
+  "server_url": "https://hydra-api-nlnj.onrender.com/mcp",
+  "transport": "streamable-http",
+  "install": {
+    "claude_code": "claude mcp add --transport http hydra-regulatory https://hydra-api-nlnj.onrender.com/mcp",
+    "claude_desktop": {
+      "mcpServers": {
+        "hydra-regulatory": {
+          "url": "https://hydra-api-nlnj.onrender.com/mcp"
+        }
+      }
+    },
+    "mcp_json": {
+      "hydra-regulatory": {
+        "type": "http",
+        "url": "https://hydra-api-nlnj.onrender.com/mcp"
+      }
+    }
+  },
+  "payment": {
+    "protocol": "x402",
+    "network": "eip155:8453",
+    "token": "USDC",
+    "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
+  },
+  "tools_count": 22,
+  "free_tools": ["health_check", "pricing", "active_markets", "utility_discovery"],
+  "paid_tools_range": "$0.001 - $50.00 USDC"
+}

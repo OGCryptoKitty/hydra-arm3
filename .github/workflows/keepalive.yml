@@ -1,0 +1,15 @@
+name: Keep Alive
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping HYDRA health endpoint
+        run: |
+          curl -sf --retry 2 --retry-delay 5 \
+            https://hydra-api-nlnj.onrender.com/health \
+            -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n"
