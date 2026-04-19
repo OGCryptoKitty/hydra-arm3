@@ -112,6 +112,71 @@ DISCOVERY_ENDPOINTS = [
             "category": "Intelligence",
         },
     },
+    {
+        "name": "x402_discovery_api",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Regulatory Intelligence",
+            "url": f"{HYDRA_BASE_URL}/v1/regulatory/scan",
+            "price_usd": 2.00,
+            "category": "data",
+            "description": "Regulatory risk scoring for crypto/DeFi — SEC, CFTC, Fed, FinCEN frameworks",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_fed",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Fed Signal",
+            "url": f"{HYDRA_BASE_URL}/v1/fed/signal",
+            "price_usd": 5.00,
+            "category": "data",
+            "description": "Pre-FOMC signal with rate probabilities, speech analysis, economic indicators",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_price",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Crypto Price",
+            "url": f"{HYDRA_BASE_URL}/v1/util/crypto/price",
+            "price_usd": 0.001,
+            "category": "data",
+            "description": "Token price, 24h change, market cap — high-volume utility endpoint",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_scrape",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Web Scrape",
+            "url": f"{HYDRA_BASE_URL}/v1/util/scrape",
+            "price_usd": 0.005,
+            "category": "data",
+            "description": "URL to clean structured text — HTML parsed, scripts removed",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_oracle",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA UMA Oracle",
+            "url": f"{HYDRA_BASE_URL}/v1/oracle/uma",
+            "price_usd": 5.00,
+            "category": "data",
+            "description": "UMA Optimistic Oracle assertion data with evidence chain for market resolution",
+            "network": "base-mainnet",
+        },
+    },
 ]
 
 SELF_VERIFICATION_ENDPOINTS = [

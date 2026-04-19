@@ -592,7 +592,7 @@ class FedIntelligenceEngine:
             },
             {
                 "source": "HYDRA Rate Probability Model",
-                "url": "https://hydra-arm3.io/v1/fed/signal",
+                "url": "https://hydra-api-nlnj.onrender.com/v1/fed/signal",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "content": f"Model probabilities: HOLD={probs['hold']}, CUT_25={probs['cut_25']}, CUT_50={probs['cut_50']}, HIKE_25={probs['hike_25']}",
             },
