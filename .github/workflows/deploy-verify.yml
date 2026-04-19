@@ -3,6 +3,8 @@ name: Deploy & Verify HYDRA
 on:
   push:
     branches: [master]
+  schedule:
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
@@ -99,7 +101,27 @@ jobs:
           echo -n "GET  /.well-known/ai-plugin.json ... "
           curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/ai-plugin.json" --max-time 10
           echo ""
-          
+
+          echo -n "GET  /.well-known/mcp.json ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/mcp.json" --max-time 10
+          echo ""
+
+          echo -n "GET  /.well-known/agent.json ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/agent.json" --max-time 10
+          echo ""
+
+          echo -n "GET  /.well-known/agent-card.json ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/agent-card.json" --max-time 10
+          echo ""
+
+          echo -n "GET  /.well-known/llms.txt ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/llms.txt" --max-time 10
+          echo ""
+
+          echo -n "GET  /mcp (MCP server) ... "
+          curl -s -o /dev/null -w "%{http_code}" "$BASE/mcp" --max-time 10
+          echo ""
+
           echo -n "GET  /v1/markets (free discovery) ... "
           curl -s -o /dev/null -w "%{http_code}" "$BASE/v1/markets" --max-time 10
           echo ""
