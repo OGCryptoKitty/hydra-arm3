@@ -19,7 +19,11 @@
     "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
     "x402_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
     "mcp_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/mcp.json",
+    "mcp_server": "https://hydra-api-nlnj.onrender.com/mcp",
+    "a2a_agent_card": "https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json",
+    "ai_plugin": "https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json",
     "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
+    "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml",
     "docs": "https://hydra-api-nlnj.onrender.com/docs"
   },
   "workflows": [

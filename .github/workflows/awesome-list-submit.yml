@@ -5,120 +5,112 @@ on:
     - cron: '0 12 * * 1'
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   submit-awesome-mcp-servers:
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.GH_PAT }}
     steps:
-      - name: Check PAT availability
+      - name: Check PAT
         id: check
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "GH_PAT secret not set — skipping"
+            echo "GH_PAT not set"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "PAT available"
+            gh api user --jq '"Authenticated as: " + .login'
           fi
 
-      - name: Fork and submit to punkpeye/awesome-mcp-servers
+      - name: Submit to punkpeye/awesome-mcp-servers
         if: steps.check.outputs.skip == 'false'
         run: |
-          set -e
           REPO="punkpeye/awesome-mcp-servers"
           BRANCH="add-hydra-regulatory-intelligence"
           FORK_OWNER=$(gh api user --jq '.login')
-          echo "Authenticated as: $FORK_OWNER"
 
-          # Check if PR already exists
-          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
-            echo "PR #$EXISTING already exists — skipping"
+          # Skip if PR exists
+          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq 'length' 2>/dev/null || echo "0")
+          if [ "$EXISTING" != "0" ]; then
+            echo "PR already exists — skipping"
             exit 0
           fi
 
-          # Fork and clone
-          gh repo fork "$REPO" --clone -- --depth 1 || true
-          cd awesome-mcp-servers || { echo "Clone failed"; exit 1; }
+          # Fork
+          gh repo fork "$REPO" --clone=false 2>/dev/null || echo "Fork exists or created"
+          sleep 10
 
-          # Configure git
+          # Clone the fork
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${FORK_OWNER}/awesome-mcp-servers.git" --depth 1
+          cd awesome-mcp-servers
+
           git config user.name "$FORK_OWNER"
-          git config user.email "$FORK_OWNER@users.noreply.github.com"
+          git config user.email "${FORK_OWNER}@users.noreply.github.com"
 
-          # Create branch
+          # Sync fork with upstream
+          git remote add upstream "https://github.com/${REPO}.git"
+          git fetch upstream --depth 1
+          DEFAULT_BRANCH=$(git remote show upstream | grep 'HEAD branch' | awk '{print $NF}')
+          git reset --hard "upstream/${DEFAULT_BRANCH}"
+
           git checkout -b "$BRANCH"
 
-          # Check if already listed
           if grep -q "HYDRA Regulatory Intelligence" README.md; then
-            echo "HYDRA already listed — skipping"
+            echo "Already listed — skipping"
             exit 0
           fi
 
-          # Add entry — append to end of file as fallback
+          # Add entry
           python3 << 'PYEOF'
           import re
-
-          with open("README.md", "r") as f:
+          with open("README.md") as f:
               content = f.read()
 
           entry = "- [HYDRA Regulatory Intelligence](https://github.com/OGCryptoKitty/hydra-arm3) 🐍 - Real-time SEC/CFTC/Fed regulatory risk scoring, FOMC signals, and prediction market data. 22 x402-paid endpoints on Base L2. ☁️"
 
-          # Try Finance & Fintech section
-          patterns = [
-              r"(###?\s*Finance.*?\n(?:[-*] \[.*?\n)*)",
-              r"(###?\s*Financial.*?\n(?:[-*] \[.*?\n)*)",
-          ]
-          inserted = False
-          for pat in patterns:
-              match = re.search(pat, content, re.IGNORECASE)
-              if match:
-                  section = match.group(1)
+          for pat in [r"(###?\s*Finance[^\n]*\n(?:[-*] \[.*\n)*)", r"(###?\s*Financial[^\n]*\n(?:[-*] \[.*\n)*)"]:
+              m = re.search(pat, content, re.IGNORECASE)
+              if m:
+                  section = m.group(1)
                   content = content.replace(section, section.rstrip("\n") + "\n" + entry + "\n")
-                  inserted = True
-                  print(f"Inserted into section matching: {pat}")
+                  print(f"Inserted into existing section")
                   break
-
-          if not inserted:
+          else:
               content = content.rstrip() + "\n\n### Finance & Fintech\n\n" + entry + "\n"
-              print("Created new Finance & Fintech section")
+              print("Created new section")
 
           with open("README.md", "w") as f:
               f.write(content)
           PYEOF
 
-          # Commit and push
           git add README.md
           git commit -m "Add HYDRA Regulatory Intelligence"
-          git push -u origin "$BRANCH"
+          git push -f origin "$BRANCH"
 
-          # Create PR
           gh pr create \
             --repo "$REPO" \
             --head "$FORK_OWNER:$BRANCH" \
             --title "Add HYDRA Regulatory Intelligence" \
-            --body "Adds HYDRA Regulatory Intelligence MCP server to the Finance & Fintech section.
+            --body "Adds HYDRA Regulatory Intelligence MCP server.
 
 - **Server URL:** \`https://hydra-api-nlnj.onrender.com/mcp\`
 - **Transport:** Streamable HTTP
-- **Tools:** 22 paid + 12 free (regulatory scan, FOMC signals, prediction market data, oracle feeds)
-- **Payment:** USDC on Base via x402 protocol (\$0.001-\$50)
-- **Manifest:** https://hydra-api-nlnj.onrender.com/.well-known/mcp.json
+- **Tools:** 22 paid + 12 free
+- **Payment:** USDC on Base via x402 (\$0.001-\$50)
 - **GitHub:** https://github.com/OGCryptoKitty/hydra-arm3"
 
           echo "PR submitted to $REPO"
 
   submit-awesome-x402:
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.GH_PAT }}
     steps:
-      - name: Check PAT availability
+      - name: Check PAT
         id: check
         run: |
           if [ -z "$GH_TOKEN" ]; then
@@ -127,29 +119,40 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Fork and submit to xpaysh/awesome-x402
+      - name: Submit to xpaysh/awesome-x402
         if: steps.check.outputs.skip == 'false'
         run: |
-          set -e
           REPO="xpaysh/awesome-x402"
           BRANCH="add-hydra-regulatory-intelligence"
           FORK_OWNER=$(gh api user --jq '.login')
 
-          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq 'length' 2>/dev/null || echo "0")
+          if [ "$EXISTING" != "0" ]; then
             echo "PR already exists — skipping"
             exit 0
           fi
 
-          gh repo fork "$REPO" --clone -- --depth 1 || true
-          cd awesome-x402 || { echo "Clone failed — repo may not exist"; exit 0; }
+          gh repo fork "$REPO" --clone=false 2>/dev/null || echo "Fork exists"
+          sleep 10
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${FORK_OWNER}/awesome-x402.git" --depth 1 || {
+            echo "Repo does not exist or fork failed — skipping"
+            exit 0
+          }
+          cd awesome-x402
 
           git config user.name "$FORK_OWNER"
-          git config user.email "$FORK_OWNER@users.noreply.github.com"
+          git config user.email "${FORK_OWNER}@users.noreply.github.com"
+
+          git remote add upstream "https://github.com/${REPO}.git"
+          git fetch upstream --depth 1
+          DEFAULT_BRANCH=$(git remote show upstream | grep 'HEAD branch' | awk '{print $NF}')
+          git reset --hard "upstream/${DEFAULT_BRANCH}"
+
           git checkout -b "$BRANCH"
 
           if grep -q "HYDRA Regulatory Intelligence" README.md; then
-            echo "Already listed — skipping"
+            echo "Already listed"
             exit 0
           fi
 
@@ -159,20 +162,18 @@ jobs:
 
           git add README.md
           git commit -m "Add HYDRA Regulatory Intelligence"
-          git push -u origin "$BRANCH"
+          git push -f origin "$BRANCH"
 
           gh pr create \
             --repo "$REPO" \
             --head "$FORK_OWNER:$BRANCH" \
             --title "Add HYDRA Regulatory Intelligence" \
-            --body "HYDRA is a production x402 API serving 22 paid endpoints for regulatory intelligence.
+            --body "HYDRA: 22 x402-paid regulatory intelligence endpoints on Base L2.
 
 - SEC/CFTC/Fed/FinCEN monitoring and risk scoring
 - Prediction market signals (Polymarket, Kalshi)
 - FOMC decision classification and rate probabilities
-- UMA and Chainlink oracle data feeds
 
-Payment: \$0.001-\$50 USDC on Base (chain 8453)
 Live: https://hydra-api-nlnj.onrender.com
 x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
 
@@ -180,11 +181,12 @@ x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
 
   submit-awesome-x402-merit:
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.GH_PAT }}
     steps:
-      - name: Check PAT availability
+      - name: Check PAT
         id: check
         run: |
           if [ -z "$GH_TOKEN" ]; then
@@ -193,29 +195,40 @@ x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Fork and submit to Merit-Systems/awesome-x402
+      - name: Submit to Merit-Systems/awesome-x402
         if: steps.check.outputs.skip == 'false'
         run: |
-          set -e
           REPO="Merit-Systems/awesome-x402"
           BRANCH="add-hydra-regulatory-intelligence"
           FORK_OWNER=$(gh api user --jq '.login')
 
-          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+          EXISTING=$(gh pr list --repo "$REPO" --author "$FORK_OWNER" --json number --jq 'length' 2>/dev/null || echo "0")
+          if [ "$EXISTING" != "0" ]; then
             echo "PR already exists — skipping"
             exit 0
           fi
 
-          gh repo fork "$REPO" --clone -- --depth 1 || true
-          cd awesome-x402 || { echo "Clone failed — repo may not exist"; exit 0; }
+          gh repo fork "$REPO" --clone=false 2>/dev/null || echo "Fork exists"
+          sleep 10
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${FORK_OWNER}/awesome-x402.git" --depth 1 || {
+            echo "Repo does not exist or fork failed — skipping"
+            exit 0
+          }
+          cd awesome-x402
 
           git config user.name "$FORK_OWNER"
-          git config user.email "$FORK_OWNER@users.noreply.github.com"
+          git config user.email "${FORK_OWNER}@users.noreply.github.com"
+
+          git remote add upstream "https://github.com/${REPO}.git"
+          git fetch upstream --depth 1
+          DEFAULT_BRANCH=$(git remote show upstream | grep 'HEAD branch' | awk '{print $NF}')
+          git reset --hard "upstream/${DEFAULT_BRANCH}"
+
           git checkout -b "$BRANCH"
 
           if grep -q "HYDRA Regulatory Intelligence" README.md; then
-            echo "Already listed — skipping"
+            echo "Already listed"
             exit 0
           fi
 
@@ -225,7 +238,7 @@ x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
 
           git add README.md
           git commit -m "Add HYDRA Regulatory Intelligence"
-          git push -u origin "$BRANCH"
+          git push -f origin "$BRANCH"
 
           gh pr create \
             --repo "$REPO" \

@@ -1,3 +1,5 @@
+name: hydra-regulatory-intelligence
+description: "Real-time regulatory intelligence MCP server. SEC/CFTC/Fed monitoring, prediction market signals, oracle data. 22 x402-paid endpoints on Base L2."
 startCommand:
   type: http
   configSchema:

@@ -59,7 +59,12 @@ DISCOVERY_ENDPOINTS = [
         "name": "x402scan",
         "url": "https://x402scan.com/api/submit",
         "method": "POST",
-        "payload": {"url": HYDRA_BASE_URL, "manifest": HYDRA_MANIFEST},
+        "payload": {
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "name": "HYDRA Regulatory Intelligence",
+            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
+        },
     },
     {
         "name": "mcp_so",
@@ -67,6 +72,7 @@ DISCOVERY_ENDPOINTS = [
         "method": "POST",
         "payload": {
             "url": f"{HYDRA_BASE_URL}/mcp",
+            "manifest": HYDRA_MANIFEST,
             "name": "HYDRA Regulatory Intelligence",
             "description": "x402-paid regulatory intelligence MCP server. SEC/CFTC/Fed monitoring, prediction market signals, oracle data.",
             "openapi_url": HYDRA_OPENAPI,
@@ -77,13 +83,23 @@ DISCOVERY_ENDPOINTS = [
         "name": "x402list_fun",
         "url": "https://x402list.fun/api/submit",
         "method": "POST",
-        "payload": {"url": HYDRA_BASE_URL, "manifest": HYDRA_MANIFEST},
+        "payload": {
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "name": "HYDRA Regulatory Intelligence",
+            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
+        },
     },
     {
         "name": "x402_list_com",
         "url": "https://x402-list.com/api/submit",
         "method": "POST",
-        "payload": {"url": HYDRA_BASE_URL, "manifest": HYDRA_MANIFEST},
+        "payload": {
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "name": "HYDRA Regulatory Intelligence",
+            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
+        },
     },
     {
         "name": "the402_ai",
