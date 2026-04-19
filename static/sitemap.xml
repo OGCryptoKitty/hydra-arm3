@@ -9,6 +9,8 @@
   <url><loc>https://hydra-api-nlnj.onrender.com/metrics</loc><changefreq>always</changefreq><priority>0.6</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/x402.json</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/mcp.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agent.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agents.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/llms.txt</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -17,4 +19,5 @@
   <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/discovery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/pricing</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/v1/util</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/mcp</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
 </urlset>

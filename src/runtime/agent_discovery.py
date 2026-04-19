@@ -24,8 +24,10 @@ Distribution channels:
     - Google sitemap ping
     - Bing IndexNow
     - Yandex sitemap ping
+  x402 marketplaces:
+    - the402.ai — agent marketplace with x402 payments
   Self-verification:
-    - All 8 discovery manifests verified on each cycle
+    - All discovery manifests verified on each cycle
 """
 
 from __future__ import annotations
