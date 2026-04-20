@@ -51,5 +51,5 @@
     "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
     "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml"
   },
-  "tags": ["regulatory", "prediction-markets", "polymarket", "kalshi", "fed", "sec", "cftc", "oracle", "uma", "chainlink", "compliance", "x402"]
+  "tags": ["extraction", "search", "web-scraping", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "defi"]
 }

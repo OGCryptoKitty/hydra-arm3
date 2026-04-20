@@ -205,6 +205,14 @@ app = FastAPI(
     },
     openapi_tags=[
         {
+            "name": "Extraction",
+            "description": (
+                "Web extraction, search, and batch data retrieval. "
+                "Low-friction entry pricing ($0.01-$0.05 USDC). "
+                "Designed for agent workflows that need structured web data."
+            ),
+        },
+        {
             "name": "System",
             "description": "Health check and pricing — free endpoints",
         },
