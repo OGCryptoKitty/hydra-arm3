@@ -1,9 +1,9 @@
 {
   "schema_version": "v1",
-  "name_for_human": "HYDRA Regulatory Intelligence",
-  "name_for_model": "hydra_regulatory",
-  "description_for_human": "AI-powered regulatory analysis for prediction market traders. Real-time FOMC signals, SEC enforcement tracking, and regulatory event feeds.",
-  "description_for_model": "Access regulatory intelligence for prediction markets. Use /v1/markets (free) to list active regulatory markets, /v1/markets/discovery (free) to see all tracked markets and onboarding steps, /pricing (free) for full pricing table. Paid endpoints require USDC payment on Base L2 via x402 protocol — call any paid endpoint to receive payment instructions in the 402 response. MCP server available at /mcp for tool-based access.",
+  "name_for_human": "HYDRA",
+  "name_for_model": "hydra",
+  "description_for_human": "402-native paid work engine for agents and developers. Web extraction, search, regulatory intelligence, prediction market signals, and oracle data.",
+  "description_for_model": "HYDRA is a pay-per-call API on Base L2. Top tools: /v1/extract/url ($0.01) for structured web extraction, /v1/extract/search ($0.02) for web search, /v1/extract/multi ($0.05) for batch extraction. Also: /v1/util/crypto/price ($0.001), /v1/util/scrape ($0.005), /v1/regulatory/scan ($2.00). Call any paid endpoint without payment to get x402 payment instructions. MCP server at /mcp. Free endpoints: /v1/markets, /pricing, /health.",
   "auth": {
     "type": "none"
   },

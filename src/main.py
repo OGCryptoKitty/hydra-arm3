@@ -43,6 +43,7 @@ from src.api.system_routes import system_router, _balance_router
 from src.api.fed_routes import fed_router
 from src.api.utility_routes import utility_router
 from src.api.mpp import mpp_router
+from src.api.extract_routes import extract_router
 from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -347,6 +348,9 @@ app.include_router(utility_router)
 
 # System management endpoints (prefix="" — routes already carry /system/ prefix)
 app.include_router(system_router, prefix="")
+
+# Extraction services — general-purpose agent tools
+app.include_router(extract_router)
 
 # MPP discovery and status endpoints
 app.include_router(mpp_router)
@@ -737,6 +741,9 @@ async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
                 "GET  /v1/util/gas                 ($0.001 USDC)",
                 "GET  /v1/util/tx                  ($0.001 USDC)",
                 "POST /v1/batch                    ($0.01  USDC)",
+                "POST /v1/extract/url              ($0.01  USDC)",
+                "POST /v1/extract/multi            ($0.05  USDC)",
+                "GET  /v1/extract/search           ($0.02  USDC)",
             ],
             "docs": "/docs",
         },

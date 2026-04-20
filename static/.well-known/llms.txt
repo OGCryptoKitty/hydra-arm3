@@ -1,8 +1,8 @@
-# HYDRA Regulatory Intelligence
+# HYDRA
 
-> Real-time regulatory intelligence for prediction markets. 22 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
+> 402-native paid work engine for agents and developers. 25 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
 
-HYDRA monitors SEC, CFTC, Federal Reserve, FinCEN, OCC, and CFPB regulatory activity and translates it into actionable signals for prediction market trading, oracle resolution, and compliance analysis.
+HYDRA provides web extraction, search, regulatory intelligence, prediction market signals, and oracle data as pay-per-call x402 endpoints. Built for AI agents that need structured data on demand.
 
 ## Payment
 
@@ -17,6 +17,11 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `GET /v1/util` — Utility service discovery listing
 - `GET /docs` — Interactive OpenAPI documentation
 - `GET /openapi.json` — Machine-readable OpenAPI spec
+
+### Extraction Tier ($0.01 - $0.05 USDC)
+- `POST /v1/extract/url` ($0.01) — Structured web extraction: title, headings, clean text, links, OpenGraph metadata.
+- `POST /v1/extract/multi` ($0.05) — Batch extraction from up to 5 URLs in parallel.
+- `GET /v1/extract/search?q=...` ($0.02) — Web search with structured result extraction: titles, snippets, URLs.
 
 ### Agent Utility Tier ($0.001 - $0.01 USDC)
 - `POST /v1/util/scrape` ($0.005) — URL to clean structured text. HTML parsed, scripts removed.

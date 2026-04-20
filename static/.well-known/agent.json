@@ -1,6 +1,6 @@
 {
-  "name": "HYDRA Regulatory Intelligence",
-  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 22 paid endpoints from $0.001 USDC via x402 on Base L2.",
+  "name": "HYDRA",
+  "description": "402-native paid work engine for agents and developers. Web extraction, search, regulatory intelligence, prediction market signals, oracle data. 25 paid endpoints from $0.001 USDC via x402 on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "version": "1.0.0",
   "protocol": "a2a",

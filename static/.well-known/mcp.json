@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "server": {
-    "name": "HYDRA Regulatory Intelligence",
-    "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 22 paid tools from $0.001 USDC.",
+    "name": "HYDRA",
+    "description": "402-native paid work engine for agents. Web extraction, search, regulatory intelligence, prediction market signals, oracle data. 25 paid tools from $0.001 USDC.",
     "url": "https://hydra-api-nlnj.onrender.com/mcp",
     "transport": "streamable-http"
   },
@@ -41,7 +41,10 @@
     {"name": "market_resolution", "description": "Resolution verdict for market settlement ($25.00)", "endpoint": "/v1/markets/resolution"},
     {"name": "gas_prices", "description": "Base L2 gas prices with cost estimates for transfers, swaps, mints ($0.001)", "endpoint": "/v1/util/gas"},
     {"name": "tx_status", "description": "Transaction receipt lookup — status, gas used, block number ($0.001)", "endpoint": "/v1/util/tx"},
-    {"name": "batch_utility", "description": "Batch up to 5 utility calls in one request — saves gas ($0.01)", "endpoint": "/v1/batch"}
+    {"name": "batch_utility", "description": "Batch up to 5 utility calls in one request — saves gas ($0.01)", "endpoint": "/v1/batch"},
+    {"name": "extract_url", "description": "Structured web extraction — title, headings, text, links, metadata ($0.01)", "endpoint": "/v1/extract/url"},
+    {"name": "extract_multi", "description": "Batch extraction from up to 5 URLs in parallel ($0.05)", "endpoint": "/v1/extract/multi"},
+    {"name": "extract_search", "description": "Web search with structured result extraction ($0.02)", "endpoint": "/v1/extract/search"}
   ],
   "discovery": {
     "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
@@ -53,5 +56,5 @@
     "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml",
     "docs": "https://hydra-api-nlnj.onrender.com/docs"
   },
-  "tags": ["regulatory", "prediction-markets", "oracle", "x402", "defi"]
+  "tags": ["extraction", "search", "regulatory", "prediction-markets", "oracle", "x402", "agent-tools"]
 }

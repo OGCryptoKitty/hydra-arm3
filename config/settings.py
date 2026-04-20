@@ -169,6 +169,22 @@ PRICING: dict[str, dict] = {
         "description": "Batch up to 5 utility calls in one request. Saves gas costs vs individual x402 payments.",
         "amount_base_units": 10_000,
     },
+    # ── Extraction Services ──────────────────────────────────────
+    "/v1/extract/url": {
+        "amount_usdc": Decimal("0.01"),
+        "description": "Structured web extraction — title, headings, clean text, links, OpenGraph metadata from any URL.",
+        "amount_base_units": 10_000,
+    },
+    "/v1/extract/multi": {
+        "amount_usdc": Decimal("0.05"),
+        "description": "Batch extraction from up to 5 URLs in parallel. Structured output per URL.",
+        "amount_base_units": 50_000,
+    },
+    "/v1/extract/search": {
+        "amount_usdc": Decimal("0.02"),
+        "description": "Web search with structured result extraction — titles, snippets, URLs.",
+        "amount_base_units": 20_000,
+    },
 }
 
 # ─────────────────────────────────────────────────────────────

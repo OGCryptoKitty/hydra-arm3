@@ -1,6 +1,6 @@
 {
-  "name": "HYDRA Regulatory Intelligence",
-  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Polymarket/Kalshi signal generation. Oracle resolution data for UMA and Chainlink.",
+  "name": "HYDRA",
+  "description": "402-native paid work engine for agents and developers. Web extraction, search, regulatory intelligence, prediction market signals, and oracle data. Pay-per-call in USDC on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "x402Version": 1,
   "payment": {
@@ -35,7 +35,10 @@
     {"path": "/v1/util/crypto/balance", "method": "GET", "price": "0.001", "description": "Wallet ETH and USDC balance on Base L2"},
     {"path": "/v1/util/gas", "method": "GET", "price": "0.001", "description": "Base L2 gas prices with estimated costs for transfers, swaps, mints"},
     {"path": "/v1/util/tx", "method": "GET", "price": "0.001", "description": "Transaction receipt lookup — status, gas used, block number"},
-    {"path": "/v1/batch", "method": "POST", "price": "0.01", "description": "Batch up to 5 utility calls in one request — saves gas vs individual payments"}
+    {"path": "/v1/batch", "method": "POST", "price": "0.01", "description": "Batch up to 5 utility calls in one request — saves gas vs individual payments"},
+    {"path": "/v1/extract/url", "method": "POST", "price": "0.01", "description": "Structured web extraction — title, headings, clean text, links, OpenGraph metadata"},
+    {"path": "/v1/extract/multi", "method": "POST", "price": "0.05", "description": "Batch extraction from up to 5 URLs in parallel"},
+    {"path": "/v1/extract/search", "method": "GET", "price": "0.02", "description": "Web search with structured result extraction — titles, snippets, URLs"}
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
