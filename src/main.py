@@ -250,11 +250,11 @@ if _mcp_available:
     try:
         mcp_server = FastApiMcp(
             app,
-            name="HYDRA Regulatory Intelligence",
+            name="HYDRA",
             description=(
-                "Real-time regulatory intelligence for prediction markets. "
-                "SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. "
-                "22 paid tools from $0.001 USDC via x402 on Base L2."
+                "402-native paid work engine for agents. Web extraction, search, "
+                "regulatory intelligence, prediction market signals, oracle data. "
+                "25 paid tools from $0.001 USDC via x402 on Base L2."
             ),
         )
         mcp_server.mount()
@@ -462,6 +462,19 @@ async def ai_plugin_json():
             return _json.load(f)
     except FileNotFoundError:
         return JSONResponse(status_code=404, content={"error": "ai-plugin.json not found"})
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon():
+    """Serve favicon for x402scan and browser discovery."""
+    path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(__file__)),
+        "static", "favicon.svg",
+    )
+    if _os.path.exists(path):
+        return FileResponse(path, media_type="image/svg+xml")
+    return JSONResponse(status_code=404, content={"error": "favicon not found"})
 
 
 @app.get("/robots.txt", include_in_schema=False)

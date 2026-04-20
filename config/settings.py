@@ -33,11 +33,11 @@ USDC_DECIMALS: int = 6
 # Application Settings
 # ─────────────────────────────────────────────────────────────
 
-APP_NAME: str = "HYDRA Arm 3 — Regulatory Intelligence SaaS"
-APP_VERSION: str = "1.0.0"
+APP_NAME: str = "HYDRA — 402-native paid work engine"
+APP_VERSION: str = "1.1.0"
 APP_DESCRIPTION: str = (
-    "AI-powered regulatory compliance analysis via API. "
-    "Pay-per-use in USDC on Base via the x402 HTTP payment protocol."
+    "Web extraction, search, regulatory intelligence, prediction market signals, "
+    "and oracle data. 25 paid endpoints from $0.001 USDC via x402 on Base L2."
 )
 
 HOST: str = os.getenv("HOST", "0.0.0.0")

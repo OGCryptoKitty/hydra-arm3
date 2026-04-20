@@ -89,6 +89,19 @@ def _get_sample_response(path: str) -> dict | None:
             "rate_probability": {"hold": 0.87, "cut": 0.11, "hike": 0.02},
             "next_fomc": "2026-05-07",
         },
+        "/v1/extract/url": {
+            "_note": "SAMPLE — pay to get full extraction",
+            "title": "Example Page Title",
+            "headings": [{"level": 1, "text": "Main Heading"}],
+            "text": "Clean extracted text (truncated)...",
+            "links": [{"text": "Link text", "href": "https://example.com"}],
+        },
+        "/v1/extract/search": {
+            "_note": "SAMPLE — pay to get full results",
+            "query": "example query",
+            "results": [{"title": "Result 1", "snippet": "Preview...", "url": "https://example.com"}],
+            "result_count": 8,
+        },
     }
     if path in samples:
         return samples[path]
