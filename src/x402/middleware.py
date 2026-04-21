@@ -173,7 +173,11 @@ import os as _os
 _STATE_DIR = _os.getenv("HYDRA_STATE_DIR", _os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data"))
 _REPLAY_CACHE_FILE = _os.path.join(_STATE_DIR, "used_txhashes.json")
 
+import asyncio as _asyncio
+import threading as _threading
+
 _used_tx_cache: TTLCache = TTLCache(maxsize=10_000, ttl=PAYMENT_CACHE_TTL)
+_tx_lock = _threading.Lock()
 
 
 def _load_replay_cache() -> None:
@@ -209,12 +213,25 @@ _load_replay_cache()
 
 
 def _mark_tx_used(tx_hash: str) -> None:
-    _used_tx_cache[tx_hash.lower()] = time.time()
+    with _tx_lock:
+        _used_tx_cache[tx_hash.lower()] = time.time()
     _save_replay_cache()
 
 
 def _is_tx_used(tx_hash: str) -> bool:
-    return tx_hash.lower() in _used_tx_cache
+    with _tx_lock:
+        return tx_hash.lower() in _used_tx_cache
+
+
+def _try_claim_tx(tx_hash: str) -> bool:
+    """Atomically check-and-claim a tx hash. Returns True if newly claimed."""
+    key = tx_hash.lower()
+    with _tx_lock:
+        if key in _used_tx_cache:
+            return False
+        _used_tx_cache[key] = time.time()
+    _save_replay_cache()
+    return True
 
 
 # ─────────────────────────────────────────────────────────────
@@ -299,8 +316,8 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
                 pricing,
             )
 
-        # ── Replay prevention ─────────────────────────────────
-        if _is_tx_used(tx_hash):
+        # ── Replay prevention (atomic claim) ──────────────────
+        if not _try_claim_tx(tx_hash):
             return self._error_response(
                 402,
                 f"Transaction {tx_hash} has already been used for a previous request. Each payment can only be used once.",
@@ -314,15 +331,15 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
 
         if not result.verified:
             logger.warning("Payment verification failed: tx=%s error=%s", tx_hash, result.error)
+            # Release the claim so the tx can be retried
+            with _tx_lock:
+                _used_tx_cache.pop(tx_hash.lower(), None)
             return self._error_response(
                 402,
                 f"Payment verification failed: {result.error}",
                 path,
                 pricing,
             )
-
-        # ── Mark tx as used before passing through ────────────
-        _mark_tx_used(tx_hash)
         logger.info("Payment verified and consumed: tx=%s path=%s", tx_hash, path)
 
         # ── Log to persistent TransactionLog for revenue tracking ─

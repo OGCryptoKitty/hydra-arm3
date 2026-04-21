@@ -215,8 +215,8 @@ async def market_brief() -> dict:
             "is_fomc_day": fed.is_fomc_day(),
             "probabilities": fed.calculate_rate_probabilities(),
         }
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Fed data unavailable for market brief: %s", exc)
 
     market_data = {"markets_available": 0}
     try:
@@ -230,8 +230,8 @@ async def market_brief() -> dict:
                 for m in markets[:5]
             ],
         }
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Prediction market data unavailable: %s", exc)
 
     result = {
         "market_brief": "HYDRA Executive Market Brief",

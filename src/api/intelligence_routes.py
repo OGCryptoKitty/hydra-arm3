@@ -392,8 +392,8 @@ async def daily_digest() -> dict:
             "current_rate": fed.get_current_rate(),
             "is_fomc_day": fed.is_fomc_day(),
         }
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Fed summary unavailable for digest: %s", exc)
 
     result = {
         "digest": "HYDRA Daily Regulatory Digest",

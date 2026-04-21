@@ -17,6 +17,8 @@ import httpx
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
+from src.utils.url_validation import is_safe_url, is_safe_domain
+
 check_router = APIRouter(tags=["Web Checks"])
 
 _http_client: httpx.AsyncClient | None = None
@@ -43,6 +45,13 @@ async def check_url(
     content type, server header. $0.005 USDC.
     """
     start = time.monotonic()
+
+    if not is_safe_url(url):
+        return JSONResponse(status_code=422, content={
+            "error": "Invalid URL",
+            "detail": "URL must use http(s) and target a public host.",
+        })
+
     client = await _get_client()
 
     redirects: list[dict] = []
@@ -82,7 +91,7 @@ async def check_url(
             "elapsed_ms": round((time.monotonic() - start) * 1000),
         }
     except httpx.RequestError as e:
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=502, content={
             "url": url,
             "ok": False,
             "error": type(e).__name__,
@@ -101,6 +110,13 @@ async def check_dns(
     for any domain and type. $0.005 USDC.
     """
     start = time.monotonic()
+
+    if not is_safe_domain(domain):
+        return JSONResponse(status_code=422, content={
+            "error": "Invalid domain",
+            "detail": "Cannot look up private, reserved, or internal hostnames.",
+        })
+
     client = await _get_client()
 
     rtype = record_type.upper()
@@ -148,6 +164,12 @@ async def check_ssl(
     """
     start = time.monotonic()
 
+    if not is_safe_domain(domain):
+        return JSONResponse(status_code=422, content={
+            "error": "Invalid domain",
+            "detail": "Cannot inspect private, reserved, or internal hostnames.",
+        })
+
     try:
         ctx = ssl.create_default_context()
         with socket.create_connection((domain, port), timeout=10) as sock:
@@ -190,7 +212,7 @@ async def check_ssl(
             "elapsed_ms": round((time.monotonic() - start) * 1000),
         }
     except (socket.timeout, socket.gaierror, OSError) as e:
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=502, content={
             "domain": domain,
             "valid": False,
             "error": "connection_failed",
@@ -208,12 +230,19 @@ async def check_headers(
     (HSTS, CSP, X-Frame-Options, etc.). $0.003 USDC.
     """
     start = time.monotonic()
+
+    if not is_safe_url(url):
+        return JSONResponse(status_code=422, content={
+            "error": "Invalid URL",
+            "detail": "URL must use http(s) and target a public host.",
+        })
+
     client = await _get_client()
 
     try:
         resp = await client.head(url, follow_redirects=True)
     except httpx.RequestError as e:
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=502, content={
             "url": url,
             "error": type(e).__name__,
             "elapsed_ms": round((time.monotonic() - start) * 1000),

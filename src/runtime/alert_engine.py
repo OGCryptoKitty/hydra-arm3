@@ -19,9 +19,36 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import ipaddress
+from urllib.parse import urlparse
+
 import httpx
 
 logger = logging.getLogger("hydra.alerts")
+
+_BLOCKED_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]", "metadata.google.internal", "169.254.169.254"}
+
+
+def _is_safe_webhook_url(url: str) -> bool:
+    """Reject webhook URLs targeting internal/private networks (SSRF prevention)."""
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    if parsed.scheme not in ("http", "https"):
+        return False
+    hostname = parsed.hostname or ""
+    if hostname in _BLOCKED_HOSTS:
+        return False
+    try:
+        addr = ipaddress.ip_address(hostname)
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            return False
+    except ValueError:
+        pass
+    if hostname.endswith(".internal") or hostname.endswith(".local"):
+        return False
+    return True
 
 STATE_DIR = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data")))
 SUBSCRIPTIONS_FILE = STATE_DIR / "alert_subscriptions.json"
@@ -68,8 +95,8 @@ class AlertEngine:
         if ALERT_HISTORY_FILE.exists():
             try:
                 self._alert_history = json.loads(ALERT_HISTORY_FILE.read_text())[-500:]
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to load alert history: %s", exc)
 
     def _save_state(self) -> None:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -82,10 +109,15 @@ class AlertEngine:
             logger.warning("Failed to save subscriptions: %s", exc)
         try:
             ALERT_HISTORY_FILE.write_text(json.dumps(self._alert_history[-500:], indent=2))
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to save alert history: %s", exc)
 
     def subscribe(self, webhook_url: str, conditions: dict, max_alerts: int = 100) -> AlertSubscription:
+        if not _is_safe_webhook_url(webhook_url):
+            raise ValueError(
+                "Invalid webhook URL: must be an http(s) URL targeting a public host. "
+                "Private/internal network addresses are not allowed."
+            )
         sub_id = str(uuid.uuid4())[:12]
         sub = AlertSubscription(
             subscription_id=sub_id,
