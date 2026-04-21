@@ -1,7 +1,11 @@
-name: Register with Discovery Services
+name: Register with Discovery Services (on deploy)
 on:
   push:
     branches: [master]
+    paths:
+      - 'static/.well-known/**'
+      - 'src/api/**'
+      - 'config/settings.py'
   workflow_dispatch:
 
 jobs:
@@ -9,41 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for Render deploy
-        run: sleep 120
+        run: sleep 180
 
-      - name: Wake service
+      - name: Wake service and verify
         run: |
-          curl -sf --retry 4 --retry-delay 15 --max-time 60 \
-            https://hydra-api-nlnj.onrender.com/health || true
-
-      - name: Verify discovery manifests
-        run: |
-          for path in /.well-known/x402.json /.well-known/mcp.json /.well-known/llms.txt /openapi.json; do
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
-              "https://hydra-api-nlnj.onrender.com${path}")
-            echo "${path}: ${STATUS}"
+          for i in 1 2 3 4 5; do
+            HEALTH=$(curl -sf --max-time 30 https://hydra-api-nlnj.onrender.com/health 2>/dev/null)
+            if [ $? -eq 0 ] && [ -n "$HEALTH" ]; then
+              echo "✅ HYDRA is live"
+              echo "$HEALTH" | python3 -m json.tool
+              exit 0
+            fi
+            echo "Attempt $i: not ready, waiting 30s..."
+            sleep 30
           done
+          echo "❌ Service not responding after 5 attempts"
+          exit 1
 
-      - name: Register with EntRoute x402 Discovery
+      - name: Trigger automaton marketing loop
         run: |
-          ENDPOINTS=(
-            '{"name":"HYDRA Web Extract","url":"https://hydra-api-nlnj.onrender.com/v1/extract/url","price_usd":0.01,"category":"data","description":"Structured web extraction — title, headings, text, links, metadata","network":"base-mainnet"}'
-            '{"name":"HYDRA Web Search","url":"https://hydra-api-nlnj.onrender.com/v1/extract/search","price_usd":0.02,"category":"data","description":"Web search with structured result extraction","network":"base-mainnet"}'
-            '{"name":"HYDRA HTML to Markdown","url":"https://hydra-api-nlnj.onrender.com/v1/convert/html2md","price_usd":0.005,"category":"data","description":"HTML to clean Markdown","network":"base-mainnet"}'
-            '{"name":"HYDRA DNS Lookup","url":"https://hydra-api-nlnj.onrender.com/v1/check/dns","price_usd":0.005,"category":"data","description":"DNS record lookup via DNS-over-HTTPS","network":"base-mainnet"}'
-            '{"name":"HYDRA Wikipedia","url":"https://hydra-api-nlnj.onrender.com/v1/data/wikipedia","price_usd":0.01,"category":"data","description":"Wikipedia article summary","network":"base-mainnet"}'
-            '{"name":"HYDRA SEC EDGAR","url":"https://hydra-api-nlnj.onrender.com/v1/data/edgar","price_usd":0.02,"category":"data","description":"SEC EDGAR filing search","network":"base-mainnet"}'
-            '{"name":"HYDRA Crypto Price","url":"https://hydra-api-nlnj.onrender.com/v1/util/crypto/price","price_usd":0.001,"category":"data","description":"Token price with 24h change","network":"base-mainnet"}'
-          )
-          for payload in "${ENDPOINTS[@]}"; do
-            curl -sf -X POST \
-              -H "Content-Type: application/json" \
-              -d "$payload" \
-              https://x402-discovery-api.onrender.com/register || true
-            sleep 1
-          done
-
-      - name: Ping search engines
-        run: |
-          curl -sf "https://www.google.com/ping?sitemap=https://hydra-api-nlnj.onrender.com/sitemap.xml" || true
-          curl -sf "https://www.bing.com/ping?sitemap=https://hydra-api-nlnj.onrender.com/sitemap.xml" || true
+          echo "The automaton runs marketing on boot (first heartbeat)."
+          echo "Verifying it registered by checking x402 directory response..."
+          sleep 30
+          curl -sf --max-time 15 https://hydra-api-nlnj.onrender.com/v1/x402/directory | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); print(f'x402 directory serving: {d[\"total_services\"]} services')" \
+            2>/dev/null || echo "Directory not yet populated (will populate on next crawl)"

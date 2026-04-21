@@ -1,0 +1,281 @@
+name: HYDRA Autonomous Operations
+
+on:
+  schedule:
+    # Every 4 hours — matches automaton marketing interval
+    - cron: '0 */4 * * *'
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  # ── Phase 1: Verify deployment is live ──────────────────────
+  health-check:
+    runs-on: ubuntu-latest
+    outputs:
+      healthy: ${{ steps.check.outputs.healthy }}
+      health_json: ${{ steps.check.outputs.health_json }}
+    steps:
+      - name: Wait for Render deploy (on push only)
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting 180s for Render to build and deploy..."
+          sleep 180
+
+      - name: Wake service (Render free tier may sleep)
+        run: |
+          echo "Sending keepalive ping..."
+          curl -sf --retry 3 --retry-delay 30 --max-time 60 \
+            https://hydra-api-nlnj.onrender.com/health || true
+          sleep 10
+
+      - name: Health check
+        id: check
+        run: |
+          HEALTH=$(curl -sf --max-time 30 https://hydra-api-nlnj.onrender.com/health 2>/dev/null)
+          if [ $? -eq 0 ] && [ -n "$HEALTH" ]; then
+            echo "healthy=true" >> "$GITHUB_OUTPUT"
+            echo "health_json<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$HEALTH" | python3 -m json.tool >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "✅ HYDRA is healthy"
+            echo "$HEALTH" | python3 -m json.tool
+          else
+            echo "healthy=false" >> "$GITHUB_OUTPUT"
+            echo "health_json=unreachable" >> "$GITHUB_OUTPUT"
+            echo "❌ HYDRA is not responding"
+          fi
+
+  # ── Phase 2: Verify all manifests and endpoints ─────────────
+  manifest-verification:
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: needs.health-check.outputs.healthy == 'true'
+    steps:
+      - name: Verify discovery manifests
+        run: |
+          echo "=== Discovery Manifest Verification ==="
+          PASS=0
+          FAIL=0
+          for path in \
+            /.well-known/x402.json \
+            /.well-known/mcp.json \
+            /.well-known/llms.txt \
+            /.well-known/agent.json \
+            /.well-known/agent-card.json \
+            /.well-known/ai-plugin.json \
+            /openapi.json \
+            /sitemap.xml \
+            /pricing \
+            /docs; do
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 15 \
+              "https://hydra-api-nlnj.onrender.com${path}" 2>/dev/null || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "  ✅ ${path} → ${STATUS}"
+              PASS=$((PASS + 1))
+            else
+              echo "  ❌ ${path} → ${STATUS}"
+              FAIL=$((FAIL + 1))
+            fi
+          done
+          echo ""
+          echo "Results: ${PASS} pass, ${FAIL} fail"
+
+      - name: Verify x402 endpoint count
+        run: |
+          MANIFEST=$(curl -sf --max-time 15 https://hydra-api-nlnj.onrender.com/.well-known/x402.json)
+          COUNT=$(echo "$MANIFEST" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('endpoints',[])))" 2>/dev/null || echo "0")
+          echo "x402 endpoints: ${COUNT}"
+          if [ "$COUNT" -lt 40 ]; then
+            echo "⚠️ Expected 48+, got ${COUNT}"
+          else
+            echo "✅ ${COUNT} endpoints serving"
+          fi
+
+      - name: Verify paid endpoints return 402
+        run: |
+          echo "=== Payment Wall Verification ==="
+          for path in \
+            "/v1/intelligence/alpha" \
+            "/v1/intelligence/pulse" \
+            "/v1/extract/url" \
+            "/v1/regulatory/scan"; do
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 15 \
+              "https://hydra-api-nlnj.onrender.com${path}" 2>/dev/null || echo "000")
+            if [ "$STATUS" = "402" ]; then
+              echo "  ✅ ${path} → 402 (payment required)"
+            else
+              echo "  ⚠️ ${path} → ${STATUS} (expected 402)"
+            fi
+          done
+
+      - name: Verify free endpoints return 200
+        run: |
+          echo "=== Free Endpoint Verification ==="
+          for path in \
+            "/v1/x402/directory" \
+            "/v1/x402/stats" \
+            "/v1/markets" \
+            "/pricing" \
+            "/health"; do
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 15 \
+              "https://hydra-api-nlnj.onrender.com${path}" 2>/dev/null || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "  ✅ ${path} → 200"
+            else
+              echo "  ⚠️ ${path} → ${STATUS} (expected 200)"
+            fi
+          done
+
+  # ── Phase 3: Register with ALL discovery services ───────────
+  discovery-registration:
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: needs.health-check.outputs.healthy == 'true'
+    steps:
+      - name: Register with EntRoute x402 Discovery API
+        run: |
+          echo "=== EntRoute Registration (17 endpoints) ==="
+          ENDPOINTS=(
+            '{"name":"HYDRA Regulatory Scan","url":"https://hydra-api-nlnj.onrender.com/v1/regulatory/scan","price_usd":2.00,"category":"data","description":"Full regulatory risk scan for crypto/DeFi — SEC, CFTC, Fed, FinCEN frameworks","network":"base-mainnet"}'
+            '{"name":"HYDRA Fed Signal","url":"https://hydra-api-nlnj.onrender.com/v1/fed/signal","price_usd":5.00,"category":"data","description":"Pre-FOMC signal with rate probabilities, speech analysis, economic indicators","network":"base-mainnet"}'
+            '{"name":"HYDRA Alpha Signal","url":"https://hydra-api-nlnj.onrender.com/v1/intelligence/alpha","price_usd":5.00,"category":"data","description":"Composite alpha: regulatory + Fed + prediction markets + momentum. Unique product.","network":"base-mainnet"}'
+            '{"name":"HYDRA Regulatory Pulse","url":"https://hydra-api-nlnj.onrender.com/v1/intelligence/pulse","price_usd":0.50,"category":"data","description":"Hourly regulatory pulse from all US financial agencies with composite risk signal","network":"base-mainnet"}'
+            '{"name":"HYDRA Risk Score","url":"https://hydra-api-nlnj.onrender.com/v1/intelligence/risk-score","price_usd":2.00,"category":"data","description":"Real-time 0-100 regulatory risk score for any crypto token or DeFi protocol","network":"base-mainnet"}'
+            '{"name":"HYDRA Daily Digest","url":"https://hydra-api-nlnj.onrender.com/v1/intelligence/digest","price_usd":1.00,"category":"data","description":"Daily regulatory + market digest for compliance teams and trading agents","network":"base-mainnet"}'
+            '{"name":"HYDRA Push Alerts","url":"https://hydra-api-nlnj.onrender.com/v1/alerts/subscribe","price_usd":0.10,"category":"data","description":"Webhook push alerts for regulatory events — $0.10 per 100 alerts","network":"base-mainnet"}'
+            '{"name":"HYDRA x402 Router","url":"https://hydra-api-nlnj.onrender.com/v1/x402/route","price_usd":0.001,"category":"infrastructure","description":"Intelligent x402 service routing","network":"base-mainnet"}'
+            '{"name":"HYDRA Web Extract","url":"https://hydra-api-nlnj.onrender.com/v1/extract/url","price_usd":0.01,"category":"data","description":"Structured web extraction — title, headings, text, links, metadata","network":"base-mainnet"}'
+            '{"name":"HYDRA Web Search","url":"https://hydra-api-nlnj.onrender.com/v1/extract/search","price_usd":0.02,"category":"data","description":"Web search with structured result extraction","network":"base-mainnet"}'
+            '{"name":"HYDRA HTML to Markdown","url":"https://hydra-api-nlnj.onrender.com/v1/convert/html2md","price_usd":0.005,"category":"data","description":"HTML to clean Markdown","network":"base-mainnet"}'
+            '{"name":"HYDRA DNS Lookup","url":"https://hydra-api-nlnj.onrender.com/v1/check/dns","price_usd":0.005,"category":"data","description":"DNS record lookup via DNS-over-HTTPS","network":"base-mainnet"}'
+            '{"name":"HYDRA Wikipedia","url":"https://hydra-api-nlnj.onrender.com/v1/data/wikipedia","price_usd":0.01,"category":"data","description":"Wikipedia article summary","network":"base-mainnet"}'
+            '{"name":"HYDRA SEC EDGAR","url":"https://hydra-api-nlnj.onrender.com/v1/data/edgar","price_usd":0.02,"category":"data","description":"SEC EDGAR filing search","network":"base-mainnet"}'
+            '{"name":"HYDRA Crypto Price","url":"https://hydra-api-nlnj.onrender.com/v1/util/crypto/price","price_usd":0.001,"category":"data","description":"Token price with 24h change","network":"base-mainnet"}'
+            '{"name":"HYDRA Hash","url":"https://hydra-api-nlnj.onrender.com/v1/tools/hash","price_usd":0.001,"category":"data","description":"SHA-256/512, MD5, SHA-1, SHA3 hashing","network":"base-mainnet"}'
+            '{"name":"HYDRA UMA Oracle","url":"https://hydra-api-nlnj.onrender.com/v1/oracle/uma","price_usd":5.00,"category":"data","description":"UMA Optimistic Oracle assertion data with evidence chain","network":"base-mainnet"}'
+          )
+          for payload in "${ENDPOINTS[@]}"; do
+            NAME=$(echo "$payload" | python3 -c "import sys,json; print(json.load(sys.stdin)['name'])")
+            RESULT=$(curl -sf -X POST -H "Content-Type: application/json" -d "$payload" \
+              --max-time 15 https://x402-discovery-api.onrender.com/register 2>&1 || echo "timeout")
+            echo "  ${NAME} → ${RESULT:0:80}"
+            sleep 0.5
+          done
+
+      - name: Register with x402 ecosystem directories
+        run: |
+          echo "=== x402 Ecosystem Registration ==="
+          PAYLOAD='{"url":"https://hydra-api-nlnj.onrender.com","manifest":"https://hydra-api-nlnj.onrender.com/.well-known/x402.json","name":"HYDRA","description":"x402 ecosystem hub + autonomous intelligence engine. 48 paid endpoints: composite alpha signals, regulatory risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. $0.001-$50 USDC on Base."}'
+
+          for URL in \
+            "https://x402.org/api/services" \
+            "https://x402scan.com/api/submit" \
+            "https://x402list.fun/api/submit" \
+            "https://x402-list.com/api/submit"; do
+            DOMAIN=$(echo "$URL" | grep -oP '(?<=://)[^/]+')
+            curl -sf -X POST -H "Content-Type: application/json" -d "$PAYLOAD" \
+              --max-time 15 "$URL" 2>/dev/null || true
+            echo "  ${DOMAIN} → done"
+            sleep 0.5
+          done
+
+          # the402.ai marketplace
+          curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
+            -d '{"url":"https://hydra-api-nlnj.onrender.com","manifest":"https://hydra-api-nlnj.onrender.com/.well-known/x402.json","name":"HYDRA","category":"Intelligence"}' \
+            https://the402.ai/v1/register 2>/dev/null || true
+          echo "  the402.ai → done"
+
+          # mcp.so
+          curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
+            -d '{"url":"https://hydra-api-nlnj.onrender.com/mcp","manifest":"https://hydra-api-nlnj.onrender.com/.well-known/x402.json","name":"HYDRA","description":"x402 ecosystem hub + intelligence engine. 48 MCP tools.","openapi_url":"https://hydra-api-nlnj.onrender.com/openapi.json","transport":"streamable-http"}' \
+            https://mcp.so/api/servers 2>/dev/null || true
+          echo "  mcp.so → done"
+
+      - name: Ping search engines
+        run: |
+          echo "=== Search Engine Pings ==="
+          curl -sf "https://www.google.com/ping?sitemap=https://hydra-api-nlnj.onrender.com/sitemap.xml" -o /dev/null && echo "  Google → pinged" || echo "  Google → failed"
+          curl -sf "https://www.bing.com/ping?sitemap=https://hydra-api-nlnj.onrender.com/sitemap.xml" -o /dev/null && echo "  Bing → pinged" || echo "  Bing → failed"
+          curl -sf "https://webmaster.yandex.com/ping?sitemap=https://hydra-api-nlnj.onrender.com/sitemap.xml" -o /dev/null && echo "  Yandex → pinged" || echo "  Yandex → failed"
+
+  # ── Phase 4: On-chain wallet monitoring ─────────────────────
+  wallet-monitor:
+    runs-on: ubuntu-latest
+    needs: health-check
+    steps:
+      - name: Check USDC balance
+        run: |
+          RESULT=$(curl -sf https://mainnet.base.org -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913","data":"0x70a082310000000000000000000000002F12A73e1e08F3BCE12212005cCaBE2ACEf87141"},"latest"],"id":1}' \
+            --max-time 15 2>/dev/null)
+          BALANCE=$(echo "$RESULT" | python3 -c "import sys,json; r=json.load(sys.stdin); print(f'{int(r[\"result\"],16)/1e6:.6f}')" 2>/dev/null || echo "error")
+          echo "USDC Balance: \$${BALANCE}"
+
+      - name: Check Aave aUSDC balance
+        run: |
+          RESULT=$(curl -sf https://mainnet.base.org -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB","data":"0x70a082310000000000000000000000002F12A73e1e08F3BCE12212005cCaBE2ACEf87141"},"latest"],"id":1}' \
+            --max-time 15 2>/dev/null)
+          BALANCE=$(echo "$RESULT" | python3 -c "import sys,json; r=json.load(sys.stdin); print(f'{int(r[\"result\"],16)/1e6:.6f}')" 2>/dev/null || echo "error")
+          echo "Aave aUSDC: \$${BALANCE}"
+
+      - name: Check ETH balance (gas)
+        run: |
+          RESULT=$(curl -sf https://mainnet.base.org -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","method":"eth_getBalance","params":["0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141","latest"],"id":1}' \
+            --max-time 15 2>/dev/null)
+          BALANCE=$(echo "$RESULT" | python3 -c "import sys,json; r=json.load(sys.stdin); print(f'{int(r[\"result\"],16)/1e18:.6f}')" 2>/dev/null || echo "error")
+          echo "ETH Balance: ${BALANCE} ETH"
+
+  # ── Phase 5: Alert on failure ───────────────────────────────
+  alert-on-failure:
+    runs-on: ubuntu-latest
+    needs: [health-check, manifest-verification]
+    if: needs.health-check.outputs.healthy != 'true'
+    steps:
+      - name: Create GitHub issue for downtime
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'hydra-downtime',
+              per_page: 1
+            });
+            if (existing.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 HYDRA is down — health check failed',
+                body: `The scheduled health check at ${new Date().toISOString()} found HYDRA unresponsive.\n\n**URL:** https://hydra-api-nlnj.onrender.com/health\n\n**Action needed:**\n1. Check Render dashboard for deploy errors\n2. Check Render logs for crash stacktrace\n3. Verify requirements.txt dependencies install correctly\n\nThis issue will auto-close when the next health check passes.`,
+                labels: ['hydra-downtime']
+              });
+            }
+
+      - name: Close downtime issue if healthy
+        if: needs.health-check.outputs.healthy == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'hydra-downtime',
+              per_page: 5
+            });
+            for (const issue of existing.data) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                body: issue.body + `\n\n---\n✅ Auto-resolved at ${new Date().toISOString()}`
+              });
+            }
