@@ -51,8 +51,8 @@ DISCOVERY_ENDPOINTS = [
         "payload": {
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
-            "name": "HYDRA Regulatory Intelligence",
-            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
+            "name": "HYDRA",
+            "description": "40 paid x402 endpoints — web extraction, search, conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle feeds. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -62,8 +62,8 @@ DISCOVERY_ENDPOINTS = [
         "payload": {
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
-            "name": "HYDRA Regulatory Intelligence",
-            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
+            "name": "HYDRA",
+            "description": "40 paid x402 endpoints — web extraction, search, conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle feeds. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -73,8 +73,8 @@ DISCOVERY_ENDPOINTS = [
         "payload": {
             "url": f"{HYDRA_BASE_URL}/mcp",
             "manifest": HYDRA_MANIFEST,
-            "name": "HYDRA Regulatory Intelligence",
-            "description": "x402-paid regulatory intelligence MCP server. SEC/CFTC/Fed monitoring, prediction market signals, oracle data.",
+            "name": "HYDRA",
+            "description": "402-native paid work engine. 40 MCP tools: web extraction, search, HTML-to-Markdown, DNS/SSL checks, hash, diff, Wikipedia, arXiv, EDGAR, regulatory intelligence, prediction markets, oracle data.",
             "openapi_url": HYDRA_OPENAPI,
             "transport": "streamable-http",
         },
@@ -86,8 +86,8 @@ DISCOVERY_ENDPOINTS = [
         "payload": {
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
-            "name": "HYDRA Regulatory Intelligence",
-            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
+            "name": "HYDRA",
+            "description": "40 paid x402 endpoints — web extraction, search, conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle feeds. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -97,8 +97,8 @@ DISCOVERY_ENDPOINTS = [
         "payload": {
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
-            "name": "HYDRA Regulatory Intelligence",
-            "description": "22 paid x402 endpoints — regulatory signals, FOMC data, oracle feeds. $0.001-$50 USDC on Base.",
+            "name": "HYDRA",
+            "description": "40 paid x402 endpoints — web extraction, search, conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle feeds. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -108,7 +108,7 @@ DISCOVERY_ENDPOINTS = [
         "payload": {
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
-            "name": "HYDRA Regulatory Intelligence",
+            "name": "HYDRA",
             "category": "Intelligence",
         },
     },
@@ -117,7 +117,7 @@ DISCOVERY_ENDPOINTS = [
         "url": "https://x402-discovery-api.onrender.com/register",
         "method": "POST",
         "payload": {
-            "name": "HYDRA Regulatory Intelligence",
+            "name": "HYDRA",
             "url": f"{HYDRA_BASE_URL}/v1/regulatory/scan",
             "price_usd": 2.00,
             "category": "data",
@@ -174,6 +174,84 @@ DISCOVERY_ENDPOINTS = [
             "price_usd": 5.00,
             "category": "data",
             "description": "UMA Optimistic Oracle assertion data with evidence chain for market resolution",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_extract",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Web Extract",
+            "url": f"{HYDRA_BASE_URL}/v1/extract/url",
+            "price_usd": 0.01,
+            "category": "data",
+            "description": "Structured web extraction — title, headings, clean text, links, metadata from any URL",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_search",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Web Search",
+            "url": f"{HYDRA_BASE_URL}/v1/extract/search",
+            "price_usd": 0.02,
+            "category": "data",
+            "description": "Web search with structured result extraction — titles, snippets, URLs",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_html2md",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA HTML to Markdown",
+            "url": f"{HYDRA_BASE_URL}/v1/convert/html2md",
+            "price_usd": 0.005,
+            "category": "data",
+            "description": "Convert HTML to clean Markdown — preserves headings, lists, links, code, tables",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_dns",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA DNS Lookup",
+            "url": f"{HYDRA_BASE_URL}/v1/check/dns",
+            "price_usd": 0.005,
+            "category": "data",
+            "description": "DNS record lookup — A, AAAA, MX, TXT, NS, CNAME via DNS-over-HTTPS",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_wikipedia",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Wikipedia",
+            "url": f"{HYDRA_BASE_URL}/v1/data/wikipedia",
+            "price_usd": 0.01,
+            "category": "data",
+            "description": "Wikipedia article summary with thumbnail, extract, and page URL",
+            "network": "base-mainnet",
+        },
+    },
+    {
+        "name": "x402_discovery_api_edgar",
+        "url": "https://x402-discovery-api.onrender.com/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA SEC EDGAR",
+            "url": f"{HYDRA_BASE_URL}/v1/data/edgar",
+            "price_usd": 0.02,
+            "category": "data",
+            "description": "SEC EDGAR filing search — 10-K, 10-Q, 8-K by company, ticker, or keyword",
             "network": "base-mainnet",
         },
     },
