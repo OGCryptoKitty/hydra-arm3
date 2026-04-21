@@ -1,20 +1,20 @@
 {
   "schema_version": "1.0",
-  "name": "hydra-regulatory-intelligence",
-  "description": "HYDRA Regulatory Intelligence MCP tools for Claude Desktop and Claude Code",
+  "name": "hydra",
+  "description": "HYDRA — 402-native paid work engine. 40 MCP tools: web extraction, search, HTML-to-Markdown, DNS/SSL/URL checks, hash, encode, diff, JSON/CSV conversion, Wikipedia, arXiv, SEC EDGAR, regulatory intelligence, prediction markets, FOMC data, oracle feeds.",
   "server_url": "https://hydra-api-nlnj.onrender.com/mcp",
   "transport": "streamable-http",
   "install": {
-    "claude_code": "claude mcp add --transport http hydra-regulatory https://hydra-api-nlnj.onrender.com/mcp",
+    "claude_code": "claude mcp add --transport http hydra https://hydra-api-nlnj.onrender.com/mcp",
     "claude_desktop": {
       "mcpServers": {
-        "hydra-regulatory": {
+        "hydra": {
           "url": "https://hydra-api-nlnj.onrender.com/mcp"
         }
       }
     },
     "mcp_json": {
-      "hydra-regulatory": {
+      "hydra": {
         "type": "http",
         "url": "https://hydra-api-nlnj.onrender.com/mcp"
       }
@@ -26,7 +26,7 @@
     "token": "USDC",
     "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
   },
-  "tools_count": 22,
-  "free_tools": ["health_check", "pricing", "active_markets", "utility_discovery"],
+  "tools_count": 40,
+  "free_tools": ["health_check", "pricing", "active_markets", "market_discovery", "market_pricing", "utility_discovery", "mpp_manifest", "mpp_status"],
   "paid_tools_range": "$0.001 - $50.00 USDC"
 }

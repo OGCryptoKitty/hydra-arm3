@@ -19,6 +19,7 @@ from web3.exceptions import TransactionNotFound
 
 from config.settings import (
     BASE_RPC_URL,
+    BASE_RPC_FALLBACKS,
     ERC20_TRANSFER_TOPIC,
     USDC_CONTRACT_ADDRESS,
     WALLET_ADDRESS,
@@ -48,11 +49,19 @@ ERC20_MINIMAL_ABI = [
 _WALLET_CHECKSUMMED: str = Web3.to_checksum_address(WALLET_ADDRESS)
 _USDC_CHECKSUMMED: str = Web3.to_checksum_address(USDC_CONTRACT_ADDRESS)
 
+_ALL_RPC_URLS: list[str] = [BASE_RPC_URL] + BASE_RPC_FALLBACKS
+
 
 def _get_web3() -> Web3:
-    """Return a Web3 instance connected to Base mainnet."""
-    w3 = Web3(Web3.HTTPProvider(BASE_RPC_URL, request_kwargs={"timeout": 30}))
-    return w3
+    """Return a Web3 instance connected to Base mainnet, with RPC failover."""
+    for rpc_url in _ALL_RPC_URLS:
+        try:
+            w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 15}))
+            if w3.is_connected():
+                return w3
+        except Exception:
+            logger.debug("RPC %s unreachable, trying next", rpc_url)
+    return Web3(Web3.HTTPProvider(BASE_RPC_URL, request_kwargs={"timeout": 30}))
 
 
 def verify_usdc_payment(
@@ -84,11 +93,11 @@ def verify_usdc_payment(
         w3 = _get_web3()
 
         if not w3.is_connected():
-            logger.error("Cannot connect to Base RPC: %s", BASE_RPC_URL)
+            logger.error("Cannot connect to any Base RPC (tried %d endpoints)", len(_ALL_RPC_URLS))
             return PaymentVerificationResult(
                 verified=False,
                 tx_hash=tx_hash,
-                error="Unable to connect to Base RPC endpoint",
+                error="Unable to connect to Base RPC endpoint. Payment verification temporarily unavailable.",
             )
 
         # Fetch the receipt; raises TransactionNotFound if not mined yet
