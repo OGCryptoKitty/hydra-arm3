@@ -1,5 +1,5 @@
-name: hydra-regulatory-intelligence
-description: "Real-time regulatory intelligence MCP server. SEC/CFTC/Fed monitoring, prediction market signals, oracle data. 22 x402-paid endpoints on Base L2."
+name: hydra
+description: "402-native paid work engine for agents. 40 tools: web extraction, search, HTML-to-Markdown, DNS/SSL/URL checks, text diff, hash, encode/decode, JSON/CSV conversion, Wikipedia, arXiv, SEC EDGAR, regulatory intelligence, prediction markets, FOMC data, oracle feeds. Pay-per-call in USDC on Base L2 via x402."
 startCommand:
   type: http
   configSchema:

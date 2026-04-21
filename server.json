@@ -1,15 +1,15 @@
 {
-  "mcpName": "io.github.ogcryptokitty/hydra-regulatory-intelligence",
-  "version": "1.0.0",
-  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 22 x402-paid MCP tools from $0.001 USDC on Base L2.",
+  "mcpName": "io.github.ogcryptokitty/hydra",
+  "version": "2.0.0",
+  "description": "402-native paid work engine for agents. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle data. 40 x402-paid MCP tools from $0.001 USDC on Base L2.",
   "repository": "https://github.com/OGCryptoKitty/hydra-arm3",
   "homepage": "https://hydra-api-nlnj.onrender.com",
   "server": {
     "transport": "streamable-http",
     "url": "https://hydra-api-nlnj.onrender.com/mcp"
   },
-  "tools": 22,
-  "categories": ["finance", "regulatory", "prediction-markets", "oracle", "defi"],
+  "tools": 40,
+  "categories": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "finance", "regulatory", "prediction-markets", "oracle", "defi"],
   "payment": {
     "protocol": "x402",
     "network": "eip155:8453",

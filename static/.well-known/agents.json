@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "name": "HYDRA Regulatory Intelligence",
-  "description": "Real-time regulatory intelligence for prediction markets. SEC, CFTC, Fed, FinCEN monitoring. Oracle data for UMA and Chainlink. 22 paid API endpoints from $0.001 USDC via x402 on Base L2.",
+  "name": "HYDRA",
+  "description": "402-native paid work engine for agents and developers. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, oracle data. 40 paid endpoints from $0.001 USDC via x402 on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "logo": null,
   "contact_email": null,
@@ -28,6 +28,105 @@
   },
   "workflows": [
     {
+      "id": "extract-url",
+      "name": "Web Extraction",
+      "description": "Structured web extraction — title, headings, clean text, links, OpenGraph metadata from any URL.",
+      "endpoint": "POST /v1/extract/url",
+      "price_usdc": "0.01",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "extract-search",
+      "name": "Web Search",
+      "description": "Web search with structured result extraction — titles, snippets, URLs.",
+      "endpoint": "GET /v1/extract/search?q={query}",
+      "price_usdc": "0.02",
+      "input": {"type": "object", "properties": {"q": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "convert-html2md",
+      "name": "HTML to Markdown",
+      "description": "Convert HTML to clean Markdown. Preserves headings, lists, links, code blocks, tables.",
+      "endpoint": "POST /v1/convert/html2md",
+      "price_usdc": "0.005",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}, "html": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "check-url",
+      "name": "URL Health Check",
+      "description": "URL health check — status code, response time, redirect chain, content type.",
+      "endpoint": "GET /v1/check/url?url={url}",
+      "price_usdc": "0.005",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "check-dns",
+      "name": "DNS Lookup",
+      "description": "DNS record lookup — A, AAAA, MX, TXT, NS, CNAME.",
+      "endpoint": "GET /v1/check/dns?domain={domain}",
+      "price_usdc": "0.005",
+      "input": {"type": "object", "properties": {"domain": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "check-ssl",
+      "name": "SSL Certificate Check",
+      "description": "SSL certificate inspection — issuer, expiry, SANs, days remaining.",
+      "endpoint": "GET /v1/check/ssl?domain={domain}",
+      "price_usdc": "0.005",
+      "input": {"type": "object", "properties": {"domain": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "tools-hash",
+      "name": "Hash Text",
+      "description": "Hash text with SHA-256, SHA-512, MD5, SHA-1, or SHA3-256.",
+      "endpoint": "POST /v1/tools/hash",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"text": {"type": "string"}, "algorithm": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "tools-diff",
+      "name": "Text Diff",
+      "description": "Unified diff between two texts with change stats and similarity ratio.",
+      "endpoint": "POST /v1/tools/diff",
+      "price_usdc": "0.003",
+      "input": {"type": "object", "properties": {"text_a": {"type": "string"}, "text_b": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "data-wikipedia",
+      "name": "Wikipedia Summary",
+      "description": "Wikipedia article summary — extract, thumbnail, description, page URL.",
+      "endpoint": "GET /v1/data/wikipedia?q={query}",
+      "price_usdc": "0.01",
+      "input": {"type": "object", "properties": {"q": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "data-arxiv",
+      "name": "arXiv Search",
+      "description": "Search arXiv for academic papers — titles, authors, abstracts, PDF links.",
+      "endpoint": "GET /v1/data/arxiv?q={query}",
+      "price_usdc": "0.02",
+      "input": {"type": "object", "properties": {"q": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "data-edgar",
+      "name": "SEC EDGAR Filings",
+      "description": "Search SEC EDGAR for company filings — 10-K, 10-Q, 8-K.",
+      "endpoint": "GET /v1/data/edgar?q={query}",
+      "price_usdc": "0.02",
+      "input": {"type": "object", "properties": {"q": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
       "id": "regulatory-scan",
       "name": "Regulatory Risk Scan",
       "description": "Analyze a business against all applicable regulatory frameworks with scored impact assessment.",
@@ -37,104 +136,23 @@
       "output": {"type": "object"}
     },
     {
-      "id": "market-signal",
-      "name": "Prediction Market Signal",
-      "description": "Get HYDRA's scored regulatory probability and expected price impact for a specific prediction market.",
-      "endpoint": "POST /v1/markets/signal/{market_id}",
-      "price_usdc": "2.00",
-      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "alpha-report",
-      "name": "Alpha Report",
-      "description": "Premium alpha report with regulatory probability, edge vs market price, Kelly sizing, entry price, and trade verdict.",
-      "endpoint": "POST /v1/markets/alpha",
-      "price_usdc": "10.00",
-      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "fomc-decision",
-      "name": "FOMC Decision Classification",
-      "description": "Real-time FOMC decision classification (HOLD/CUT/HIKE + basis points) within 30 seconds of release.",
-      "endpoint": "POST /v1/fed/decision",
-      "price_usdc": "25.00",
+      "id": "market-signals",
+      "name": "Prediction Market Signals",
+      "description": "Bulk scored signals for all regulatory prediction markets.",
+      "endpoint": "POST /v1/markets/signals",
+      "price_usdc": "5.00",
       "input": {"type": "object"},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "web-scrape",
-      "name": "Web Scrape",
-      "description": "Convert any URL to clean structured text. High-volume agent utility.",
-      "endpoint": "POST /v1/util/scrape",
-      "price_usdc": "0.005",
-      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
       "output": {"type": "object"}
     },
     {
       "id": "token-price",
       "name": "Token Price Lookup",
-      "description": "Current price, 24h change, market cap, and volume for any listed cryptocurrency.",
+      "description": "Current price, 24h change, market cap for any listed token.",
       "endpoint": "GET /v1/util/crypto/price?token={token}",
       "price_usdc": "0.001",
       "input": {"type": "object", "properties": {"token": {"type": "string"}}},
       "output": {"type": "object"}
-    },
-    {
-      "id": "rss-parse",
-      "name": "RSS Feed Parser",
-      "description": "Parse any RSS or Atom feed URL into structured JSON entries.",
-      "endpoint": "POST /v1/util/rss",
-      "price_usdc": "0.002",
-      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "wallet-balance",
-      "name": "Wallet Balance",
-      "description": "ETH and USDC balance for any address on Base L2.",
-      "endpoint": "GET /v1/util/crypto/balance?address={address}",
-      "price_usdc": "0.001",
-      "input": {"type": "object", "properties": {"address": {"type": "string"}}},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "uma-oracle",
-      "name": "UMA Oracle Assertion",
-      "description": "UMA Optimistic Oracle assertion data with evidence chain for regulatory market resolution.",
-      "endpoint": "POST /v1/oracle/uma",
-      "price_usdc": "5.00",
-      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "gas-prices",
-      "name": "Gas Prices",
-      "description": "Current Base L2 gas prices with estimated costs for ETH transfers, ERC-20 transfers, swaps, and NFT mints.",
-      "endpoint": "GET /v1/util/gas",
-      "price_usdc": "0.001",
-      "input": {"type": "object"},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "tx-status",
-      "name": "Transaction Status",
-      "description": "Look up a transaction receipt on Base L2 — confirmation status, gas used, block number.",
-      "endpoint": "GET /v1/util/tx?tx_hash={tx_hash}",
-      "price_usdc": "0.001",
-      "input": {"type": "object", "properties": {"tx_hash": {"type": "string"}}},
-      "output": {"type": "object"}
-    },
-    {
-      "id": "batch-utility",
-      "name": "Batch Utility Calls",
-      "description": "Execute up to 5 utility endpoint calls in a single request. Saves gas costs vs individual x402 payments.",
-      "endpoint": "POST /v1/batch",
-      "price_usdc": "0.01",
-      "input": {"type": "object", "properties": {"requests": {"type": "array", "items": {"type": "object", "properties": {"endpoint": {"type": "string"}, "params": {"type": "object"}}}}}},
-      "output": {"type": "object"}
     }
   ],
-  "tags": ["regulatory", "prediction-markets", "polymarket", "kalshi", "fed", "sec", "cftc", "oracle", "uma", "chainlink", "x402", "mcp", "defi"]
+  "tags": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "regulatory", "prediction-markets", "oracle", "x402", "mcp", "defi"]
 }

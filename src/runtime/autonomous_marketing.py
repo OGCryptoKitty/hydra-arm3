@@ -63,7 +63,7 @@ def _get_github_token() -> str:
 
 GITHUB_TOKEN = _get_github_token()
 
-MARKETING_LOG = Path("/home/user/workspace/hydra-bootstrap/marketing_log.jsonl")
+MARKETING_LOG = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data"))) / "marketing_log.jsonl"
 
 
 # ---------------------------------------------------------------------------
@@ -587,7 +587,7 @@ Questions welcome in the comments."""
             spec_str = json.dumps(spec, indent=2)
 
             # Save locally
-            docs_dir = Path("/home/user/workspace/hydra-arm3/docs")
+            docs_dir = Path(os.getenv("HYDRA_STATE_DIR", "/tmp/hydra-data")) / "docs"
             docs_dir.mkdir(exist_ok=True)
             spec_path = docs_dir / "openapi.json"
             spec_path.write_text(spec_str, encoding="utf-8")
@@ -749,7 +749,7 @@ Happy to discuss integration patterns or the regulatory signal methodology."""
         developer search queries and will be indexed by Google via
         the GitHub Pages / raw content crawl.
         """
-        docs_dir = Path("/home/user/workspace/hydra-arm3/docs")
+        docs_dir = Path(os.getenv("HYDRA_STATE_DIR", "/tmp/hydra-data")) / "docs"
         docs_dir.mkdir(exist_ok=True)
 
         pages = self._generate_seo_pages()

@@ -1,11 +1,11 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "name": "hydra-regulatory-intelligence",
-  "description": "Real-time regulatory intelligence for prediction markets. SEC/CFTC/Fed/FinCEN monitoring. 22 x402-paid tools from $0.001 USDC on Base L2.",
+  "name": "hydra",
+  "description": "402-native paid work engine for agents. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle data. 40 x402-paid tools from $0.001 USDC on Base L2.",
   "repository": "https://github.com/OGCryptoKitty/hydra-arm3",
   "homepage": "https://hydra-api-nlnj.onrender.com",
   "maintainers": ["OGCryptoKitty"],
-  "tags": ["regulatory", "prediction-markets", "x402", "oracle", "defi", "fed", "sec", "compliance"],
+  "tags": ["extraction", "search", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "regulatory", "prediction-markets", "x402", "oracle", "defi", "fed"],
   "transport": "streamable-http",
   "url": "https://hydra-api-nlnj.onrender.com/mcp"
 }

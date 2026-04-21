@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
@@ -23,9 +24,10 @@ logger = logging.getLogger("hydra.revenue_optimizer")
 # Constants
 # ---------------------------------------------------------------------------
 
-TRANSACTION_LOG = Path("/home/user/workspace/hydra-bootstrap/transaction_log.jsonl")
-REVENUE_REPORT_DIR = Path("/home/user/workspace/hydra-bootstrap/reports")
-MARKETING_LOG = Path("/home/user/workspace/hydra-bootstrap/marketing_log.jsonl")
+_STATE_DIR = Path(os.getenv("HYDRA_STATE_DIR", os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data")))
+TRANSACTION_LOG = _STATE_DIR / "transaction_log.jsonl"
+REVENUE_REPORT_DIR = _STATE_DIR / "reports"
+MARKETING_LOG = _STATE_DIR / "marketing_log.jsonl"
 
 # Current pricing (USDC)
 CURRENT_PRICING = {
@@ -366,7 +368,7 @@ class RevenueOptimizer:
     def generate_weekly_report(self) -> str:
         """
         Generate a markdown revenue report for the past 7 days.
-        Saves to /home/user/workspace/hydra-bootstrap/reports/weekly_{date}.md
+        Saves to $HYDRA_STATE_DIR/reports/weekly_{date}.md
 
         Returns the report content as a string.
         """

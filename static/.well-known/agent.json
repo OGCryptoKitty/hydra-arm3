@@ -1,8 +1,8 @@
 {
   "name": "HYDRA",
-  "description": "402-native paid work engine for agents and developers. Web extraction, search, regulatory intelligence, prediction market signals, oracle data. 25 paid endpoints from $0.001 USDC via x402 on Base L2.",
+  "description": "402-native paid work engine for agents and developers. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, oracle data. 40 paid endpoints from $0.001 USDC via x402 on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "protocol": "a2a",
   "protocolVersion": "0.3.0",
   "capabilities": {
@@ -17,53 +17,109 @@
   "defaultOutputModes": ["application/json"],
   "skills": [
     {
+      "id": "extract-url",
+      "name": "Web Extraction",
+      "description": "Structured web extraction — title, headings, clean text, links, metadata from any URL. $0.01 USDC.",
+      "tags": ["extraction", "web", "scraping"],
+      "examples": ["Extract content from https://example.com"]
+    },
+    {
+      "id": "extract-search",
+      "name": "Web Search",
+      "description": "Web search with structured result extraction. $0.02 USDC.",
+      "tags": ["search", "web"],
+      "examples": ["Search for 'x402 payment protocol'"]
+    },
+    {
+      "id": "convert-html2md",
+      "name": "HTML to Markdown",
+      "description": "Convert HTML to clean Markdown preserving structure. $0.005 USDC.",
+      "tags": ["conversion", "markdown", "html"],
+      "examples": ["Convert this HTML page to Markdown"]
+    },
+    {
+      "id": "check-url",
+      "name": "URL Health Check",
+      "description": "Check URL status, redirects, response time. $0.005 USDC.",
+      "tags": ["web-checks", "monitoring"],
+      "examples": ["Is https://example.com up?"]
+    },
+    {
+      "id": "check-dns",
+      "name": "DNS Lookup",
+      "description": "DNS record lookup — A, MX, TXT, NS, CNAME. $0.005 USDC.",
+      "tags": ["dns", "web-checks"],
+      "examples": ["Get MX records for gmail.com"]
+    },
+    {
+      "id": "check-ssl",
+      "name": "SSL Certificate Check",
+      "description": "SSL cert inspection — issuer, expiry, SANs. $0.005 USDC.",
+      "tags": ["ssl", "security", "web-checks"],
+      "examples": ["Check SSL cert for github.com"]
+    },
+    {
+      "id": "tools-hash",
+      "name": "Hash Text",
+      "description": "SHA-256, SHA-512, MD5, SHA-1 hash. $0.001 USDC.",
+      "tags": ["developer-tools", "hash", "crypto"],
+      "examples": ["SHA-256 hash of 'hello world'"]
+    },
+    {
+      "id": "tools-diff",
+      "name": "Text Diff",
+      "description": "Unified diff with stats and similarity ratio. $0.003 USDC.",
+      "tags": ["developer-tools", "diff"],
+      "examples": ["Diff these two texts"]
+    },
+    {
+      "id": "data-wikipedia",
+      "name": "Wikipedia Summary",
+      "description": "Wikipedia article summary with thumbnail. $0.01 USDC.",
+      "tags": ["public-data", "wikipedia", "research"],
+      "examples": ["Wikipedia summary for Bitcoin"]
+    },
+    {
+      "id": "data-arxiv",
+      "name": "arXiv Search",
+      "description": "Academic paper search — titles, authors, abstracts, PDFs. $0.02 USDC.",
+      "tags": ["public-data", "arxiv", "research"],
+      "examples": ["Search arXiv for 'transformer architecture'"]
+    },
+    {
+      "id": "data-edgar",
+      "name": "SEC EDGAR Filings",
+      "description": "SEC filing search — 10-K, 10-Q, 8-K. $0.02 USDC.",
+      "tags": ["public-data", "sec", "edgar", "finance"],
+      "examples": ["Find Apple's latest 10-K filing"]
+    },
+    {
       "id": "regulatory-scan",
       "name": "Regulatory Risk Scan",
-      "description": "Analyze a business against all applicable US regulatory frameworks with scored impact assessment. $2.00 USDC.",
+      "description": "Full regulatory risk scan with scored impact. $2.00 USDC.",
       "tags": ["regulatory", "compliance", "risk"],
-      "examples": ["Scan my DeFi lending protocol for SEC/CFTC exposure"]
+      "examples": ["Scan my DeFi protocol for SEC/CFTC exposure"]
     },
     {
       "id": "market-signals",
       "name": "Prediction Market Signals",
-      "description": "Scored regulatory signals for all active Polymarket and Kalshi prediction markets. $5.00 USDC.",
-      "tags": ["prediction-markets", "polymarket", "kalshi", "trading"],
+      "description": "Scored regulatory signals for Polymarket/Kalshi. $5.00 USDC.",
+      "tags": ["prediction-markets", "polymarket", "kalshi"],
       "examples": ["Get signals for all regulatory prediction markets"]
     },
     {
       "id": "fed-signal",
       "name": "FOMC Pre-Decision Signal",
-      "description": "Pre-FOMC signal with rate probabilities, speech analysis, and economic indicators. $5.00 USDC.",
-      "tags": ["fed", "fomc", "interest-rates", "monetary-policy"],
-      "examples": ["What are the rate probabilities for the next FOMC meeting?"]
-    },
-    {
-      "id": "oracle-uma",
-      "name": "UMA Oracle Assertion Data",
-      "description": "UMA Optimistic Oracle assertion data with evidence chain for prediction market resolution. $5.00 USDC.",
-      "tags": ["oracle", "uma", "resolution"],
-      "examples": ["Get UMA assertion data for FOMC rate hold market"]
-    },
-    {
-      "id": "web-scrape",
-      "name": "Web Scrape",
-      "description": "Convert any URL to clean structured text. $0.005 USDC.",
-      "tags": ["utility", "scraping"],
-      "examples": ["Scrape https://sec.gov/news for latest filings"]
+      "description": "Pre-FOMC rate probabilities and speech analysis. $5.00 USDC.",
+      "tags": ["fed", "fomc", "interest-rates"],
+      "examples": ["Rate probabilities for next FOMC meeting"]
     },
     {
       "id": "crypto-price",
       "name": "Token Price",
-      "description": "Current price, 24h change, market cap for any listed token. $0.001 USDC.",
+      "description": "Current price, 24h change, market cap. $0.001 USDC.",
       "tags": ["utility", "crypto", "price"],
       "examples": ["Get ETH price"]
-    },
-    {
-      "id": "gas-prices",
-      "name": "Base L2 Gas Prices",
-      "description": "Current gas prices with cost estimates for transfers, swaps, mints. $0.001 USDC.",
-      "tags": ["utility", "gas", "base"],
-      "examples": ["What are current Base gas prices?"]
     }
   ],
   "payment": {
