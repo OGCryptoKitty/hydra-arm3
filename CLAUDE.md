@@ -44,6 +44,12 @@ src/api/routes.py                    — Core regulatory endpoints (scan, change
 src/api/prediction_routes.py         — Polymarket/Kalshi/oracle endpoints
 src/api/fed_routes.py                — FOMC signal/decision/resolution
 src/api/utility_routes.py            — High-volume utilities (scrape, price, gas, tx, batch)
+src/api/extract_routes.py            — Web extraction (url, multi, search)
+src/api/check_routes.py              — Web checks (url health, dns, ssl, headers)
+src/api/convert_routes.py            — Format conversion (html2md, json2csv, csv2json)
+src/api/tools_routes.py              — Developer tools (hash, encode, diff, validate)
+src/api/data_routes.py               — Public data (wikipedia, arxiv, edgar)
+src/api/mpp.py                       — MPP manifest and status
 src/api/system_routes.py             — Wallet management, remittance, status
 src/services/regulatory.py           — Rule-based regulatory engine (1500+ lines)
 src/services/prediction_markets.py   — Polymarket Gamma + Kalshi REST clients
@@ -62,7 +68,7 @@ src/x402/middleware.py               — HTTP 402 intercept, payment verificatio
 src/x402/verify.py                   — On-chain USDC transfer verification
 src/x402/cdp_facilitator.py          — CDP x402 SDK middleware
 src/x402/mpp_integration.py          — Machine Payments Protocol middleware
-config/settings.py                   — Pricing dict (22 endpoints), wallet, chain config
+config/settings.py                   — Pricing dict (40 endpoints), wallet, chain config
 static/.well-known/                  — x402.json, mcp.json, agents.json, llms.txt, ai-plugin.json
 static/robots.txt                    — Crawler directives
 static/sitemap.xml                   — 17 URLs for crawler discovery
@@ -70,7 +76,7 @@ static/sitemap.xml                   — 17 URLs for crawler discovery
 
 ## Revenue Model
 
-22 paid endpoints ($0.001 - $50.00 USDC) + 12 free endpoints. Triple payment stack:
+40 paid endpoints ($0.001 - $50.00 USDC) + 12 free endpoints. Triple payment stack:
 - **x402** (CDP SDK) — standard facilitator flow
 - **MPP** (Stripe/Tempo) — session micropayments
 - **X-Payment-Proof** — direct on-chain tx hash verification
@@ -116,7 +122,7 @@ When assessing what to build next, prioritize by expected revenue impact:
 2. **Private key on Render** — Set `WALLET_PRIVATE_KEY` env var in Render dashboard for full automaton mode.
 3. **Replay cache in-memory** — `src/x402/middleware.py` tx hash cache resets on restart. Persist to `/tmp/hydra_used_txhashes.json`.
 4. **FRED API hardcoded** — Economic indicators in `src/services/fed_intelligence.py` are static. Set `FRED_API_KEY` env var.
-5. **Revenue = $0.00** — No agent has made a payment yet. Distribution is the bottleneck.
+5. **Revenue = $0.00** — No agent has made a payment yet. Distribution is the bottleneck. 40 paid endpoints now live.
 
 ## Authorization
 

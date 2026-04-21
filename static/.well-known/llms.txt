@@ -1,8 +1,8 @@
 # HYDRA
 
-> 402-native paid work engine for agents and developers. 25 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
+> 402-native paid work engine for agents and developers. 40 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
 
-HYDRA provides web extraction, search, regulatory intelligence, prediction market signals, and oracle data as pay-per-call x402 endpoints. Built for AI agents that need structured data on demand.
+HYDRA provides web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, and oracle data as pay-per-call x402 endpoints. Built for AI agents that need structured data and utilities on demand.
 
 ## Payment
 
@@ -22,6 +22,29 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `POST /v1/extract/url` ($0.01) — Structured web extraction: title, headings, clean text, links, OpenGraph metadata.
 - `POST /v1/extract/multi` ($0.05) — Batch extraction from up to 5 URLs in parallel.
 - `GET /v1/extract/search?q=...` ($0.02) — Web search with structured result extraction: titles, snippets, URLs.
+
+### Web Checks Tier ($0.003 - $0.005 USDC)
+- `GET /v1/check/url?url=...` ($0.005) — URL health check: status code, response time, redirect chain, content type.
+- `GET /v1/check/dns?domain=...` ($0.005) — DNS record lookup: A, AAAA, MX, TXT, NS, CNAME via DNS-over-HTTPS.
+- `GET /v1/check/ssl?domain=...` ($0.005) — SSL certificate inspection: issuer, expiry, SANs, days remaining.
+- `GET /v1/check/headers?url=...` ($0.003) — HTTP response headers with security headers analysis and score.
+
+### Conversion Tier ($0.003 - $0.005 USDC)
+- `POST /v1/convert/html2md` ($0.005) — HTML to Markdown. Preserves headings, lists, links, code blocks, tables.
+- `POST /v1/convert/json2csv` ($0.003) — JSON array of objects to CSV with auto-detected headers.
+- `POST /v1/convert/csv2json` ($0.003) — CSV text to JSON array. First row = headers.
+
+### Developer Tools Tier ($0.001 - $0.003 USDC)
+- `POST /v1/tools/hash` ($0.001) — Hash text with SHA-256, SHA-512, MD5, SHA-1, SHA3-256.
+- `POST /v1/tools/encode` ($0.001) — Base64, URL, hex encode/decode.
+- `POST /v1/tools/diff` ($0.003) — Unified diff between two texts with change stats and similarity ratio.
+- `POST /v1/tools/validate/json` ($0.001) — JSON syntax validation with pretty-print and structure info.
+- `POST /v1/tools/validate/email` ($0.002) — Email format validation with MX record check.
+
+### Public Data Tier ($0.01 - $0.02 USDC)
+- `GET /v1/data/wikipedia?q=...` ($0.01) — Wikipedia article summary: extract, thumbnail, description, page URL.
+- `GET /v1/data/arxiv?q=...` ($0.02) — arXiv academic paper search: titles, authors, abstracts, PDF links.
+- `GET /v1/data/edgar?q=...` ($0.02) — SEC EDGAR filing search: 10-K, 10-Q, 8-K by company, ticker, or keyword.
 
 ### Agent Utility Tier ($0.001 - $0.01 USDC)
 - `POST /v1/util/scrape` ($0.005) — URL to clean structured text. HTML parsed, scripts removed.
@@ -63,12 +86,16 @@ Three ways to pay for HYDRA endpoints:
 
 ## Agent Use Cases
 
+- **Web extraction**: Get clean structured text, metadata, and links from any URL
+- **Format conversion**: Convert HTML to Markdown, JSON to CSV, CSV to JSON
+- **Developer tools**: Hash text, encode/decode Base64/URL/hex, diff texts, validate JSON/email
+- **Web infrastructure**: Check URL health, DNS records, SSL certificates, HTTP headers
+- **Research**: Search Wikipedia, arXiv papers, SEC EDGAR filings
 - **Prediction market trading**: Get scored regulatory signals before placing trades on Polymarket or Kalshi
-- **FOMC event trading**: Pre-decision signals with rate probabilities, real-time classification within 30 seconds of release
+- **FOMC event trading**: Pre-decision signals with rate probabilities, real-time classification within 30 seconds
 - **Compliance monitoring**: Scan DeFi protocols against SEC, CFTC, FinCEN frameworks
-- **Oracle resolution**: Generate UMA Optimistic Oracle assertions or Chainlink External Adapter responses with evidence chains
-- **Regulatory research**: Q&A with statutory citations across 6 federal agencies
-- **Utility tooling**: Web scraping, crypto prices, gas estimates, RSS parsing — high-volume, low-cost agent tools
+- **Oracle resolution**: Generate UMA/Chainlink oracle assertions with evidence chains
+- **Utility tooling**: Crypto prices, gas estimates, RSS parsing, web scraping
 
 ## Quick Test
 
@@ -104,11 +131,11 @@ curl -s https://hydra-api-nlnj.onrender.com/v1/util/crypto/price?token=ETH
 
 ```bash
 # Claude Code
-claude mcp add --transport http hydra-regulatory https://hydra-api-nlnj.onrender.com/mcp
+claude mcp add --transport http hydra https://hydra-api-nlnj.onrender.com/mcp
 
 # Claude Desktop — add to claude_desktop_config.json:
-# { "mcpServers": { "hydra-regulatory": { "url": "https://hydra-api-nlnj.onrender.com/mcp" } } }
+# { "mcpServers": { "hydra": { "url": "https://hydra-api-nlnj.onrender.com/mcp" } } }
 
 # .mcp.json (project-scoped)
-# { "hydra-regulatory": { "type": "http", "url": "https://hydra-api-nlnj.onrender.com/mcp" } }
+# { "hydra": { "type": "http", "url": "https://hydra-api-nlnj.onrender.com/mcp" } }
 ```

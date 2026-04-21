@@ -44,6 +44,10 @@ from src.api.fed_routes import fed_router
 from src.api.utility_routes import utility_router
 from src.api.mpp import mpp_router
 from src.api.extract_routes import extract_router
+from src.api.check_routes import check_router
+from src.api.convert_routes import convert_router
+from src.api.tools_routes import tools_router
+from src.api.data_routes import data_router
 from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -213,6 +217,34 @@ app = FastAPI(
             ),
         },
         {
+            "name": "Web Checks",
+            "description": (
+                "URL health checks, DNS record lookup, SSL certificate inspection, "
+                "and HTTP header analysis. $0.003-$0.005 USDC per call."
+            ),
+        },
+        {
+            "name": "Conversion",
+            "description": (
+                "Format conversion — HTML to Markdown, JSON to CSV, CSV to JSON. "
+                "$0.003-$0.005 USDC per call."
+            ),
+        },
+        {
+            "name": "Developer Tools",
+            "description": (
+                "Hash, encode/decode, text diff, JSON validation, email validation. "
+                "Pure computation endpoints. $0.001-$0.003 USDC per call."
+            ),
+        },
+        {
+            "name": "Public Data",
+            "description": (
+                "Wikipedia summaries, arXiv paper search, SEC EDGAR filing search. "
+                "Public data sources, no API keys needed. $0.01-$0.02 USDC per call."
+            ),
+        },
+        {
             "name": "System",
             "description": "Health check and pricing — free endpoints",
         },
@@ -261,8 +293,9 @@ if _mcp_available:
             name="HYDRA",
             description=(
                 "402-native paid work engine for agents. Web extraction, search, "
+                "format conversion, developer tools, web checks, public data, "
                 "regulatory intelligence, prediction market signals, oracle data. "
-                "25 paid tools from $0.001 USDC via x402 on Base L2."
+                "40 paid tools from $0.001 USDC via x402 on Base L2."
             ),
         )
         mcp_server.mount()
@@ -359,6 +392,18 @@ app.include_router(system_router, prefix="")
 
 # Extraction services — general-purpose agent tools
 app.include_router(extract_router)
+
+# Web infrastructure checks (URL, DNS, SSL, headers)
+app.include_router(check_router)
+
+# Format conversion (HTML→Markdown, JSON↔CSV)
+app.include_router(convert_router)
+
+# Developer micro-tools (hash, encode, diff, validate)
+app.include_router(tools_router)
+
+# Public data search (Wikipedia, arXiv, SEC EDGAR)
+app.include_router(data_router)
 
 # MPP discovery and status endpoints
 app.include_router(mpp_router)
@@ -748,13 +793,24 @@ async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
             "available_endpoints": [
                 "GET  /health",
                 "GET  /pricing",
-                "POST /v1/regulatory/scan          ($2.00 USDC)",
-                "POST /v1/regulatory/changes       ($1.00 USDC)",
-                "POST /v1/regulatory/jurisdiction  ($3.00 USDC)",
-                "POST /v1/regulatory/query         ($1.00 USDC)",
-                "GET  /v1/markets                  (free)",
-                "POST /v1/markets/signals          ($5.00 USDC)",
-                "POST /v1/markets/alpha            ($10.00 USDC)",
+                "POST /v1/extract/url              ($0.01  USDC)",
+                "POST /v1/extract/multi            ($0.05  USDC)",
+                "GET  /v1/extract/search           ($0.02  USDC)",
+                "GET  /v1/check/url                ($0.005 USDC)",
+                "GET  /v1/check/dns                ($0.005 USDC)",
+                "GET  /v1/check/ssl                ($0.005 USDC)",
+                "GET  /v1/check/headers            ($0.003 USDC)",
+                "POST /v1/convert/html2md          ($0.005 USDC)",
+                "POST /v1/convert/json2csv         ($0.003 USDC)",
+                "POST /v1/convert/csv2json         ($0.003 USDC)",
+                "POST /v1/tools/hash               ($0.001 USDC)",
+                "POST /v1/tools/encode             ($0.001 USDC)",
+                "POST /v1/tools/diff               ($0.003 USDC)",
+                "POST /v1/tools/validate/json      ($0.001 USDC)",
+                "POST /v1/tools/validate/email     ($0.002 USDC)",
+                "GET  /v1/data/wikipedia           ($0.01  USDC)",
+                "GET  /v1/data/arxiv               ($0.02  USDC)",
+                "GET  /v1/data/edgar               ($0.02  USDC)",
                 "POST /v1/util/scrape              ($0.005 USDC)",
                 "GET  /v1/util/crypto/price        ($0.001 USDC)",
                 "POST /v1/util/rss                 ($0.002 USDC)",
@@ -762,9 +818,13 @@ async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
                 "GET  /v1/util/gas                 ($0.001 USDC)",
                 "GET  /v1/util/tx                  ($0.001 USDC)",
                 "POST /v1/batch                    ($0.01  USDC)",
-                "POST /v1/extract/url              ($0.01  USDC)",
-                "POST /v1/extract/multi            ($0.05  USDC)",
-                "GET  /v1/extract/search           ($0.02  USDC)",
+                "GET  /v1/markets                  (free)",
+                "POST /v1/markets/signals          ($5.00 USDC)",
+                "POST /v1/markets/alpha            ($10.00 USDC)",
+                "POST /v1/regulatory/scan          ($2.00 USDC)",
+                "POST /v1/regulatory/changes       ($1.00 USDC)",
+                "POST /v1/regulatory/jurisdiction  ($3.00 USDC)",
+                "POST /v1/regulatory/query         ($1.00 USDC)",
             ],
             "docs": "/docs",
         },

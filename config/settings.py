@@ -34,10 +34,11 @@ USDC_DECIMALS: int = 6
 # ─────────────────────────────────────────────────────────────
 
 APP_NAME: str = "HYDRA — 402-native paid work engine"
-APP_VERSION: str = "1.1.0"
+APP_VERSION: str = "2.0.0"
 APP_DESCRIPTION: str = (
-    "Web extraction, search, regulatory intelligence, prediction market signals, "
-    "and oracle data. 25 paid endpoints from $0.001 USDC via x402 on Base L2."
+    "Web extraction, search, format conversion, developer tools, public data, "
+    "web checks, regulatory intelligence, prediction market signals, and oracle data. "
+    "40 paid endpoints from $0.001 USDC via x402 on Base L2."
 )
 
 HOST: str = os.getenv("HOST", "0.0.0.0")
@@ -183,6 +184,85 @@ PRICING: dict[str, dict] = {
     "/v1/extract/search": {
         "amount_usdc": Decimal("0.02"),
         "description": "Web search with structured result extraction — titles, snippets, URLs.",
+        "amount_base_units": 20_000,
+    },
+    # ── Web Infrastructure Checks ────────────────────────────────
+    "/v1/check/url": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "URL health check — status code, response time, redirect chain, content type.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/check/dns": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "DNS record lookup — A, AAAA, MX, TXT, NS, CNAME via Google DNS-over-HTTPS.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/check/ssl": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "SSL certificate inspection — issuer, expiry, SANs, protocol, days remaining.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/check/headers": {
+        "amount_usdc": Decimal("0.003"),
+        "description": "HTTP response headers with security headers analysis and score.",
+        "amount_base_units": 3_000,
+    },
+    # ── Format Conversion ────────────────────────────────────────
+    "/v1/convert/html2md": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "HTML to Markdown — preserves headings, lists, links, code blocks, tables.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/convert/json2csv": {
+        "amount_usdc": Decimal("0.003"),
+        "description": "JSON array of objects to CSV with auto-detected headers.",
+        "amount_base_units": 3_000,
+    },
+    "/v1/convert/csv2json": {
+        "amount_usdc": Decimal("0.003"),
+        "description": "CSV text to JSON array of objects. First row = headers.",
+        "amount_base_units": 3_000,
+    },
+    # ── Developer Tools ──────────────────────────────────────────
+    "/v1/tools/hash": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Hash text with SHA-256, SHA-512, MD5, SHA-1, or SHA3-256.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/tools/encode": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Encode/decode text — Base64, URL encoding, hex.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/tools/diff": {
+        "amount_usdc": Decimal("0.003"),
+        "description": "Unified diff between two texts with change stats and similarity ratio.",
+        "amount_base_units": 3_000,
+    },
+    "/v1/tools/validate/json": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "JSON syntax validation with pretty-print and structure info.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/tools/validate/email": {
+        "amount_usdc": Decimal("0.002"),
+        "description": "Email format validation with MX record check.",
+        "amount_base_units": 2_000,
+    },
+    # ── Public Data Search ───────────────────────────────────────
+    "/v1/data/wikipedia": {
+        "amount_usdc": Decimal("0.01"),
+        "description": "Wikipedia article summary — extract, thumbnail, description, page URL.",
+        "amount_base_units": 10_000,
+    },
+    "/v1/data/arxiv": {
+        "amount_usdc": Decimal("0.02"),
+        "description": "arXiv academic paper search — titles, authors, abstracts, PDF links.",
+        "amount_base_units": 20_000,
+    },
+    "/v1/data/edgar": {
+        "amount_usdc": Decimal("0.02"),
+        "description": "SEC EDGAR filing search — 10-K, 10-Q, 8-K by company, ticker, or keyword.",
         "amount_base_units": 20_000,
     },
 }

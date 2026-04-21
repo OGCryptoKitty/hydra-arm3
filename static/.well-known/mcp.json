@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "server": {
     "name": "HYDRA",
-    "description": "402-native paid work engine for agents. Web extraction, search, regulatory intelligence, prediction market signals, oracle data. 25 paid tools from $0.001 USDC.",
+    "description": "402-native paid work engine for agents. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, oracle data. 40 paid tools from $0.001 USDC.",
     "url": "https://hydra-api-nlnj.onrender.com/mcp",
     "transport": "streamable-http"
   },
@@ -44,7 +44,22 @@
     {"name": "batch_utility", "description": "Batch up to 5 utility calls in one request — saves gas ($0.01)", "endpoint": "/v1/batch"},
     {"name": "extract_url", "description": "Structured web extraction — title, headings, text, links, metadata ($0.01)", "endpoint": "/v1/extract/url"},
     {"name": "extract_multi", "description": "Batch extraction from up to 5 URLs in parallel ($0.05)", "endpoint": "/v1/extract/multi"},
-    {"name": "extract_search", "description": "Web search with structured result extraction ($0.02)", "endpoint": "/v1/extract/search"}
+    {"name": "extract_search", "description": "Web search with structured result extraction ($0.02)", "endpoint": "/v1/extract/search"},
+    {"name": "check_url", "description": "URL health check — status code, response time, redirect chain ($0.005)", "endpoint": "/v1/check/url"},
+    {"name": "check_dns", "description": "DNS record lookup — A, AAAA, MX, TXT, NS, CNAME ($0.005)", "endpoint": "/v1/check/dns"},
+    {"name": "check_ssl", "description": "SSL certificate inspection — issuer, expiry, SANs ($0.005)", "endpoint": "/v1/check/ssl"},
+    {"name": "check_headers", "description": "HTTP response headers with security analysis ($0.003)", "endpoint": "/v1/check/headers"},
+    {"name": "convert_html2md", "description": "HTML to Markdown with headings, lists, links, tables ($0.005)", "endpoint": "/v1/convert/html2md"},
+    {"name": "convert_json2csv", "description": "JSON array to CSV with auto-detected headers ($0.003)", "endpoint": "/v1/convert/json2csv"},
+    {"name": "convert_csv2json", "description": "CSV text to JSON array ($0.003)", "endpoint": "/v1/convert/csv2json"},
+    {"name": "hash_text", "description": "Hash text with SHA-256, SHA-512, MD5, SHA-1 ($0.001)", "endpoint": "/v1/tools/hash"},
+    {"name": "encode_decode", "description": "Base64, URL, hex encode/decode ($0.001)", "endpoint": "/v1/tools/encode"},
+    {"name": "text_diff", "description": "Unified diff with change stats and similarity ratio ($0.003)", "endpoint": "/v1/tools/diff"},
+    {"name": "validate_json", "description": "JSON syntax validation with pretty-print ($0.001)", "endpoint": "/v1/tools/validate/json"},
+    {"name": "validate_email", "description": "Email format + MX record validation ($0.002)", "endpoint": "/v1/tools/validate/email"},
+    {"name": "wikipedia_summary", "description": "Wikipedia article summary with thumbnail ($0.01)", "endpoint": "/v1/data/wikipedia"},
+    {"name": "arxiv_search", "description": "arXiv paper search — authors, abstracts, PDFs ($0.02)", "endpoint": "/v1/data/arxiv"},
+    {"name": "edgar_filings", "description": "SEC EDGAR filing search — 10-K, 8-K, 10-Q ($0.02)", "endpoint": "/v1/data/edgar"}
   ],
   "discovery": {
     "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
@@ -56,5 +71,5 @@
     "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml",
     "docs": "https://hydra-api-nlnj.onrender.com/docs"
   },
-  "tags": ["extraction", "search", "regulatory", "prediction-markets", "oracle", "x402", "agent-tools"]
+  "tags": ["extraction", "search", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "regulatory", "prediction-markets", "oracle", "x402", "agent-tools"]
 }

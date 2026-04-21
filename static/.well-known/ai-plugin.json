@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "name_for_human": "HYDRA",
   "name_for_model": "hydra",
-  "description_for_human": "402-native paid work engine for agents and developers. Web extraction, search, regulatory intelligence, prediction market signals, and oracle data.",
-  "description_for_model": "HYDRA is a pay-per-call API on Base L2. Top tools: /v1/extract/url ($0.01) for structured web extraction, /v1/extract/search ($0.02) for web search, /v1/extract/multi ($0.05) for batch extraction. Also: /v1/util/crypto/price ($0.001), /v1/util/scrape ($0.005), /v1/regulatory/scan ($2.00). Call any paid endpoint without payment to get x402 payment instructions. MCP server at /mcp. Free endpoints: /v1/markets, /pricing, /health.",
+  "description_for_human": "402-native paid work engine for agents and developers. 40 paid endpoints: web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle data.",
+  "description_for_model": "HYDRA is a pay-per-call API on Base L2 with 40 paid tools. Top tools: /v1/extract/url ($0.01) web extraction, /v1/extract/search ($0.02) web search, /v1/convert/html2md ($0.005) HTML to Markdown, /v1/check/url ($0.005) URL health, /v1/check/dns ($0.005) DNS lookup, /v1/check/ssl ($0.005) SSL cert, /v1/tools/hash ($0.001) hash text, /v1/tools/diff ($0.003) text diff, /v1/data/wikipedia ($0.01) Wikipedia, /v1/data/arxiv ($0.02) arXiv search, /v1/data/edgar ($0.02) SEC filings, /v1/util/crypto/price ($0.001) token prices. Call any paid endpoint without payment to get x402 payment instructions. MCP server at /mcp. Free: /v1/markets, /pricing, /health.",
   "auth": {
     "type": "none"
   },

@@ -102,6 +102,57 @@ def _get_sample_response(path: str) -> dict | None:
             "results": [{"title": "Result 1", "snippet": "Preview...", "url": "https://example.com"}],
             "result_count": 8,
         },
+        "/v1/check/url": {
+            "_note": "SAMPLE — pay to get live check",
+            "url": "https://example.com",
+            "status_code": 200,
+            "ok": True,
+            "content_type": "text/html",
+            "elapsed_ms": 145,
+        },
+        "/v1/check/dns": {
+            "_note": "SAMPLE — pay to get live DNS",
+            "domain": "example.com",
+            "record_type": "A",
+            "records": [{"data": "93.184.216.34", "ttl": 3600}],
+        },
+        "/v1/check/ssl": {
+            "_note": "SAMPLE — pay to get live SSL info",
+            "domain": "example.com",
+            "valid": True,
+            "issuer": {"organizationName": "DigiCert Inc"},
+            "days_remaining": 247,
+        },
+        "/v1/convert/html2md": {
+            "_note": "SAMPLE — pay to convert",
+            "markdown": "# Example Heading\n\nConverted text...",
+            "length": 42,
+        },
+        "/v1/tools/hash": {
+            "_note": "SAMPLE — pay to hash",
+            "algorithm": "sha256",
+            "hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        },
+        "/v1/tools/diff": {
+            "_note": "SAMPLE — pay to diff",
+            "stats": {"lines_added": 3, "lines_removed": 1, "similarity": 0.85},
+        },
+        "/v1/data/wikipedia": {
+            "_note": "SAMPLE — pay to get full article",
+            "title": "Bitcoin",
+            "description": "Cryptocurrency",
+            "extract": "Bitcoin is a decentralized digital currency...",
+        },
+        "/v1/data/arxiv": {
+            "_note": "SAMPLE — pay to get full results",
+            "results": [{"title": "Attention Is All You Need", "authors": ["Vaswani et al."], "categories": ["cs.CL"]}],
+            "result_count": 10,
+        },
+        "/v1/data/edgar": {
+            "_note": "SAMPLE — pay to get SEC filings",
+            "results": [{"filing_type": "10-K", "entity": "Apple Inc", "filed": "2025-10-31"}],
+            "result_count": 10,
+        },
     }
     if path in samples:
         return samples[path]

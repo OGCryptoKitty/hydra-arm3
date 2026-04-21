@@ -1,6 +1,6 @@
 {
   "name": "HYDRA",
-  "description": "402-native paid work engine for agents and developers. Web extraction, search, regulatory intelligence, prediction market signals, and oracle data. Pay-per-call in USDC on Base L2.",
+  "description": "402-native paid work engine for agents and developers. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, and oracle data. 40 paid endpoints from $0.001 USDC on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "x402Version": 1,
   "payment": {
@@ -38,7 +38,22 @@
     {"path": "/v1/batch", "method": "POST", "price": "0.01", "description": "Batch up to 5 utility calls in one request — saves gas vs individual payments"},
     {"path": "/v1/extract/url", "method": "POST", "price": "0.01", "description": "Structured web extraction — title, headings, clean text, links, OpenGraph metadata"},
     {"path": "/v1/extract/multi", "method": "POST", "price": "0.05", "description": "Batch extraction from up to 5 URLs in parallel"},
-    {"path": "/v1/extract/search", "method": "GET", "price": "0.02", "description": "Web search with structured result extraction — titles, snippets, URLs"}
+    {"path": "/v1/extract/search", "method": "GET", "price": "0.02", "description": "Web search with structured result extraction — titles, snippets, URLs"},
+    {"path": "/v1/check/url", "method": "GET", "price": "0.005", "description": "URL health check — status code, response time, redirect chain, content type"},
+    {"path": "/v1/check/dns", "method": "GET", "price": "0.005", "description": "DNS record lookup — A, AAAA, MX, TXT, NS, CNAME via DNS-over-HTTPS"},
+    {"path": "/v1/check/ssl", "method": "GET", "price": "0.005", "description": "SSL certificate inspection — issuer, expiry, SANs, days remaining"},
+    {"path": "/v1/check/headers", "method": "GET", "price": "0.003", "description": "HTTP response headers with security headers analysis and score"},
+    {"path": "/v1/convert/html2md", "method": "POST", "price": "0.005", "description": "HTML to Markdown — preserves headings, lists, links, code blocks, tables"},
+    {"path": "/v1/convert/json2csv", "method": "POST", "price": "0.003", "description": "JSON array to CSV with auto-detected headers"},
+    {"path": "/v1/convert/csv2json", "method": "POST", "price": "0.003", "description": "CSV text to JSON array of objects"},
+    {"path": "/v1/tools/hash", "method": "POST", "price": "0.001", "description": "Hash text with SHA-256, SHA-512, MD5, SHA-1, or SHA3-256"},
+    {"path": "/v1/tools/encode", "method": "POST", "price": "0.001", "description": "Encode/decode text — Base64, URL encoding, hex"},
+    {"path": "/v1/tools/diff", "method": "POST", "price": "0.003", "description": "Unified diff between two texts with change stats and similarity ratio"},
+    {"path": "/v1/tools/validate/json", "method": "POST", "price": "0.001", "description": "JSON syntax validation with pretty-print and structure info"},
+    {"path": "/v1/tools/validate/email", "method": "POST", "price": "0.002", "description": "Email format validation with MX record check"},
+    {"path": "/v1/data/wikipedia", "method": "GET", "price": "0.01", "description": "Wikipedia article summary — extract, thumbnail, description, page URL"},
+    {"path": "/v1/data/arxiv", "method": "GET", "price": "0.02", "description": "arXiv academic paper search — titles, authors, abstracts, PDF links"},
+    {"path": "/v1/data/edgar", "method": "GET", "price": "0.02", "description": "SEC EDGAR filing search — 10-K, 10-Q, 8-K by company, ticker, or keyword"}
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
@@ -51,5 +66,5 @@
     "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
     "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml"
   },
-  "tags": ["extraction", "search", "web-scraping", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "defi"]
+  "tags": ["extraction", "search", "web-scraping", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "defi"]
 }
