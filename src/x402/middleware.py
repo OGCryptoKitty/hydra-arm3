@@ -250,9 +250,16 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         path = request.url.path
 
-        # ── Free endpoints pass through immediately ──────────
+        # ── Free endpoints pass through with cross-promotion headers ──
         if path in self._FREE_PATHS or not path.startswith("/v1/"):
-            return await call_next(request)
+            response = await call_next(request)
+            response.headers["X-HYDRA-Paid-Endpoints"] = (
+                "https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
+            )
+            response.headers["X-HYDRA-Intelligence"] = (
+                "https://hydra-api-nlnj.onrender.com/v1/intelligence/alpha ($5 composite signal)"
+            )
+            return response
 
         # ── Determine pricing for this endpoint ──────────────
         pricing = PRICING.get(path)
@@ -397,46 +404,60 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         """Return a standards-compliant 402 Payment Required response."""
         sample = _get_sample_response(path)
         body = {
-            "error": "Payment Required",
-            "message": (
-                f"This endpoint requires a payment of {pricing['amount_usdc']} USDC on Base. "
-                f"Send exactly {pricing['amount_base_units']} USDC base units (6 decimals) "
-                f"to the wallet address, then retry with your transaction hash in the "
-                f"X-Payment-Proof header."
-            ),
-            "sample_response": sample,
-            "payment": {
-                "amount_usdc": str(pricing["amount_usdc"]),
-                "amount_base_units": pricing["amount_base_units"],
-                "wallet_address": WALLET_ADDRESS,
-                "network": PAYMENT_NETWORK,
-                "token": PAYMENT_TOKEN,
-                "token_contract": USDC_CONTRACT_ADDRESS,
+            "status": 402,
+            "message": "Payment Required",
+            "endpoint": path,
+            "description": pricing["description"],
+            "price": {
+                "amount": str(pricing["amount_usdc"]),
+                "currency": "USDC",
+                "chain": "base",
                 "chain_id": CHAIN_ID,
-                "endpoint": path,
-                "description": pricing["description"],
+                "decimals": USDC_DECIMALS,
+                "amount_base_units": pricing["amount_base_units"],
             },
-            "x402": {
-                "version": "1.0",
-                "scheme": "exact",
-                "facilitator": "https://x402.org/facilitator",
-                "pay": {
-                    "to": WALLET_ADDRESS,
-                    "amount": str(pricing["amount_base_units"]),
-                    "token": USDC_CONTRACT_ADDRESS,
+            "payment_methods": {
+                "x402": {
+                    "wallet": WALLET_ADDRESS,
+                    "token_address": USDC_CONTRACT_ADDRESS,
+                    "facilitator": "https://x402.org/facilitator",
+                    "protocol_version": 1,
+                    "scheme": "exact",
+                    "network": f"eip155:{CHAIN_ID}",
+                    "proof_header": "X-PAYMENT",
+                    "instructions": (
+                        "Use any x402-compatible client. The PAYMENT-REQUIRED response header "
+                        "contains a base64-encoded JSON payment requirement object."
+                    ),
+                },
+                "direct": {
+                    "instruction": (
+                        "Send exact USDC amount to wallet address, then retry with "
+                        "X-Payment-Proof header containing the transaction hash"
+                    ),
+                    "wallet": WALLET_ADDRESS,
+                    "token_address": USDC_CONTRACT_ADDRESS,
+                    "chain": "base",
                     "chain_id": CHAIN_ID,
-                    "network": "base",
+                    "header": f"X-Payment-Proof: 0x_your_transaction_hash",
+                    "steps": [
+                        f"Send {pricing['amount_usdc']} USDC to {WALLET_ADDRESS} on Base (chain ID {CHAIN_ID})",
+                        "Copy the transaction hash from your wallet or block explorer",
+                        "Resend this request with header: X-Payment-Proof: <0x_tx_hash>",
+                    ],
                 },
-                "proof": {
-                    "header": "X-Payment-Proof",
-                    "type": "tx_hash",
-                    "format": "0x-prefixed 32-byte hex",
+                "mpp": {
+                    "manifest": "https://hydra-api-nlnj.onrender.com/v1/mpp/manifest",
+                    "instruction": "Use Machine Payments Protocol session-based micropayments",
                 },
             },
-            "retry_instructions": {
-                "step_1": f"Send {pricing['amount_usdc']} USDC to {WALLET_ADDRESS} on Base (chain ID {CHAIN_ID})",
-                "step_2": "Copy the transaction hash from your wallet or block explorer",
-                "step_3": "Resend this request with header: X-Payment-Proof: <0x_tx_hash>",
+            "sample_response": sample,
+            "docs": "https://hydra-api-nlnj.onrender.com/docs",
+            "client_sdk": "https://github.com/OGCryptoKitty/hydra-arm3/tree/master/examples",
+            "discovery": {
+                "x402_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/x402.json",
+                "mcp_manifest": "https://hydra-api-nlnj.onrender.com/.well-known/mcp.json",
+                "openapi": "https://hydra-api-nlnj.onrender.com/openapi.json",
             },
         }
 

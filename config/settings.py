@@ -315,6 +315,28 @@ PRICING: dict[str, dict] = {
         "description": "Real-time regulatory alert feed — last 24 hours of detected events across all monitored sources.",
         "amount_base_units": 50_000,
     },
+    # ── Portfolio Intelligence ──────────────────────────────────
+    "/v1/portfolio/scan": {
+        "amount_usdc": Decimal("10.00"),
+        "description": "Portfolio-level regulatory risk scan — up to 20 tokens/protocols with aggregate risk and cross-correlation.",
+        "amount_base_units": 10_000_000,
+    },
+    "/v1/portfolio/watchlist": {
+        "amount_usdc": Decimal("2.00"),
+        "description": "Portfolio regulatory watchlist — recent agency mentions and alert levels for up to 20 assets.",
+        "amount_base_units": 2_000_000,
+    },
+    "/v1/portfolio/market-brief": {
+        "amount_usdc": Decimal("3.00"),
+        "description": "Executive market brief — regulatory events + Fed signal + prediction markets in one comprehensive view.",
+        "amount_base_units": 3_000_000,
+    },
+    # ── Task Orchestration ──────────────────────────────────────
+    "/v1/orchestrate": {
+        "amount_usdc": Decimal("0.05"),
+        "description": "Multi-step task orchestration — execute up to 10 HYDRA endpoint calls in one request.",
+        "amount_base_units": 50_000,
+    },
 }
 
 # ─────────────────────────────────────────────────────────────
