@@ -272,6 +272,49 @@ PRICING: dict[str, dict] = {
         "description": "SEC EDGAR filing search — 10-K, 10-Q, 8-K by company, ticker, or keyword.",
         "amount_base_units": 20_000,
     },
+    # ── x402 Ecosystem Hub ──────────────────────────────────────
+    "/v1/x402/status": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "Real-time health and capability check of any x402 service — manifest, endpoints, pricing.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/x402/route": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Intelligent x402 service routing — find the best service for a capability request.",
+        "amount_base_units": 1_000,
+    },
+    # ── Composite Intelligence ──────────────────────────────────
+    "/v1/intelligence/pulse": {
+        "amount_usdc": Decimal("0.50"),
+        "description": "Hourly regulatory pulse — aggregated SEC, CFTC, FinCEN, Fed, Treasury activity with risk signals.",
+        "amount_base_units": 500_000,
+    },
+    "/v1/intelligence/alpha": {
+        "amount_usdc": Decimal("5.00"),
+        "description": "Composite alpha signal — regulatory risk + Fed rate probability + prediction market sentiment + directional bias.",
+        "amount_base_units": 5_000_000,
+    },
+    "/v1/intelligence/risk-score": {
+        "amount_usdc": Decimal("2.00"),
+        "description": "Real-time 0-100 risk score for any token or protocol based on regulatory exposure and agency attention.",
+        "amount_base_units": 2_000_000,
+    },
+    "/v1/intelligence/digest": {
+        "amount_usdc": Decimal("1.00"),
+        "description": "Daily market + regulatory digest — comprehensive summary for compliance teams and trading agents.",
+        "amount_base_units": 1_000_000,
+    },
+    # ── Push Alert System ───────────────────────────────────────
+    "/v1/alerts/subscribe": {
+        "amount_usdc": Decimal("0.10"),
+        "description": "Register for push alerts — webhook delivery of regulatory events matching your conditions. $0.10 per 100 alerts.",
+        "amount_base_units": 100_000,
+    },
+    "/v1/alerts/feed": {
+        "amount_usdc": Decimal("0.05"),
+        "description": "Real-time regulatory alert feed — last 24 hours of detected events across all monitored sources.",
+        "amount_base_units": 50_000,
+    },
 }
 
 # ─────────────────────────────────────────────────────────────

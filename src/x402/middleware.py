@@ -242,6 +242,9 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         "/v1/util",
         "/v1/mpp/manifest",
         "/v1/mpp/status",
+        "/v1/x402/directory",
+        "/v1/x402/stats",
+        "/v1/alerts/status",
     })
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:

@@ -1,8 +1,8 @@
 # HYDRA
 
-> 402-native paid work engine for agents and developers. 40 paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
+> The x402 ecosystem hub and autonomous intelligence engine. 48+ paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
 
-HYDRA provides web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, and oracle data as pay-per-call x402 endpoints. Built for AI agents that need structured data and utilities on demand.
+HYDRA is the infrastructure layer of the x402 economy. It provides the canonical x402 service directory, composite intelligence products (alpha signals, risk scores, regulatory pulse), push-based alert subscriptions, web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, and oracle data as pay-per-call x402 endpoints. Built for AI agents that need structured data, intelligence, and utilities on demand.
 
 ## Payment
 
@@ -15,8 +15,25 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `GET /pricing` — Full pricing table for all endpoints
 - `GET /v1/markets` — Active regulatory prediction markets on Polymarket and Kalshi
 - `GET /v1/util` — Utility service discovery listing
+- `GET /v1/x402/directory` — Canonical x402 ecosystem directory (all known x402 services, updated hourly)
+- `GET /v1/x402/stats` — x402 ecosystem aggregate statistics
+- `GET /v1/alerts/status` — Check alert subscription status
 - `GET /docs` — Interactive OpenAPI documentation
 - `GET /openapi.json` — Machine-readable OpenAPI spec
+
+### x402 Ecosystem Hub ($0.001 - $0.005 USDC)
+- `GET /v1/x402/status?url=...` ($0.005) — Real-time health and capability check of any x402 service.
+- `POST /v1/x402/route?capability=...` ($0.001) — Intelligent routing to the best x402 service for your need.
+
+### Composite Intelligence ($0.50 - $5.00 USDC)
+- `GET /v1/intelligence/pulse` ($0.50) — Hourly regulatory pulse with composite risk signal from all US agencies.
+- `GET /v1/intelligence/alpha` ($5.00) — Premium composite alpha: regulatory + Fed + prediction markets + momentum.
+- `GET /v1/intelligence/risk-score?token=BTC` ($2.00) — Real-time 0-100 regulatory risk score for any token or protocol.
+- `GET /v1/intelligence/digest` ($1.00) — Daily regulatory + market digest for compliance teams and trading agents.
+
+### Push Alerts ($0.05 - $0.10 USDC)
+- `POST /v1/alerts/subscribe` ($0.10) — Register webhook for push alerts. $0.10 buys 100 alert deliveries.
+- `GET /v1/alerts/feed` ($0.05) — Poll-based regulatory alert feed (last 24 hours).
 
 ### Extraction Tier ($0.01 - $0.05 USDC)
 - `POST /v1/extract/url` ($0.01) — Structured web extraction: title, headings, clean text, links, OpenGraph metadata.
@@ -86,6 +103,10 @@ Three ways to pay for HYDRA endpoints:
 
 ## Agent Use Cases
 
+- **x402 ecosystem navigation**: Discover all x402 services, check their health, get routed to the best one
+- **Composite intelligence**: Get a single alpha signal combining regulatory + Fed + prediction market data (unique to HYDRA)
+- **Regulatory risk scoring**: Instant 0-100 risk score for any token or DeFi protocol
+- **Push alert subscriptions**: Set-and-forget webhook alerts for regulatory events matching your keywords
 - **Web extraction**: Get clean structured text, metadata, and links from any URL
 - **Format conversion**: Convert HTML to Markdown, JSON to CSV, CSV to JSON
 - **Developer tools**: Hash text, encode/decode Base64/URL/hex, diff texts, validate JSON/email
