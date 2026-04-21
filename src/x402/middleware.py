@@ -43,6 +43,8 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+from decimal import Decimal
+
 from config.settings import (
     PAYMENT_CACHE_TTL,
     PAYMENT_NETWORK,
@@ -167,7 +169,9 @@ def _get_sample_response(path: str) -> dict | None:
 # File persistence survives Render restarts.
 # ─────────────────────────────────────────────────────────────
 
-_REPLAY_CACHE_FILE = "/tmp/hydra_used_txhashes.json"
+import os as _os
+_STATE_DIR = _os.getenv("HYDRA_STATE_DIR", _os.getenv("HYDRA_BOOTSTRAP_DIR", "/tmp/hydra-data"))
+_REPLAY_CACHE_FILE = _os.path.join(_STATE_DIR, "used_txhashes.json")
 
 _used_tx_cache: TTLCache = TTLCache(maxsize=10_000, ttl=PAYMENT_CACHE_TTL)
 
@@ -262,8 +266,12 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         required_amount = pricing["amount_base_units"]
 
         # ── If standard x402 X-PAYMENT header is present, defer to CDP middleware ──
+        # Only pass through if CDP middleware is actually registered
         if request.headers.get("X-PAYMENT") or request.headers.get("x-payment"):
-            return await call_next(request)
+            cdp_active = getattr(request.app.state, "cdp_middleware_active", False)
+            if cdp_active:
+                return await call_next(request)
+            # CDP middleware not active — fall through to X-Payment-Proof check or 402
 
         # ── Check for legacy payment proof header ────────────
         proof_header = request.headers.get("X-Payment-Proof") or request.headers.get("x-payment-proof")
@@ -306,6 +314,21 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
         # ── Mark tx as used before passing through ────────────
         _mark_tx_used(tx_hash)
         logger.info("Payment verified and consumed: tx=%s path=%s", tx_hash, path)
+
+        # ── Log to persistent TransactionLog for revenue tracking ─
+        try:
+            tx_log = getattr(request.app.state, "transaction_log", None)
+            if tx_log is not None:
+                amount_usdc = Decimal(str(result.amount_received_base_units)) / Decimal("1000000")
+                tx_log.log_inbound(
+                    tx_hash=tx_hash,
+                    amount_usdc=amount_usdc,
+                    from_address=result.from_address or "unknown",
+                    category="x402-revenue",
+                    note=path,
+                )
+        except Exception as log_exc:
+            logger.error("Failed to log payment to TransactionLog: %s", log_exc)
 
         # ── Execute the actual request handler ────────────────
         response = await call_next(request)

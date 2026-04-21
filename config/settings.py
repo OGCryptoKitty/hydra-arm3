@@ -18,8 +18,15 @@ WALLET_ADDRESS: str = os.getenv(
     "WALLET_ADDRESS", "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
 )
 
-# Base L2 RPC endpoint
+# Base L2 RPC endpoint (primary)
 BASE_RPC_URL: str = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
+
+# Fallback RPC endpoints for payment verification resilience
+BASE_RPC_FALLBACKS: list[str] = [
+    "https://base.llamarpc.com",
+    "https://base.drpc.org",
+    "https://1rpc.io/base",
+]
 
 # USDC contract on Base mainnet
 USDC_CONTRACT_ADDRESS: str = os.getenv(

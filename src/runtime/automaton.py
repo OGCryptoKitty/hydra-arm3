@@ -44,8 +44,8 @@ USDC_DECIMALS: int = 6
 HEARTBEAT_INTERVAL: int = 60  # seconds
 
 # Marketing and revenue loop intervals
-MARKETING_INTERVAL_SECONDS: int = 86400    # 24 hours
-REVENUE_REPORT_INTERVAL_SECONDS: int = 604800  # 7 days
+MARKETING_INTERVAL_SECONDS: int = 14400     # 4 hours — aggressive discovery
+REVENUE_REPORT_INTERVAL_SECONDS: int = 86400  # daily
 
 # Minimal ERC-20 ABI — only balanceOf is required
 ERC20_ABI = [
@@ -168,6 +168,7 @@ class HydraAutomaton:
         )
         self._last_marketing_run: Optional[datetime] = None
         self._last_revenue_report: Optional[datetime] = None
+        self._last_self_test: Optional[datetime] = None
 
         # Load persisted state
         self._load_state()
@@ -352,11 +353,15 @@ class HydraAutomaton:
         # ---- Update automaton FSM state ------------------------------
         self._automaton_state = self._derive_automaton_state(tier, phase)
 
-        # ---- Autonomous marketing (every 24 hours) ------------------
+        # ---- Autonomous marketing (every 4 hours) -------------------
         if self._should_run_marketing(now):
             asyncio.create_task(self._run_marketing_async())
 
-        # ---- Revenue report (every 7 days) ---------------------------
+        # ---- Proactive self-test (every 4 hours) --------------------
+        if self._should_run_self_test(now):
+            asyncio.create_task(self._run_self_test_async())
+
+        # ---- Revenue report (daily) ----------------------------------
         if self._should_run_revenue_report(now):
             asyncio.create_task(self._run_revenue_report_async())
 
@@ -417,6 +422,58 @@ class HydraAutomaton:
             )
         except Exception as exc:  # noqa: BLE001
             logger.error("[AUTOMATON] Revenue report failed: %s", exc, exc_info=True)
+
+    def _should_run_self_test(self, now: datetime) -> bool:
+        if self._last_self_test is None:
+            return True
+        return (now - self._last_self_test).total_seconds() >= MARKETING_INTERVAL_SECONDS
+
+    async def _run_self_test_async(self) -> None:
+        """Proactively test all free endpoints and discovery manifests."""
+        now = datetime.now(timezone.utc)
+        logger.info("[AUTOMATON] Running proactive self-test at %s", now.isoformat())
+        self._last_self_test = now
+        try:
+            import httpx
+            port = int(os.getenv("PORT", "8402"))
+            base = f"http://127.0.0.1:{port}"
+            free_paths = [
+                "/health", "/pricing", "/v1/markets",
+                "/.well-known/x402.json", "/.well-known/mcp.json",
+                "/.well-known/llms.txt", "/.well-known/agent.json",
+                "/openapi.json", "/sitemap.xml",
+            ]
+            paid_paths = [
+                "/v1/check/url?url=https://example.com",
+                "/v1/extract/url",
+                "/v1/data/wikipedia?title=Bitcoin",
+            ]
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                ok_count = 0
+                fail_count = 0
+                for path in free_paths:
+                    try:
+                        resp = await client.get(f"{base}{path}")
+                        if resp.status_code < 400:
+                            ok_count += 1
+                        else:
+                            fail_count += 1
+                            logger.warning("[SELF-TEST] %s → %d", path, resp.status_code)
+                    except Exception:
+                        fail_count += 1
+                for path in paid_paths:
+                    try:
+                        resp = await client.get(f"{base}{path}")
+                        if resp.status_code == 402:
+                            ok_count += 1
+                        else:
+                            fail_count += 1
+                            logger.warning("[SELF-TEST] %s → %d (expected 402)", path, resp.status_code)
+                    except Exception:
+                        fail_count += 1
+                logger.info("[SELF-TEST] Complete: %d ok, %d failed", ok_count, fail_count)
+        except Exception as exc:
+            logger.debug("[SELF-TEST] Skipped: %s", exc)
 
     def _derive_automaton_state(
         self, tier: SurvivalTier, phase: Phase

@@ -356,6 +356,7 @@ app.add_middleware(X402PaymentMiddleware)
 #    Auto-registers HYDRA on Bazaar, x402list.fun, and x402search.
 #    Gracefully degrades if x402 SDK is not installed.
 _cdp_enabled = add_cdp_middleware(app)
+app.state.cdp_middleware_active = _cdp_enabled
 if _cdp_enabled:
     logger.info("CDP facilitator middleware active — HYDRA discoverable via x402 Bazaar")
 else:

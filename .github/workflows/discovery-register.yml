@@ -1,0 +1,49 @@
+name: Register with Discovery Services
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Render deploy
+        run: sleep 120
+
+      - name: Wake service
+        run: |
+          curl -sf --retry 4 --retry-delay 15 --max-time 60 \
+            https://hydra-api-nlnj.onrender.com/health || true
+
+      - name: Verify discovery manifests
+        run: |
+          for path in /.well-known/x402.json /.well-known/mcp.json /.well-known/llms.txt /openapi.json; do
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+              "https://hydra-api-nlnj.onrender.com${path}")
+            echo "${path}: ${STATUS}"
+          done
+
+      - name: Register with EntRoute x402 Discovery
+        run: |
+          ENDPOINTS=(
+            '{"name":"HYDRA Web Extract","url":"https://hydra-api-nlnj.onrender.com/v1/extract/url","price_usd":0.01,"category":"data","description":"Structured web extraction — title, headings, text, links, metadata","network":"base-mainnet"}'
+            '{"name":"HYDRA Web Search","url":"https://hydra-api-nlnj.onrender.com/v1/extract/search","price_usd":0.02,"category":"data","description":"Web search with structured result extraction","network":"base-mainnet"}'
+            '{"name":"HYDRA HTML to Markdown","url":"https://hydra-api-nlnj.onrender.com/v1/convert/html2md","price_usd":0.005,"category":"data","description":"HTML to clean Markdown","network":"base-mainnet"}'
+            '{"name":"HYDRA DNS Lookup","url":"https://hydra-api-nlnj.onrender.com/v1/check/dns","price_usd":0.005,"category":"data","description":"DNS record lookup via DNS-over-HTTPS","network":"base-mainnet"}'
+            '{"name":"HYDRA Wikipedia","url":"https://hydra-api-nlnj.onrender.com/v1/data/wikipedia","price_usd":0.01,"category":"data","description":"Wikipedia article summary","network":"base-mainnet"}'
+            '{"name":"HYDRA SEC EDGAR","url":"https://hydra-api-nlnj.onrender.com/v1/data/edgar","price_usd":0.02,"category":"data","description":"SEC EDGAR filing search","network":"base-mainnet"}'
+            '{"name":"HYDRA Crypto Price","url":"https://hydra-api-nlnj.onrender.com/v1/util/crypto/price","price_usd":0.001,"category":"data","description":"Token price with 24h change","network":"base-mainnet"}'
+          )
+          for payload in "${ENDPOINTS[@]}"; do
+            curl -sf -X POST \
+              -H "Content-Type: application/json" \
+              -d "$payload" \
+              https://x402-discovery-api.onrender.com/register || true
+            sleep 1
+          done
+
+      - name: Ping search engines
+        run: |
+          curl -sf "https://www.google.com/ping?sitemap=https://hydra-api-nlnj.onrender.com/sitemap.xml" || true
+          curl -sf "https://www.bing.com/ping?sitemap=https://hydra-api-nlnj.onrender.com/sitemap.xml" || true
