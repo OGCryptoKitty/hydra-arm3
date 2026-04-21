@@ -64,7 +64,11 @@
     {"path": "/v1/intelligence/digest", "method": "GET", "price": "1.00", "description": "Daily regulatory + market digest for compliance teams and trading agents"},
     {"path": "/v1/alerts/subscribe", "method": "POST", "price": "0.10", "description": "Push alert subscription — webhook delivery of regulatory events. $0.10/100 alerts"},
     {"path": "/v1/alerts/feed", "method": "GET", "price": "0.05", "description": "Real-time regulatory alert feed — last 24 hours of detected events"},
-    {"path": "/v1/alerts/status", "method": "GET", "price": "free", "description": "Check alert subscription status and remaining alerts"}
+    {"path": "/v1/alerts/status", "method": "GET", "price": "free", "description": "Check alert subscription status and remaining alerts"},
+    {"path": "/v1/portfolio/scan", "method": "POST", "price": "10.00", "description": "Portfolio-level regulatory scan — up to 20 assets with aggregate risk"},
+    {"path": "/v1/portfolio/watchlist", "method": "POST", "price": "2.00", "description": "Portfolio watchlist — agency mentions and alert levels for up to 20 assets"},
+    {"path": "/v1/portfolio/market-brief", "method": "GET", "price": "3.00", "description": "Executive market brief — regulatory + Fed + prediction markets in one view"},
+    {"path": "/v1/orchestrate", "method": "POST", "price": "0.05", "description": "Multi-step orchestration — execute up to 10 HYDRA calls in one request"}
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",

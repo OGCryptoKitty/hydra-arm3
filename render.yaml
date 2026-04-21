@@ -1,19 +1,33 @@
+# HYDRA Autonomous Intelligence Engine — Render Blueprint
+# https://render.com/docs/blueprint-spec
+#
+# Deploy: connect this repo to Render and it will auto-detect this file.
+# Auto-deploys on every push to master branch.
+#
+# Wallet: 0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141
+# Chain:  Base (8453)
+# Token:  USDC
+# API:    https://hydra-api-nlnj.onrender.com
+
 services:
   - type: web
     name: hydra-api
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 30
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
+      - key: PORT
+        value: 8402
       - key: WALLET_ADDRESS
-        sync: false
+        value: "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141"
       - key: BASE_RPC_URL
-        value: https://mainnet.base.org
+        value: "https://mainnet.base.org"
       - key: HYDRA_STATE_DIR
-        value: /opt/render/project/src/data
+        value: /tmp/hydra-data
+      - key: WALLET_PRIVATE_KEY
+        sync: false  # Must be set manually in Render dashboard
       - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: ENFORCE_HTTPS
-        value: "true"
+        value: "3.11.6"

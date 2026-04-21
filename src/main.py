@@ -51,6 +51,7 @@ from src.api.data_routes import data_router
 from src.api.ecosystem_routes import router as ecosystem_router
 from src.api.alert_routes import alert_router
 from src.api.intelligence_routes import router as intelligence_router
+from src.api.portfolio_routes import router as portfolio_router
 from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -420,6 +421,8 @@ app.include_router(ecosystem_router)
 app.include_router(alert_router)
 
 app.include_router(intelligence_router)
+
+app.include_router(portfolio_router)
 
 
 # ─────────────────────────────────────────────────────────────
