@@ -48,6 +48,9 @@ from src.api.check_routes import check_router
 from src.api.convert_routes import convert_router
 from src.api.tools_routes import tools_router
 from src.api.data_routes import data_router
+from src.api.ecosystem_routes import router as ecosystem_router
+from src.api.alert_routes import alert_router
+from src.api.intelligence_routes import router as intelligence_router
 from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -411,6 +414,12 @@ app.include_router(mpp_router)
 
 # Internal monitoring endpoint (phrase-authenticated, read-only)
 app.include_router(_balance_router)
+
+app.include_router(ecosystem_router)
+
+app.include_router(alert_router)
+
+app.include_router(intelligence_router)
 
 
 # ─────────────────────────────────────────────────────────────

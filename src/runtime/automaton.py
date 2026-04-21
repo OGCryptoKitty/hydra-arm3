@@ -29,6 +29,7 @@ from .lifecycle import LifecycleManager, Phase
 from .autonomous_marketing import AutonomousMarketing
 from .revenue_optimizer import RevenueOptimizer
 from .treasury_yield import TreasuryYieldManager
+from .alert_engine import get_alert_engine
 
 logger = logging.getLogger("hydra.automaton")
 
@@ -365,6 +366,9 @@ class HydraAutomaton:
         if self._should_run_revenue_report(now):
             asyncio.create_task(self._run_revenue_report_async())
 
+        # ---- Alert engine: check feeds and deliver to subscribers ----
+        asyncio.create_task(self._run_alert_check_async())
+
         # ---- Persist -------------------------------------------------
         self._last_heartbeat = now
         self._save_state()
@@ -474,6 +478,18 @@ class HydraAutomaton:
                 logger.info("[SELF-TEST] Complete: %d ok, %d failed", ok_count, fail_count)
         except Exception as exc:
             logger.debug("[SELF-TEST] Skipped: %s", exc)
+
+    async def _run_alert_check_async(self) -> None:
+        """Check RSS feeds and deliver alerts to subscribers."""
+        try:
+            from src.services.feeds import fetch_all_feeds
+            feed_items = await fetch_all_feeds()
+            engine = get_alert_engine()
+            delivered = await engine.check_and_deliver(feed_items)
+            if delivered > 0:
+                logger.info("[ALERTS] Delivered %d alerts to subscribers", delivered)
+        except Exception as exc:
+            logger.debug("[ALERTS] Check skipped: %s", exc)
 
     def _derive_automaton_state(
         self, tier: SurvivalTier, phase: Phase

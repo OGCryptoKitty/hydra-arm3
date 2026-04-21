@@ -1,6 +1,6 @@
 {
   "name": "HYDRA",
-  "description": "402-native paid work engine for agents and developers. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, and oracle data. 40 paid endpoints from $0.001 USDC on Base L2.",
+  "description": "The x402 ecosystem hub and autonomous intelligence engine. 48+ paid endpoints: composite intelligence (alpha signals, risk scores, regulatory pulse), push alerts, x402 ecosystem directory/routing, web extraction, search, conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. From $0.001 USDC on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "x402Version": 1,
   "payment": {
@@ -53,7 +53,18 @@
     {"path": "/v1/tools/validate/email", "method": "POST", "price": "0.002", "description": "Email format validation with MX record check"},
     {"path": "/v1/data/wikipedia", "method": "GET", "price": "0.01", "description": "Wikipedia article summary — extract, thumbnail, description, page URL"},
     {"path": "/v1/data/arxiv", "method": "GET", "price": "0.02", "description": "arXiv academic paper search — titles, authors, abstracts, PDF links"},
-    {"path": "/v1/data/edgar", "method": "GET", "price": "0.02", "description": "SEC EDGAR filing search — 10-K, 10-Q, 8-K by company, ticker, or keyword"}
+    {"path": "/v1/data/edgar", "method": "GET", "price": "0.02", "description": "SEC EDGAR filing search — 10-K, 10-Q, 8-K by company, ticker, or keyword"},
+    {"path": "/v1/x402/directory", "method": "GET", "price": "free", "description": "Canonical x402 ecosystem directory — all known x402 services indexed hourly"},
+    {"path": "/v1/x402/stats", "method": "GET", "price": "free", "description": "x402 ecosystem aggregate statistics — services by chain, category, growth"},
+    {"path": "/v1/x402/status", "method": "GET", "price": "0.005", "description": "Real-time health and capability check of any x402 service"},
+    {"path": "/v1/x402/route", "method": "POST", "price": "0.001", "description": "Intelligent x402 service routing — find the best service for your need"},
+    {"path": "/v1/intelligence/pulse", "method": "GET", "price": "0.50", "description": "Hourly regulatory pulse — aggregated agency activity with composite risk signal"},
+    {"path": "/v1/intelligence/alpha", "method": "GET", "price": "5.00", "description": "Composite alpha signal — regulatory + Fed + prediction markets + momentum"},
+    {"path": "/v1/intelligence/risk-score", "method": "GET", "price": "2.00", "description": "Real-time 0-100 regulatory risk score for any token or protocol"},
+    {"path": "/v1/intelligence/digest", "method": "GET", "price": "1.00", "description": "Daily regulatory + market digest for compliance teams and trading agents"},
+    {"path": "/v1/alerts/subscribe", "method": "POST", "price": "0.10", "description": "Push alert subscription — webhook delivery of regulatory events. $0.10/100 alerts"},
+    {"path": "/v1/alerts/feed", "method": "GET", "price": "0.05", "description": "Real-time regulatory alert feed — last 24 hours of detected events"},
+    {"path": "/v1/alerts/status", "method": "GET", "price": "free", "description": "Check alert subscription status and remaining alerts"}
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
@@ -66,5 +77,5 @@
     "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
     "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml"
   },
-  "tags": ["extraction", "search", "web-scraping", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "defi"]
+  "tags": ["x402-hub", "ecosystem-directory", "composite-intelligence", "alpha-signal", "risk-score", "push-alerts", "extraction", "search", "web-scraping", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "defi"]
 }
