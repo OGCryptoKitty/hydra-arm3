@@ -697,20 +697,26 @@ async def get_economic_snapshot() -> dict[str, Any]:
                    "federal-reserve-system", "financial-crimes-enforcement-network"],
         per_page=5,
     )
+    fdic_task = get_fdic_bank_failures(limit=5)
 
-    results = await asyncio.gather(fred_task, bls_task, treasury_task, fedreg_task, return_exceptions=True)
+    results = await asyncio.gather(
+        fred_task, bls_task, treasury_task, fedreg_task, fdic_task,
+        return_exceptions=True,
+    )
 
     snapshot: dict[str, Any] = {
         "fred": results[0] if not isinstance(results[0], Exception) else {"error": str(results[0])},
         "bls": results[1] if not isinstance(results[1], Exception) else {"error": str(results[1])},
         "treasury": results[2] if not isinstance(results[2], Exception) else {"error": str(results[2])},
         "federal_register": results[3] if not isinstance(results[3], Exception) else {"error": str(results[3])},
+        "fdic_recent_failures": results[4] if not isinstance(results[4], Exception) else {"error": str(results[4])},
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "data_sources": [
             "Federal Reserve Economic Data (FRED) — fred.stlouisfed.org",
             "Bureau of Labor Statistics — bls.gov",
             "U.S. Treasury Fiscal Data — fiscaldata.treasury.gov",
             "Federal Register — federalregister.gov",
+            "FDIC BankFind Suite — banks.data.fdic.gov",
         ],
     }
 

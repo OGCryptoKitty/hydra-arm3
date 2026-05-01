@@ -1,8 +1,8 @@
 # HYDRA
 
-> The x402 ecosystem hub and autonomous intelligence engine. 48+ paid API endpoints from $0.001 USDC. Pay-per-call via x402 protocol on Base L2.
+> Autonomous regulatory intelligence API with 50+ paid endpoints. Real-time data from 13 authoritative sources. Market-calibrated Fed rate probabilities. Alpha signals with edge analysis. From $0.001 USDC on Base L2.
 
-HYDRA is the infrastructure layer of the x402 economy. It provides the canonical x402 service directory, composite intelligence products (alpha signals, risk scores, regulatory pulse), push-based alert subscriptions, web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, and oracle data as pay-per-call x402 endpoints. Built for AI agents that need structured data, intelligence, and utilities on demand.
+HYDRA is the infrastructure layer of the x402 economy. It provides real-time economic data from 13 authoritative sources (FRED, BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket), composite intelligence products (alpha signals with Kelly sizing, market-calibrated risk scores, regulatory pulse), prediction market signals with Kalshi KXFED-calibrated Fed rate probabilities (60% market / 40% model blend), FOMC decision classification within 30 seconds, push alerts, web extraction, format conversion, developer tools, and oracle data for UMA/Chainlink. All data sourced from Tier 1 (US government) and Tier 3 (CFTC-regulated) sources — no unverified data in signal generation.
 
 ## Payment
 
@@ -25,11 +25,14 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `GET /v1/x402/status?url=...` ($0.005) — Real-time health and capability check of any x402 service.
 - `POST /v1/x402/route?capability=...` ($0.001) — Intelligent routing to the best x402 service for your need.
 
-### Composite Intelligence ($0.50 - $5.00 USDC)
+### Composite Intelligence ($0.25 - $5.00 USDC)
 - `GET /v1/intelligence/pulse` ($0.50) — Hourly regulatory pulse with composite risk signal from all US agencies.
 - `GET /v1/intelligence/alpha` ($5.00) — Premium composite alpha: regulatory + Fed + prediction markets + momentum.
 - `GET /v1/intelligence/risk-score?token=BTC` ($2.00) — Real-time 0-100 regulatory risk score for any token or protocol.
 - `GET /v1/intelligence/digest` ($1.00) — Daily regulatory + market digest for compliance teams and trading agents.
+- `GET /v1/intelligence/economic-snapshot` ($0.50) — Atomic real-time snapshot: FRED (28 series), BLS, Treasury yields, FDIC, Federal Register.
+- `GET /v1/intelligence/regulatory-pulse-live` ($0.50) — Live regulatory pulse: SEC EDGAR search, Federal Register API, Congress bill tracker.
+- `GET /v1/intelligence/bank-failures` ($0.25) — FDIC bank failure monitor: recent closures, resolution details, estimated losses.
 
 ### Push Alerts ($0.05 - $0.10 USDC)
 - `POST /v1/alerts/subscribe` ($0.10) — Register webhook for push alerts. $0.10 buys 100 alert deliveries.
@@ -83,7 +86,7 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `POST /v1/regulatory/query` ($1.00) — Regulatory Q&A with statutory citations.
 - `POST /v1/markets/signal/{market_id}` ($2.00) — Scored signal for one prediction market.
 - `POST /v1/markets/signals` ($5.00) — Bulk scored signals for all regulatory markets.
-- `POST /v1/fed/signal` ($5.00) — Pre-FOMC signal with rate probability model.
+- `POST /v1/fed/signal` ($5.00) — Pre-FOMC signal with Kalshi KXFED-calibrated rate probabilities.
 - `POST /v1/oracle/uma` ($5.00) — UMA Optimistic Oracle assertion data.
 - `POST /v1/oracle/chainlink` ($5.00) — Chainlink External Adapter response.
 
@@ -112,8 +115,10 @@ Three ways to pay for HYDRA endpoints:
 - **Developer tools**: Hash text, encode/decode Base64/URL/hex, diff texts, validate JSON/email
 - **Web infrastructure**: Check URL health, DNS records, SSL certificates, HTTP headers
 - **Research**: Search Wikipedia, arXiv papers, SEC EDGAR filings
-- **Prediction market trading**: Get scored regulatory signals before placing trades on Polymarket or Kalshi
-- **FOMC event trading**: Pre-decision signals with rate probabilities, real-time classification within 30 seconds
+- **Prediction market trading**: Scored regulatory signals with Kalshi KXFED market-calibrated probabilities
+- **FOMC event trading**: Pre-decision signals with live KXFED-calibrated rate probabilities, real-time classification within 30 seconds
+- **Economic data**: Atomic real-time snapshot from FRED (28 series), BLS, Treasury, FDIC — all Tier 1 government sources
+- **Bank failure monitoring**: FDIC BankFind API for bank closure tracking and financial stability analysis
 - **Compliance monitoring**: Scan DeFi protocols against SEC, CFTC, FinCEN frameworks
 - **Oracle resolution**: Generate UMA/Chainlink oracle assertions with evidence chains
 - **Utility tooling**: Crypto prices, gas estimates, RSS parsing, web scraping

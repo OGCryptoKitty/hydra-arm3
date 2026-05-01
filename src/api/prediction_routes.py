@@ -494,9 +494,10 @@ async def get_market_signals(
         },
         "signals": signals,
         "data_freshness": {
-            "market_prices": "5-minute cache",
-            "regulatory_analysis": "60-minute cache",
-            "note": "Signal directions and confidence scores reflect HYDRA's regulatory knowledge base, not real-time prediction market positioning.",
+            "market_prices": "60-second cache (live)",
+            "regulatory_analysis": "15-minute cache",
+            "economic_data": "FRED/BLS/Treasury enrichment when available",
+            "note": "Signals blend HYDRA regulatory analysis with live Kalshi KXFED market-implied probabilities for Fed rate markets.",
         },
         "generated_at": datetime.now(timezone.utc).isoformat(),
     })
@@ -1274,6 +1275,23 @@ async def get_market_alpha(
         signal_direction = hydra_analysis.get("signal_direction", "neutral")
         confidence = hydra_analysis.get("confidence", 50)
 
+        # ── Step 3b: KXFED enrichment for fed_rate markets ────────
+        kxfed_data = None
+        if domain == "fed_rate":
+            try:
+                from src.services.fed_intelligence import FedIntelligenceEngine
+                fed_engine = FedIntelligenceEngine()
+                live_probs = await fed_engine.calculate_live_rate_probabilities()
+                if live_probs.get("market_calibrated"):
+                    kxfed_data = live_probs
+                    hydra_analysis["kxfed_calibrated_probabilities"] = {
+                        k: v for k, v in live_probs.items()
+                        if k in ("hold", "cut_25", "cut_50", "hike_25")
+                    }
+                    hydra_analysis["data_freshness"] = "real-time (KXFED calibrated)"
+            except Exception as exc:
+                logger.warning("KXFED enrichment failed for alpha report: %s", exc)
+
         # ── Step 4: Derive HYDRA's implied probability ────────────
         # HYDRA's internal probability estimate based on regulatory analysis
         # Maps: confidence 50=neutral → implied prob = current market price
@@ -1490,6 +1508,18 @@ async def get_market_alpha(
             "resolution_source": hydra_analysis.get("resolution_source"),
         },
         "historical_analogues": historical_trades,
+        "kxfed_market_data": (
+            {
+                "calibrated_probabilities": {
+                    k: v for k, v in kxfed_data.items()
+                    if k in ("hold", "cut_25", "cut_50", "hike_25")
+                },
+                "kxfed_event": kxfed_data.get("kxfed_event"),
+                "method": "60% KXFED market-implied / 40% HYDRA model",
+                "source": "Kalshi KXFED (CFTC-regulated)",
+            }
+            if kxfed_data else None
+        ),
         "regulatory_depth": regulatory_qa,
         "resolution_timeline": {
             "end_date": end_date,
@@ -1503,8 +1533,10 @@ async def get_market_alpha(
             ),
         },
         "data_quality": {
-            "market_data_freshness": "5-minute cache",
-            "regulatory_analysis_freshness": "60-minute cache",
+            "market_data_freshness": "60-second cache (live)",
+            "regulatory_analysis_freshness": "15-minute cache",
+            "economic_data": "FRED/BLS/Treasury live enrichment",
+            "fed_rate_calibration": "Kalshi KXFED market-implied probabilities (60/40 blend)" if domain == "fed_rate" else None,
             "data_sources": hydra_analysis.get("data_sources", []),
             "analysis_timestamp": hydra_analysis.get("analysis_timestamp"),
             "disclaimer": (
