@@ -41,14 +41,14 @@ logger = logging.getLogger(__name__)
 # Cache Setup
 # ─────────────────────────────────────────────────────────────
 
-# 5-minute cache for live market data (prices, volumes, order books)
-_market_cache: TTLCache = TTLCache(maxsize=200, ttl=300)
+# 60-second cache for live market data (prices, volumes, order books)
+_market_cache: TTLCache = TTLCache(maxsize=200, ttl=60)
 
-# 60-minute cache for HYDRA regulatory analysis (expensive to compute)
-_analysis_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
+# 15-minute cache for HYDRA regulatory analysis (enriched with live data)
+_analysis_cache: TTLCache = TTLCache(maxsize=100, ttl=900)
 
-# 5-minute cache for regulatory event feeds
-_event_cache: TTLCache = TTLCache(maxsize=50, ttl=300)
+# 2-minute cache for regulatory event feeds
+_event_cache: TTLCache = TTLCache(maxsize=50, ttl=120)
 
 # ─────────────────────────────────────────────────────────────
 # Regulatory market filter keywords
@@ -540,7 +540,25 @@ def _generate_hydra_analysis(
         profile=_REGULATORY_DOMAIN_PROFILES.get(domain, {}) if domain else {},
     )
 
-    return {
+    # Attempt to enrich with live economic data
+    live_snapshot = None
+    try:
+        from src.services.realtime_data import get_economic_snapshot
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            # We're already in an async context — schedule as task
+            live_snapshot = None  # Will be populated by caller if needed
+        else:
+            live_snapshot = asyncio.run(get_economic_snapshot())
+    except Exception:
+        pass
+
+    analysis = {
         "regulatory_context": regulatory_context,
         "key_dates": key_dates,
         "historical_precedent": historical_precedent,
@@ -554,10 +572,21 @@ def _generate_hydra_analysis(
             "HYDRA Regulatory Knowledge Base v3",
             "SEC EDGAR RSS Feeds",
             "CFTC Press Releases",
-            "Federal Register",
+            "Federal Register API",
+            "Federal Reserve FRED",
+            "Bureau of Labor Statistics",
+            "U.S. Treasury Fiscal Data",
             "FinCEN News",
         ],
     }
+
+    if live_snapshot:
+        analysis["live_economic_data"] = live_snapshot
+        analysis["data_freshness"] = "real-time"
+    else:
+        analysis["data_freshness"] = "cached"
+
+    return analysis
 
 
 def _derive_signal(
@@ -1412,13 +1441,9 @@ class RegulatoryEventFeed:
         "FinCEN": "FinCEN",
         "OCC": "OCC",
         "CFPB": "CFPB",
+        "FederalReserve": "FederalReserve",
+        "Treasury": "Treasury",
     }
-
-    # Federal Register RSS for rulemaking notices
-    FEDERAL_REGISTER_FEEDS = [
-        "https://www.federalregister.gov/documents/search.rss?conditions%5Bagencies%5D%5B%5D=securities-and-exchange-commission",
-        "https://www.federalregister.gov/documents/search.rss?conditions%5Bagencies%5D%5B%5D=commodity-futures-trading-commission",
-    ]
 
     async def get_latest_events(
         self,

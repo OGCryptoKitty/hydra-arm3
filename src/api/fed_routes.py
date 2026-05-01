@@ -131,7 +131,8 @@ async def fed_signal(
     )
 
     try:
-        signal = _engine.generate_pre_fomc_signal()
+        # Use live data enrichment (async) — falls back to baseline if APIs unavailable
+        signal = await _engine.generate_live_signal()
 
         # Optionally strip verbose fields if caller doesn't want them
         if not request_body.include_speech_analysis:

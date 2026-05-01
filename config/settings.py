@@ -304,6 +304,16 @@ PRICING: dict[str, dict] = {
         "description": "Daily market + regulatory digest — comprehensive summary for compliance teams and trading agents.",
         "amount_base_units": 1_000_000,
     },
+    "/v1/intelligence/economic-snapshot": {
+        "amount_usdc": Decimal("0.50"),
+        "description": "Atomic real-time economic data — FRED, BLS, Treasury yields, Federal Register rulemakings. Live at request time.",
+        "amount_base_units": 500_000,
+    },
+    "/v1/intelligence/regulatory-pulse-live": {
+        "amount_usdc": Decimal("0.50"),
+        "description": "Live regulatory pulse — SEC EDGAR search, Federal Register API, Congress bill tracker. Real-time at request.",
+        "amount_base_units": 500_000,
+    },
     # ── Push Alert System ───────────────────────────────────────
     "/v1/alerts/subscribe": {
         "amount_usdc": Decimal("0.10"),
@@ -344,7 +354,7 @@ PRICING: dict[str, dict] = {
 # ─────────────────────────────────────────────────────────────
 
 # How long to cache RSS feed results (seconds)
-FEED_CACHE_TTL: int = int(os.getenv("FEED_CACHE_TTL", "3600"))  # 1 hour
+FEED_CACHE_TTL: int = int(os.getenv("FEED_CACHE_TTL", "600"))  # 10 minutes (was 1 hour)
 
 # How long to cache payment verifications (seconds); long enough to prevent replay
 PAYMENT_CACHE_TTL: int = int(os.getenv("PAYMENT_CACHE_TTL", "86400"))  # 24 hours

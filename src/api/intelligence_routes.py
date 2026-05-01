@@ -413,3 +413,64 @@ async def daily_digest() -> dict:
 
     _digest_cache[cache_key] = result
     return result
+
+
+# ─────────────────────────────────────────────────────────────
+# Real-Time Economic Data Endpoint
+# ─────────────────────────────────────────────────────────────
+
+
+@router.get(
+    "/economic-snapshot",
+    summary="Live Economic Data Snapshot ($0.50 USDC)",
+    description=(
+        "**$0.50 USDC via x402.** "
+        "Atomic real-time economic data from FRED, BLS, Treasury, and Federal Register. "
+        "Returns the freshest available: Fed funds rate, CPI, PCE, GDP, unemployment, "
+        "Treasury yields, 10Y-2Y spread, VIX, plus latest SEC/CFTC rulemakings. "
+        "Designed for prediction market agents that need up-to-the-second macro data "
+        "before trading FOMC, inflation, and recession markets."
+    ),
+)
+async def economic_snapshot():
+    """
+    Atomic real-time economic data snapshot.
+    Combines FRED + BLS + Treasury + Federal Register into one payload.
+    """
+    try:
+        from src.services.realtime_data import get_economic_snapshot
+        snapshot = await get_economic_snapshot()
+        return {
+            "endpoint": "/v1/intelligence/economic-snapshot",
+            **snapshot,
+        }
+    except Exception as exc:
+        logger.exception("Economic snapshot failed: %s", exc)
+        return {"error": str(exc), "fallback": "Set FRED_API_KEY for live FRED data"}
+
+
+@router.get(
+    "/regulatory-pulse-live",
+    summary="Live Regulatory Pulse ($0.50 USDC)",
+    description=(
+        "**$0.50 USDC via x402.** "
+        "Real-time regulatory activity pulse from SEC EDGAR full-text search, "
+        "Federal Register API, and Congress bill tracker. "
+        "Returns latest crypto/ETF/enforcement filings, new SEC/CFTC rulemakings, "
+        "and crypto legislation status — all pulled live at request time."
+    ),
+)
+async def regulatory_pulse_live():
+    """
+    Real-time regulatory activity pulse from EDGAR + Federal Register + Congress.
+    """
+    try:
+        from src.services.realtime_data import get_regulatory_pulse
+        pulse = await get_regulatory_pulse()
+        return {
+            "endpoint": "/v1/intelligence/regulatory-pulse-live",
+            **pulse,
+        }
+    except Exception as exc:
+        logger.exception("Regulatory pulse failed: %s", exc)
+        return {"error": str(exc)}

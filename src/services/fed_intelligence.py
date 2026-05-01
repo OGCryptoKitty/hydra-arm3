@@ -226,7 +226,8 @@ class FedIntelligenceEngine:
     """
     Rule-based Fed intelligence engine for HYDRA.
 
-    Uses hardcoded MVP data for economic indicators and FOMC schedule.
+    Uses hardcoded MVP data as baseline, enriched with live data from
+    FRED, BLS, and Treasury APIs when available.
     Rate probability model is driven by indicator logic, not random numbers.
     """
 
@@ -240,6 +241,91 @@ class FedIntelligenceEngine:
         self._speech_analysis = _FED_SPEECH_ANALYSIS
         self._dot_plot = _DOT_PLOT
         self._last_decision = _LAST_DECISION
+        self._live_data_cache: dict[str, Any] | None = None
+
+    async def enrich_with_live_data(self) -> dict[str, Any]:
+        """
+        Pull live economic data from FRED/BLS/Treasury and merge with
+        hardcoded baseline. Returns the live data dict for inclusion
+        in signal payloads.
+        """
+        try:
+            from src.services.realtime_data import get_economic_snapshot
+            snapshot = await get_economic_snapshot()
+            self._live_data_cache = snapshot
+
+            # Update indicators with live FRED values if available
+            fred = snapshot.get("fred", {}).get("indicators", {})
+
+            live_indicators = []
+            for ind in self._indicators:
+                enriched = {**ind}
+                name = ind["indicator"]
+                if "CPI" in name and "Core" not in name:
+                    fred_obs = fred.get("CPIAUCSL", {}).get("observations", [])
+                    if fred_obs and fred_obs[0].get("value"):
+                        enriched["live_value"] = fred_obs[0]["value"]
+                        enriched["live_date"] = fred_obs[0]["date"]
+                        enriched["data_source"] = "FRED CPIAUCSL (live)"
+                elif "Core PCE" in name:
+                    fred_obs = fred.get("PCEPILFE", {}).get("observations", [])
+                    if fred_obs and fred_obs[0].get("value"):
+                        enriched["live_value"] = fred_obs[0]["value"]
+                        enriched["live_date"] = fred_obs[0]["date"]
+                        enriched["data_source"] = "FRED PCEPILFE (live)"
+                elif "Unemployment" in name:
+                    fred_obs = fred.get("UNRATE", {}).get("observations", [])
+                    if fred_obs and fred_obs[0].get("value"):
+                        enriched["live_value"] = fred_obs[0]["value"]
+                        enriched["live_date"] = fred_obs[0]["date"]
+                        enriched["data_source"] = "FRED UNRATE (live)"
+                elif "Nonfarm" in name:
+                    fred_obs = fred.get("PAYEMS", {}).get("observations", [])
+                    if fred_obs and fred_obs[0].get("value"):
+                        enriched["live_value"] = fred_obs[0]["value"]
+                        enriched["live_date"] = fred_obs[0]["date"]
+                        enriched["data_source"] = "FRED PAYEMS (live)"
+                elif "GDP" in name:
+                    fred_obs = fred.get("GDPC1", {}).get("observations", [])
+                    if fred_obs and fred_obs[0].get("value"):
+                        enriched["live_value"] = fred_obs[0]["value"]
+                        enriched["live_date"] = fred_obs[0]["date"]
+                        enriched["data_source"] = "FRED GDPC1 (live)"
+                elif "10Y Treasury" in name:
+                    fred_obs = fred.get("DGS10", {}).get("observations", [])
+                    if fred_obs and fred_obs[0].get("value"):
+                        enriched["live_value"] = fred_obs[0]["value"] + "%"
+                        enriched["live_date"] = fred_obs[0]["date"]
+                        enriched["data_source"] = "FRED DGS10 (live)"
+                live_indicators.append(enriched)
+
+            # Add extra live indicators not in baseline
+            for sid, title in [("T10Y2Y", "10Y-2Y Spread"), ("VIXCLS", "CBOE VIX"), ("DGS2", "2Y Treasury Yield")]:
+                fred_obs = fred.get(sid, {}).get("observations", [])
+                if fred_obs and fred_obs[0].get("value"):
+                    live_indicators.append({
+                        "indicator": title,
+                        "value": fred_obs[0]["value"] + ("%" if "Spread" in title or "Yield" in title else ""),
+                        "period": fred_obs[0]["date"],
+                        "trend": "live",
+                        "implication": f"Live {title} data from FRED",
+                        "source": "FRED (live)",
+                        "live_value": fred_obs[0]["value"],
+                        "live_date": fred_obs[0]["date"],
+                        "data_source": f"FRED {sid} (live)",
+                    })
+
+            return {
+                "live_indicators": live_indicators,
+                "treasury": snapshot.get("treasury", {}),
+                "bls": snapshot.get("bls", {}),
+                "federal_register": snapshot.get("federal_register", {}),
+                "data_freshness": "real-time",
+                "fetched_at": snapshot.get("generated_at"),
+            }
+        except Exception as exc:
+            logger.warning("Live data enrichment failed, using baseline: %s", exc)
+            return {"live_indicators": self._indicators, "data_freshness": "baseline (hardcoded)"}
 
     # ── Date helpers ──────────────────────────────────────────
 
@@ -443,6 +529,23 @@ class FedIntelligenceEngine:
                 "https://www.bls.gov/news.release/empsit.nr0.htm",
             ],
         }
+
+    async def generate_live_signal(self) -> dict[str, Any]:
+        """
+        Enhanced pre-FOMC signal with live data from FRED, BLS, Treasury.
+        Falls back to baseline signal if live data is unavailable.
+        """
+        baseline = self.generate_pre_fomc_signal()
+        live_data = await self.enrich_with_live_data()
+
+        baseline["live_economic_data"] = live_data
+        if live_data.get("data_freshness") == "real-time":
+            baseline["data_freshness"] = "real-time (FRED + BLS + Treasury)"
+            baseline["key_indicators"] = live_data.get("live_indicators", self._indicators)
+        else:
+            baseline["data_freshness"] = "baseline (hardcoded April 2026)"
+
+        return baseline
 
     # ── Decision data ─────────────────────────────────────────
 
