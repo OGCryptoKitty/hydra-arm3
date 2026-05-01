@@ -320,6 +320,48 @@ class RevenueOptimizer:
                 "priority": "medium",
             })
 
+        # Intelligence bundle
+        intelligence_calls = sum(
+            by_endpoint.get(ep, {}).get("calls", 0) for ep in INTELLIGENCE_ENDPOINTS
+        )
+        if intelligence_calls > 10:
+            recommendations.append({
+                "endpoint": "bundle:intelligence_daily",
+                "action": "create_bundle",
+                "suggested_price_usdc": 5.00,
+                "description": "Daily intelligence bundle — pulse + digest + economic snapshot ($5 USDC)",
+                "reasoning": f"{intelligence_calls} intelligence calls suggest daily briefing demand",
+                "priority": "high",
+            })
+
+        # Portfolio bundle
+        portfolio_calls = sum(
+            by_endpoint.get(ep, {}).get("calls", 0) for ep in PORTFOLIO_ENDPOINTS
+        )
+        if portfolio_calls > 5:
+            recommendations.append({
+                "endpoint": "bundle:portfolio_suite",
+                "action": "create_bundle",
+                "suggested_price_usdc": 12.00,
+                "description": "Portfolio suite — scan + watchlist + market brief ($12 vs $15 individual)",
+                "reasoning": f"{portfolio_calls} portfolio calls suggest suite pricing opportunity",
+                "priority": "medium",
+            })
+
+        # Utility high-volume bundle
+        utility_calls = sum(
+            by_endpoint.get(ep, {}).get("calls", 0) for ep in UTILITY_ENDPOINTS
+        )
+        if utility_calls > 100:
+            recommendations.append({
+                "endpoint": "bundle:utility_pass",
+                "action": "create_bundle",
+                "suggested_price_usdc": 0.50,
+                "description": "Utility day pass — 100 utility calls for $0.50 (vs $0.10-$2.00 individual)",
+                "reasoning": f"{utility_calls} utility calls — high-volume agents want bulk pricing",
+                "priority": "high",
+            })
+
         return {
             "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
             "current_total_revenue_usdc": performance["total_revenue_usdc"],
@@ -345,37 +387,28 @@ class RevenueOptimizer:
 
         opportunities: List[Dict[str, Any]] = []
 
-        # Opportunity 1: Portfolio tracking endpoint
-        # Users calling signal endpoint repeatedly likely have positions
-        opportunities.append({
-            "opportunity": "Portfolio Signal Subscription",
-            "description": (
-                "Endpoint: POST /v1/portfolio/signals\n"
-                "User provides list of market IDs, HYDRA returns signals for all.\n"
-                "Price: $0.50 USDC (vs $0.10 * N for individual calls)"
-            ),
-            "target_users": "prediction market traders with 5+ active positions",
-            "estimated_revenue_lift": "2x signal endpoint revenue",
-            "implementation_effort": "low",
-            "priority": "high",
-        })
+        # --- Already shipped (status: LIVE) ---
+        # /v1/alerts/subscribe, /v1/alerts/feed — webhook alerts ($0.10/$0.05)
+        # /v1/portfolio/scan, /v1/portfolio/watchlist, /v1/portfolio/market-brief
+        # /v1/intelligence/economic-snapshot, /v1/intelligence/regulatory-pulse-live
+        # /v1/intelligence/bank-failures, /v1/orchestrate
 
-        # Opportunity 2: Webhook subscription
+        # Opportunity 1: Subscription / day-pass pricing
         opportunities.append({
-            "opportunity": "Regulatory Event Webhooks",
+            "opportunity": "Subscription / Day-Pass Pricing",
             "description": (
-                "Endpoint: POST /v1/subscribe/webhooks\n"
-                "User provides webhook URL + agency filter.\n"
-                "HYDRA pushes real-time regulatory events.\n"
-                "Price: $5 USDC/month setup + $0.01/event delivered"
+                "Implement a $1 USDC day-pass that unlocks all utility endpoints for 24h.\n"
+                "Currently each call requires a separate on-chain payment, which is friction.\n"
+                "A day-pass reduces per-call gas overhead to zero after the initial payment.\n"
+                "Implementation: issue a signed JWT on first payment, verify on subsequent calls."
             ),
-            "target_users": "compliance automation bots that poll /v1/markets/events",
-            "estimated_revenue_lift": "recurring revenue stream",
+            "target_users": "high-volume agent workflows making 50+ calls/day",
+            "estimated_revenue_lift": "10-50x utility tier revenue",
             "implementation_effort": "medium",
             "priority": "high",
         })
 
-        # Opportunity 3: Congressional activity
+        # Opportunity 2: Congressional activity
         opportunities.append({
             "opportunity": "Congressional Prediction Market Signals",
             "description": (
@@ -390,21 +423,22 @@ class RevenueOptimizer:
             "priority": "medium",
         })
 
-        # Opportunity 4: Pre-FOMC daily briefing
+        # Opportunity 3: Historical data API for backtesting
         opportunities.append({
-            "opportunity": "Daily Fed Briefing (Subscription Tier)",
+            "opportunity": "Historical Regulatory Data API",
             "description": (
-                "Endpoint: GET /v1/fed/daily-brief\n"
-                "Automated daily email/webhook with Fed intelligence summary.\n"
-                "Price: $25 USDC/month"
+                "Endpoint: GET /v1/data/regulatory-history?agency=SEC&year=2025\n"
+                "Historical regulatory events, enforcement actions, and rule changes.\n"
+                "Enables backtesting prediction market strategies against past data.\n"
+                "Price: $2.00 USDC per year-agency query"
             ),
-            "target_users": "traders who call /v1/fed/signal before each FOMC",
-            "estimated_revenue_lift": "converts high-value one-time to recurring",
-            "implementation_effort": "low",
+            "target_users": "quant teams backtesting regulatory alpha strategies",
+            "estimated_revenue_lift": "new data product with recurring demand",
+            "implementation_effort": "medium",
             "priority": "high",
         })
 
-        # Opportunity 5: Crypto regulation tracker
+        # Opportunity 4: Crypto regulation tracker
         opportunities.append({
             "opportunity": "Crypto Regulatory Pipeline Tracker",
             "description": (
@@ -415,6 +449,21 @@ class RevenueOptimizer:
             ),
             "target_users": "DeFi protocols and crypto compliance teams",
             "estimated_revenue_lift": "high TAM, $1 price point drives volume",
+            "implementation_effort": "low",
+            "priority": "high",
+        })
+
+        # Opportunity 5: Multi-agent orchestration discount
+        opportunities.append({
+            "opportunity": "Agent Referral / Volume Discount",
+            "description": (
+                "Implement volume-based pricing: after $10 cumulative spend from\n"
+                "one wallet, all subsequent calls are 20% off.\n"
+                "Tracked via on-chain payment history.\n"
+                "Incentivizes agents to consolidate spend on HYDRA."
+            ),
+            "target_users": "agent frameworks (AutoGPT, CrewAI, LangChain) with recurring spend",
+            "estimated_revenue_lift": "increases LTV per agent wallet by 2-3x",
             "implementation_effort": "low",
             "priority": "high",
         })

@@ -86,8 +86,8 @@ jobs:
           MANIFEST=$(curl -sf --max-time 15 https://hydra-api-nlnj.onrender.com/.well-known/x402.json)
           COUNT=$(echo "$MANIFEST" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('endpoints',[])))" 2>/dev/null || echo "0")
           echo "x402 endpoints: ${COUNT}"
-          if [ "$COUNT" -lt 40 ]; then
-            echo "⚠️ Expected 48+, got ${COUNT}"
+          if [ "$COUNT" -lt 50 ]; then
+            echo "⚠️ Expected 55+, got ${COUNT}"
           else
             echo "✅ ${COUNT} endpoints serving"
           fi
@@ -166,7 +166,7 @@ jobs:
       - name: Register with x402 ecosystem directories
         run: |
           echo "=== x402 Ecosystem Registration ==="
-          PAYLOAD='{"url":"https://hydra-api-nlnj.onrender.com","manifest":"https://hydra-api-nlnj.onrender.com/.well-known/x402.json","name":"HYDRA","description":"x402 ecosystem hub + autonomous intelligence engine. 48 paid endpoints: composite alpha signals, regulatory risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. $0.001-$50 USDC on Base."}'
+          PAYLOAD='{"url":"https://hydra-api-nlnj.onrender.com","manifest":"https://hydra-api-nlnj.onrender.com/.well-known/x402.json","name":"HYDRA","description":"Autonomous regulatory intelligence API. 55 paid endpoints: composite alpha signals, KXFED-calibrated Fed rate model, FDIC bank failure monitor, regulatory risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. 13 real-time data sources. $0.001-$50 USDC on Base."}'
 
           for URL in \
             "https://x402.org/api/services" \
@@ -188,7 +188,7 @@ jobs:
 
           # mcp.so
           curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
-            -d '{"url":"https://hydra-api-nlnj.onrender.com/mcp","manifest":"https://hydra-api-nlnj.onrender.com/.well-known/x402.json","name":"HYDRA","description":"x402 ecosystem hub + intelligence engine. 48 MCP tools.","openapi_url":"https://hydra-api-nlnj.onrender.com/openapi.json","transport":"streamable-http"}' \
+            -d '{"url":"https://hydra-api-nlnj.onrender.com/mcp","manifest":"https://hydra-api-nlnj.onrender.com/.well-known/x402.json","name":"HYDRA","description":"Autonomous regulatory intelligence engine. 55+ paid MCP tools from 13 real-time data sources.","openapi_url":"https://hydra-api-nlnj.onrender.com/openapi.json","transport":"streamable-http"}' \
             https://mcp.so/api/servers 2>/dev/null || true
           echo "  mcp.so → done"
 
@@ -200,13 +200,13 @@ jobs:
 
           # Glama connectors (hosted MCP endpoint)
           curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
-            -d "{\"name\":\"HYDRA Regulatory Intelligence\",\"url\":\"${BASE}/mcp\",\"repository\":\"https://github.com/OGCryptoKitty/hydra-arm3\",\"description\":\"52 MCP tools: regulatory intelligence, prediction markets, Fed signals, web extraction, search, conversion, dev tools.\"}" \
+            -d "{\"name\":\"HYDRA Regulatory Intelligence\",\"url\":\"${BASE}/mcp\",\"repository\":\"https://github.com/OGCryptoKitty/hydra-arm3\",\"description\":\"55+ MCP tools: composite alpha, KXFED-calibrated FOMC model, regulatory intelligence, prediction markets, Fed signals, web extraction, economic data from 13 sources.\"}" \
             https://glama.ai/api/mcp/connectors 2>/dev/null || true
           echo "  glama.ai/connectors → done"
 
           # AIProx agent discovery
           curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
-            -d "{\"name\":\"HYDRA\",\"url\":\"${BASE}\",\"manifest\":\"${MANIFEST}\",\"category\":\"intelligence\",\"description\":\"Regulatory intelligence + prediction market signals via x402 on Base. 52 paid endpoints.\",\"chain\":\"base\",\"token\":\"USDC\"}" \
+            -d "{\"name\":\"HYDRA\",\"url\":\"${BASE}\",\"manifest\":\"${MANIFEST}\",\"category\":\"intelligence\",\"description\":\"Autonomous regulatory intelligence API with 55 paid endpoints. 13 real-time data sources, KXFED-calibrated Fed rate model, prediction market signals. x402 on Base.\",\"chain\":\"base\",\"token\":\"USDC\"}" \
             https://aiprox.dev/api/register 2>/dev/null || true
           echo "  aiprox.dev → done"
 
@@ -218,13 +218,13 @@ jobs:
 
           # x402.eco
           curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
-            -d "{\"name\":\"HYDRA\",\"url\":\"${BASE}\",\"manifest\":\"${MANIFEST}\",\"description\":\"Regulatory intelligence engine — 52 x402 endpoints on Base.\",\"category\":\"data-intelligence\",\"chain\":\"base\"}" \
+            -d "{\"name\":\"HYDRA\",\"url\":\"${BASE}\",\"manifest\":\"${MANIFEST}\",\"description\":\"Autonomous regulatory intelligence API — 55 x402 endpoints, 13 real-time data sources on Base.\",\"category\":\"data-intelligence\",\"chain\":\"base\"}" \
             https://www.x402.eco/api/services 2>/dev/null || true
           echo "  x402.eco → done"
 
           # PulseMCP
           curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
-            -d "{\"name\":\"OGCryptoKitty/hydra-arm3\",\"url\":\"${BASE}/mcp\",\"repository\":\"https://github.com/OGCryptoKitty/hydra-arm3\",\"description\":\"HYDRA Regulatory Intelligence — 52 MCP tools for regulatory risk, prediction markets, Fed signals, web extraction. x402 on Base.\",\"transport\":\"streamable-http\"}" \
+            -d "{\"name\":\"OGCryptoKitty/hydra-arm3\",\"url\":\"${BASE}/mcp\",\"repository\":\"https://github.com/OGCryptoKitty/hydra-arm3\",\"description\":\"HYDRA Regulatory Intelligence — 55+ MCP tools: composite alpha, KXFED-calibrated FOMC model, regulatory risk, prediction markets, web extraction, economic data. x402 on Base.\",\"transport\":\"streamable-http\"}" \
             https://www.pulsemcp.com/api/servers 2>/dev/null || true
           echo "  pulsemcp.com → done"
 
