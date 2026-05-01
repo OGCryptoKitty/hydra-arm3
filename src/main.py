@@ -52,6 +52,7 @@ from src.api.ecosystem_routes import router as ecosystem_router
 from src.api.alert_routes import alert_router
 from src.api.intelligence_routes import router as intelligence_router
 from src.api.portfolio_routes import router as portfolio_router
+from src.api.market_data_routes import market_data_router
 from src.runtime.automaton import HydraAutomaton, set_automaton
 from src.runtime.constitution import ConstitutionCheck
 from src.runtime.lifecycle import LifecycleManager
@@ -310,10 +311,11 @@ if _mcp_available:
             app,
             name="HYDRA",
             description=(
-                "402-native paid work engine for agents. Web extraction, search, "
-                "format conversion, developer tools, web checks, public data, "
-                "regulatory intelligence, prediction market signals, oracle data. "
-                "55 paid tools from $0.001 USDC via x402 on Base L2."
+                "402-native paid work engine for agents. Live crypto prices, DeFi yields, "
+                "stablecoin pegs, multi-chain gas, Fear & Greed, forex, web extraction, "
+                "format conversion, developer tools, regulatory intelligence, "
+                "prediction market signals, oracle data. "
+                "66+ paid tools from $0.001 USDC via x402 on Base L2."
             ),
         )
         mcp_server.mount()
@@ -437,6 +439,8 @@ app.include_router(alert_router)
 app.include_router(intelligence_router)
 
 app.include_router(portfolio_router)
+
+app.include_router(market_data_router)
 
 
 # ─────────────────────────────────────────────────────────────
