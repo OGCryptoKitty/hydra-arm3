@@ -1,8 +1,8 @@
 {
   "name": "HYDRA",
-  "description": "402-native paid work engine for agents and developers. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, oracle data. 40 paid endpoints from $0.001 USDC via x402 on Base L2.",
+  "description": "402-native regulatory intelligence API for autonomous agents. 55 paid endpoints from $0.001 USDC via x402 on Base L2. Real-time data from 13 authoritative sources: FRED (28 economic series), BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket Gamma, Polymarket CLOB. Market-calibrated Fed rate probabilities (60% KXFED / 40% model blend), FDIC bank failure monitoring, atomic economic snapshots, live regulatory pulse, alpha reports with edge analysis and Kelly sizing. Tier 1 government + Tier 3 CFTC-regulated data only.",
   "url": "https://hydra-api-nlnj.onrender.com",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "protocol": "a2a",
   "protocolVersion": "0.3.0",
   "capabilities": {
@@ -103,16 +103,51 @@
     {
       "id": "market-signals",
       "name": "Prediction Market Signals",
-      "description": "Scored regulatory signals for Polymarket/Kalshi. $5.00 USDC.",
-      "tags": ["prediction-markets", "polymarket", "kalshi"],
+      "description": "Bulk scored signals for all active regulatory prediction markets — HYDRA probability, impact scoring, signal direction. Data from Polymarket Gamma, Polymarket CLOB, and Kalshi KXFED. CFTC-regulated sources only. $5.00 USDC.",
+      "tags": ["prediction-markets", "polymarket", "kalshi", "kxfed"],
       "examples": ["Get signals for all regulatory prediction markets"]
+    },
+    {
+      "id": "market-alpha",
+      "name": "Alpha Report",
+      "description": "Premium alpha report — edge vs market price, Kelly sizing, entry price, historical analogues, resolution timeline. Calibrated with Kalshi KXFED market data. $10.00 USDC.",
+      "tags": ["alpha", "prediction-markets", "kelly", "kxfed", "edge-analysis"],
+      "examples": ["Alpha report for Fed rate decision market"]
     },
     {
       "id": "fed-signal",
       "name": "FOMC Pre-Decision Signal",
-      "description": "Pre-FOMC rate probabilities and speech analysis. $5.00 USDC.",
-      "tags": ["fed", "fomc", "interest-rates"],
+      "description": "Pre-FOMC rate probabilities with Kalshi KXFED market calibration (60% market / 40% model blend), speech analysis, dot plot tracking. $5.00 USDC.",
+      "tags": ["fed", "fomc", "interest-rates", "kxfed", "kalshi"],
       "examples": ["Rate probabilities for next FOMC meeting"]
+    },
+    {
+      "id": "fed-decision",
+      "name": "FOMC Decision Classification",
+      "description": "Real-time FOMC decision classification within 30 seconds of release. Market-calibrated rate probabilities, vote breakdown, statement analysis. $25.00 USDC.",
+      "tags": ["fed", "fomc", "decision", "real-time"],
+      "examples": ["Classify the latest FOMC rate decision"]
+    },
+    {
+      "id": "economic-snapshot",
+      "name": "Real-Time Economic Snapshot",
+      "description": "Atomic real-time economic data from FRED (28 series), BLS, Treasury yields, FDIC bank failures, Federal Register rulemakings. All Tier 1 government sources. $0.50 USDC.",
+      "tags": ["economic-data", "fred", "bls", "treasury", "fdic", "real-time"],
+      "examples": ["Get current CPI, unemployment, GDP, yield curve"]
+    },
+    {
+      "id": "regulatory-pulse-live",
+      "name": "Live Regulatory Pulse",
+      "description": "Real-time regulatory activity from SEC EDGAR full-text search, Federal Register API, and Congress bill tracker. $0.50 USDC.",
+      "tags": ["regulatory", "sec", "edgar", "congress", "real-time"],
+      "examples": ["Latest crypto regulatory filings and rulemakings"]
+    },
+    {
+      "id": "bank-failures",
+      "name": "FDIC Bank Failure Monitor",
+      "description": "Recent bank failures from FDIC BankFind API — closures, resolution details, estimated losses, acquiring institutions. $0.25 USDC.",
+      "tags": ["fdic", "bank-failures", "financial-stability"],
+      "examples": ["List recent bank failures and losses"]
     },
     {
       "id": "crypto-price",

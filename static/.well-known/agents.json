@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "HYDRA",
-  "description": "402-native paid work engine for agents and developers. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, oracle data. 40 paid endpoints from $0.001 USDC via x402 on Base L2.",
+  "description": "402-native regulatory intelligence API for autonomous agents. 55+ paid endpoints from $0.001 USDC via x402 on Base L2. Real-time data from 13 authoritative sources: FRED (28 economic series), BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket Gamma, Polymarket CLOB, Google DNS-over-HTTPS, CoinGecko. Market-calibrated Fed rate probabilities (60% KXFED / 40% model blend), FDIC bank failure monitoring, atomic economic snapshots, live regulatory pulse, alpha reports with edge analysis and Kelly sizing. Tier 1 government + Tier 3 CFTC-regulated data only.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "logo": null,
   "contact_email": null,
@@ -138,10 +138,19 @@
     {
       "id": "market-signals",
       "name": "Prediction Market Signals",
-      "description": "Bulk scored signals for all regulatory prediction markets.",
+      "description": "Bulk scored signals for all active regulatory prediction markets — HYDRA probability, impact scoring, signal direction. Data from Polymarket Gamma, Polymarket CLOB, and Kalshi KXFED. CFTC-regulated sources only.",
       "endpoint": "POST /v1/markets/signals",
       "price_usdc": "5.00",
       "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "market-alpha",
+      "name": "Alpha Report",
+      "description": "Premium alpha report — regulatory probability, edge vs market price, Kelly sizing, entry price, historical analogues, resolution timeline, trade verdict. Calibrated with Kalshi KXFED market data.",
+      "endpoint": "POST /v1/markets/alpha",
+      "price_usdc": "10.00",
+      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
       "output": {"type": "object"}
     },
     {
@@ -152,7 +161,70 @@
       "price_usdc": "0.001",
       "input": {"type": "object", "properties": {"token": {"type": "string"}}},
       "output": {"type": "object"}
+    },
+    {
+      "id": "economic-snapshot",
+      "name": "Economic Snapshot",
+      "description": "Atomic real-time economic data from FRED (28 series), BLS employment, Treasury yields, FDIC bank health, and Federal Register rulemakings. All data fetched live at request time from Tier 1 government sources.",
+      "endpoint": "GET /v1/intelligence/economic-snapshot",
+      "price_usdc": "0.50",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "regulatory-pulse-live",
+      "name": "Live Regulatory Pulse",
+      "description": "Live regulatory pulse from SEC EDGAR full-text search, Federal Register API, and Congress.gov bill tracker. Real-time data fetched at request time — not cached.",
+      "endpoint": "GET /v1/intelligence/regulatory-pulse-live",
+      "price_usdc": "0.50",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "bank-failures",
+      "name": "FDIC Bank Failure Monitor",
+      "description": "FDIC BankFind API — recent bank failures, resolution details, estimated losses, acquiring institutions. Live government data.",
+      "endpoint": "GET /v1/intelligence/bank-failures",
+      "price_usdc": "0.25",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "intelligence-alpha",
+      "name": "Composite Alpha Signal",
+      "description": "Composite alpha — regulatory risk + KXFED-calibrated Fed rate probability + prediction market sentiment + directional bias. 13-source data fusion.",
+      "endpoint": "GET /v1/intelligence/alpha",
+      "price_usdc": "5.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "intelligence-risk-score",
+      "name": "Regulatory Risk Score",
+      "description": "Real-time 0-100 risk score for any token or protocol based on regulatory exposure and agency attention.",
+      "endpoint": "GET /v1/intelligence/risk-score?token={token}",
+      "price_usdc": "2.00",
+      "input": {"type": "object", "properties": {"token": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "portfolio-scan",
+      "name": "Portfolio Risk Scan",
+      "description": "Portfolio-level regulatory risk scan — up to 20 tokens/protocols with aggregate risk and cross-correlation analysis.",
+      "endpoint": "POST /v1/portfolio/scan",
+      "price_usdc": "10.00",
+      "input": {"type": "object", "properties": {"tokens": {"type": "array", "items": {"type": "string"}}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "portfolio-market-brief",
+      "name": "Executive Market Brief",
+      "description": "Executive market brief — regulatory events + KXFED-calibrated Fed signal + prediction markets in one comprehensive view.",
+      "endpoint": "GET /v1/portfolio/market-brief",
+      "price_usdc": "3.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
     }
   ],
-  "tags": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "regulatory", "prediction-markets", "oracle", "x402", "mcp", "defi"]
+  "tags": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "regulatory", "prediction-markets", "oracle", "x402", "mcp", "defi", "fed-rates", "fomc", "economic-data", "fred", "bls", "treasury", "fdic", "bank-failures", "kalshi", "polymarket", "edgar", "federal-register", "congress"]
 }
