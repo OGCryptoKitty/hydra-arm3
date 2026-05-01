@@ -242,6 +242,7 @@ class FedIntelligenceEngine:
         self._dot_plot = _DOT_PLOT
         self._last_decision = _LAST_DECISION
         self._live_data_cache: dict[str, Any] | None = None
+        self._kxfed_cache: dict[str, Any] | None = None
 
     async def enrich_with_live_data(self) -> dict[str, Any]:
         """
@@ -374,59 +375,43 @@ class FedIntelligenceEngine:
 
     # ── Rate probability model ────────────────────────────────
 
-    def calculate_rate_probabilities(self) -> dict[str, float]:
+    def _baseline_probabilities(self) -> dict[str, float]:
         """
-        Rule-based rate probability model.
+        Rule-based baseline rate probability model.
 
-        Logic:
-          - Core PCE 2.6%, CPI 2.8%: both above 2% target → cuts not imminent
-          - Unemployment 4.0%, payrolls +143K: labor market solid → no urgency to cut
-          - GDP 2.3%: economy above potential → no need for stimulus
-          - Fed tone neutral-to-hawkish: extended pause most likely
-          - Dot plot: 1 cut in 2026, likely Q4 → next 2 meetings strongly favour HOLD
-
-        For the NEXT meeting (May 2026 unless already past):
+        Uses meeting index and hardcoded economic logic. Serves as the
+        prior when live market data is unavailable.
         """
         next_fomc = self.get_next_fomc()
-        days_until = next_fomc["days_until_fomc"]
         ann_date_str = next_fomc["announcement_date"]
         ann_date = date.fromisoformat(ann_date_str)
 
-        # Determine meeting number in 2026 (1=Jan, 2=Mar, 3=May, ...)
         meeting_index = next(
             (i for i, (_, _, a) in enumerate(FOMC_2026_MEETINGS) if a == ann_date),
             0,
         )
 
-        # Base probabilities: strong hold bias given current data
-        # Meetings 1-4 (Jan-Jun): very high hold probability
-        # Meeting 5+ (Jul-Dec): some cut probability emerges as inflation cools
         if meeting_index <= 3:
-            # Jan through Jun: inflation still above target, economy solid
             hold = 0.82
             cut_25 = 0.13
             cut_50 = 0.02
             hike_25 = 0.03
         elif meeting_index == 4:
-            # Jul: inflation should be ~2.4-2.5%; first cut possible
             hold = 0.55
             cut_25 = 0.38
             cut_50 = 0.04
             hike_25 = 0.03
         elif meeting_index == 5:
-            # Sep: cut more likely if H1 data confirm disinflation
             hold = 0.40
             cut_25 = 0.50
             cut_50 = 0.07
             hike_25 = 0.03
         else:
-            # Oct-Dec: dot plot median implies one cut → cut likely
             hold = 0.30
             cut_25 = 0.58
             cut_50 = 0.09
             hike_25 = 0.03
 
-        # Normalise to ensure sum = 1.0
         total = hold + cut_25 + cut_50 + hike_25
         return {
             "hold": round(hold / total, 4),
@@ -434,6 +419,92 @@ class FedIntelligenceEngine:
             "cut_50": round(cut_50 / total, 4),
             "hike_25": round(hike_25 / total, 4),
         }
+
+    def calculate_rate_probabilities(self) -> dict[str, float]:
+        """
+        Rate probability model. Returns baseline probabilities synchronously.
+        For live market-calibrated probabilities, use calculate_live_rate_probabilities().
+        """
+        if self._kxfed_cache is not None:
+            return self._blend_with_kxfed(self._baseline_probabilities(), self._kxfed_cache)
+        return self._baseline_probabilities()
+
+    async def calculate_live_rate_probabilities(self) -> dict[str, Any]:
+        """
+        Rate probability model calibrated with live Kalshi KXFED market prices.
+
+        Blends HYDRA's rule-based baseline (40% weight) with KXFED market-implied
+        probabilities (60% weight). KXFED prices are the closest free equivalent
+        to CME FedWatch — they represent real money wagered on Fed outcomes on a
+        CFTC-regulated exchange.
+        """
+        baseline = self._baseline_probabilities()
+        kxfed = await self._fetch_kxfed()
+
+        if kxfed is None:
+            return {
+                **baseline,
+                "source": "HYDRA rule-based model (baseline only)",
+                "market_calibrated": False,
+            }
+
+        self._kxfed_cache = kxfed
+        blended = self._blend_with_kxfed(baseline, kxfed)
+        return {
+            **blended,
+            "source": "HYDRA model + Kalshi KXFED market-implied (60/40 blend)",
+            "market_calibrated": True,
+            "kxfed_raw": {
+                "hold": kxfed["hold"],
+                "cut_25": kxfed["cut_25"],
+                "cut_50": kxfed["cut_50"],
+                "hike_25": kxfed["hike_25"],
+            },
+            "baseline_raw": baseline,
+            "kxfed_event": kxfed.get("event_title", ""),
+            "kxfed_fetched_at": kxfed.get("fetched_at", ""),
+        }
+
+    def _blend_with_kxfed(
+        self, baseline: dict[str, float], kxfed: dict[str, Any]
+    ) -> dict[str, float]:
+        """
+        Blend baseline rule-based probabilities with KXFED market-implied prices.
+
+        Weight: 60% market / 40% model. Market prices reflect aggregated
+        information from thousands of participants with real money at stake.
+        The model prior prevents the output from being purely noise when
+        KXFED liquidity is thin.
+        """
+        market_weight = 0.60
+        model_weight = 0.40
+
+        hold = model_weight * baseline["hold"] + market_weight * kxfed["hold"]
+        cut_25 = model_weight * baseline["cut_25"] + market_weight * kxfed["cut_25"]
+        cut_50 = model_weight * baseline["cut_50"] + market_weight * kxfed["cut_50"]
+        hike_25 = model_weight * baseline["hike_25"] + market_weight * kxfed["hike_25"]
+
+        total = hold + cut_25 + cut_50 + hike_25
+        return {
+            "hold": round(hold / total, 4),
+            "cut_25": round(cut_25 / total, 4),
+            "cut_50": round(cut_50 / total, 4),
+            "hike_25": round(hike_25 / total, 4),
+        }
+
+    async def _fetch_kxfed(self) -> dict[str, Any] | None:
+        """Fetch KXFED probabilities from KalshiClient."""
+        try:
+            from src.services.prediction_markets import KalshiClient
+            client = KalshiClient()
+            try:
+                result = await client.get_kxfed_probabilities()
+                return result
+            finally:
+                await client.close()
+        except Exception as exc:
+            logger.warning("KXFED fetch failed: %s", exc)
+            return None
 
     # ── Speech analysis ───────────────────────────────────────
 
@@ -509,8 +580,9 @@ class FedIntelligenceEngine:
             "market_consensus": {
                 "label": market_consensus_label,
                 "note": (
-                    "Live Kalshi KXFED market data attempted at request time. "
-                    "This estimate is based on HYDRA's rule-based model and recent consensus surveys."
+                    "Probabilities calibrated with live Kalshi KXFED market-implied prices "
+                    "when available (60% market / 40% model blend). KXFED is the closest "
+                    "free equivalent to CME FedWatch — CFTC-regulated real-money contracts."
                 ),
             },
             "hydra_signal": signal_direction,
@@ -532,18 +604,50 @@ class FedIntelligenceEngine:
 
     async def generate_live_signal(self) -> dict[str, Any]:
         """
-        Enhanced pre-FOMC signal with live data from FRED, BLS, Treasury.
-        Falls back to baseline signal if live data is unavailable.
+        Enhanced pre-FOMC signal with live data from FRED, BLS, Treasury,
+        and Kalshi KXFED market-implied probabilities.
         """
-        baseline = self.generate_pre_fomc_signal()
-        live_data = await self.enrich_with_live_data()
+        live_probs = await self.calculate_live_rate_probabilities()
 
+        baseline = self.generate_pre_fomc_signal()
+
+        baseline["hydra_rate_probability"] = {
+            k: v for k, v in live_probs.items()
+            if k in ("hold", "cut_25", "cut_50", "hike_25")
+        }
+        if live_probs.get("market_calibrated"):
+            baseline["market_calibration"] = {
+                "method": "60% KXFED market-implied / 40% HYDRA rule-based",
+                "kxfed_raw_probabilities": live_probs.get("kxfed_raw"),
+                "hydra_baseline_probabilities": live_probs.get("baseline_raw"),
+                "kxfed_event": live_probs.get("kxfed_event"),
+                "kxfed_fetched_at": live_probs.get("kxfed_fetched_at"),
+                "source": "Kalshi KXFED series — CFTC-regulated exchange",
+            }
+
+        max_outcome = max(
+            ("hold", "cut_25", "cut_50", "hike_25"),
+            key=lambda k: live_probs.get(k, 0),
+        )
+        outcome_map = {
+            "hold": ("HOLD", 0),
+            "cut_25": ("CUT", 25),
+            "cut_50": ("CUT", 50),
+            "hike_25": ("HIKE", 25),
+        }
+        baseline["hydra_signal"], baseline["hydra_basis_points"] = outcome_map[max_outcome]
+        baseline["confidence"] = round(live_probs.get(max_outcome, 0) * 100)
+
+        live_data = await self.enrich_with_live_data()
         baseline["live_economic_data"] = live_data
         if live_data.get("data_freshness") == "real-time":
-            baseline["data_freshness"] = "real-time (FRED + BLS + Treasury)"
+            baseline["data_freshness"] = "real-time (FRED + BLS + Treasury + Kalshi KXFED)"
             baseline["key_indicators"] = live_data.get("live_indicators", self._indicators)
         else:
-            baseline["data_freshness"] = "baseline (hardcoded April 2026)"
+            baseline["data_freshness"] = (
+                "market-calibrated (Kalshi KXFED)" if live_probs.get("market_calibrated")
+                else "baseline (hardcoded April 2026)"
+            )
 
         return baseline
 

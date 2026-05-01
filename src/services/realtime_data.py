@@ -46,23 +46,41 @@ _HEADERS = {
 }
 
 # FRED series IDs for key economic indicators
+# All sourced from fred.stlouisfed.org — Tier 1 authoritative data
 FRED_KEY_SERIES = {
+    # Federal Reserve policy
     "FEDFUNDS": "Federal Funds Effective Rate",
     "DFEDTARU": "Fed Funds Target Range Upper",
     "DFEDTARL": "Fed Funds Target Range Lower",
+    "WALCL": "Fed Balance Sheet Total Assets",
+    # Inflation (Fed's dual mandate)
     "CPIAUCSL": "CPI All Urban Consumers (SA)",
     "CPILFESL": "Core CPI (Less Food & Energy, SA)",
     "PCEPI": "PCE Price Index",
     "PCEPILFE": "Core PCE (Less Food & Energy)",
+    # Growth
     "GDPC1": "Real GDP (Chained 2017 Dollars)",
+    "GDPNOW": "Atlanta Fed GDPNow Estimate",
+    # Labor market (Fed's dual mandate)
     "UNRATE": "Unemployment Rate",
     "PAYEMS": "Total Nonfarm Payrolls",
-    "DGS10": "10-Year Treasury Constant Maturity",
+    "IC4WSA": "Initial Jobless Claims (4-Week Average)",
+    # Bond market / yield curve
     "DGS2": "2-Year Treasury Constant Maturity",
-    "T10Y2Y": "10Y-2Y Treasury Spread",
+    "DGS10": "10-Year Treasury Constant Maturity",
+    "DGS30": "30-Year Treasury Constant Maturity",
+    "T10Y2Y": "10Y-2Y Treasury Spread (Inversion Indicator)",
+    "T10YFF": "10Y Treasury Minus Fed Funds Rate",
+    # Risk / sentiment
+    "VIXCLS": "CBOE VIX (Volatility Index)",
+    "BAMLH0A0HYM2": "High Yield OAS Spread (Credit Risk)",
     "DTWEXBGS": "Trade Weighted Dollar Index (Broad)",
-    "VIXCLS": "CBOE VIX",
-    "BAMLH0A0HYM2": "High Yield OAS Spread",
+    "UMCSENT": "U. Michigan Consumer Sentiment",
+    # Inflation expectations / financial conditions
+    "T5YIE": "5-Year Breakeven Inflation Rate",
+    "DFII10": "10-Year TIPS/Treasury Breakeven",
+    "STLFSI4": "St. Louis Fed Financial Stress Index",
+    "MORTGAGE30US": "30-Year Fixed Mortgage Rate",
 }
 
 # BLS series for employment data
@@ -305,6 +323,50 @@ async def search_edgar(query: str, date_range: str = "", form_types: list[str] |
                 "filed_at": source.get("file_date", ""),
                 "url": f"https://www.sec.gov/Archives/edgar/data/{source.get('entity_id', '')}/{source.get('adsh', '').replace('-', '')}/",
                 "description": (source.get("file_description") or "")[:300],
+            })
+
+    _edgar_cache[cache_key] = result
+    return result
+
+
+async def get_sec_company_filings(cik: str, limit: int = 10) -> dict[str, Any]:
+    """
+    Fetch recent filings for a specific SEC registrant via the structured EDGAR API.
+    More reliable than EFTS for company-specific queries.
+
+    Uses data.sec.gov which requires a User-Agent header but no API key.
+    CIK should be zero-padded to 10 digits (e.g., "0000320193" for Apple).
+    """
+    cache_key = f"sec_company_{cik}"
+    if cache_key in _edgar_cache:
+        return _edgar_cache[cache_key]
+
+    padded_cik = cik.zfill(10)
+    data = await _async_get(f"https://data.sec.gov/submissions/CIK{padded_cik}.json")
+
+    result: dict[str, Any] = {
+        "cik": cik,
+        "filings": [],
+        "company_name": "",
+        "source": "SEC EDGAR Structured Data API (data.sec.gov)",
+        "trust_tier": 1,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if data and isinstance(data, dict):
+        result["company_name"] = data.get("name", "")
+        recent = data.get("filings", {}).get("recent", {})
+        forms = recent.get("form", [])
+        dates = recent.get("filingDate", [])
+        accessions = recent.get("accessionNumber", [])
+        descriptions = recent.get("primaryDocDescription", [])
+
+        for i in range(min(limit, len(forms))):
+            result["filings"].append({
+                "form_type": forms[i] if i < len(forms) else "",
+                "filed_at": dates[i] if i < len(dates) else "",
+                "accession_number": accessions[i] if i < len(accessions) else "",
+                "description": descriptions[i] if i < len(descriptions) else "",
             })
 
     _edgar_cache[cache_key] = result
@@ -659,8 +721,8 @@ DATA_SOURCE_REGISTRY: list[dict[str, Any]] = [
         "coverage": "National debt, interest rates, revenue, spending, savings bonds",
     },
     {
-        "id": "sec_edgar",
-        "name": "SEC EDGAR Full-Text Search",
+        "id": "sec_edgar_efts",
+        "name": "SEC EDGAR Full-Text Search (EFTS)",
         "operator": "U.S. Securities and Exchange Commission",
         "trust_tier": 1,
         "url": "https://www.sec.gov/edgar/searchedgar/companysearch",
@@ -670,7 +732,21 @@ DATA_SOURCE_REGISTRY: list[dict[str, Any]] = [
         "latency": "<5 minutes from filing to search availability",
         "rate_limit": "10 requests/second (per SEC fair access policy)",
         "data_integrity": "Primary source for all SEC filings. Legally required disclosure — highest integrity.",
-        "coverage": "All SEC registrant filings: 10-K, 10-Q, 8-K, S-1, proxy statements, enforcement actions",
+        "coverage": "Full-text search across all SEC filings: 10-K, 10-Q, 8-K, S-1, enforcement actions",
+    },
+    {
+        "id": "sec_edgar_structured",
+        "name": "SEC EDGAR Structured Data API",
+        "operator": "U.S. Securities and Exchange Commission",
+        "trust_tier": 1,
+        "url": "https://data.sec.gov",
+        "api_url": "https://data.sec.gov/submissions/CIK{cik}.json",
+        "auth_required": "No (User-Agent header with contact email required)",
+        "update_frequency": "Real-time — filings indexed within minutes",
+        "latency": "<5 minutes from filing to API availability",
+        "rate_limit": "10 requests/second",
+        "data_integrity": "Structured JSON access to all EDGAR filings and XBRL financial data. Primary source.",
+        "coverage": "All SEC registrant filings, XBRL facts, company metadata, filing history",
     },
     {
         "id": "federal_register",

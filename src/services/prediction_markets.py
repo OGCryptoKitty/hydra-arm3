@@ -1273,6 +1273,102 @@ class KalshiClient:
         _market_cache[cache_key] = result
         return result
 
+    async def get_kxfed_probabilities(self) -> dict[str, Any] | None:
+        """
+        Fetch KXFED series markets and extract market-implied Fed rate probabilities.
+
+        Returns a dict with:
+          - hold_prob, cut_25_prob, cut_50_prob, hike_25_prob (floats 0-1)
+          - raw_markets: list of KXFED market tickers with yes_price
+          - next_meeting_event: the event ticker for the next FOMC meeting
+          - fetched_at: ISO timestamp
+
+        Returns None if KXFED data is unavailable.
+        """
+        cache_key = "kxfed_probabilities"
+        if cache_key in _market_cache:
+            return _market_cache[cache_key]
+
+        data = await self._get(
+            "/events",
+            params={"limit": 20, "status": "open", "series_ticker": "KXFED"},
+        )
+        if not data or not data.get("events"):
+            logger.warning("KXFED: no open events found")
+            return None
+
+        events = data["events"]
+        next_event = events[0]
+        event_ticker = next_event.get("event_ticker", "")
+
+        mdata = await self._get(
+            "/markets",
+            params={"event_ticker": event_ticker, "limit": 50, "status": "open"},
+        )
+        if not mdata or not mdata.get("markets"):
+            logger.warning("KXFED: no markets for event %s", event_ticker)
+            return None
+
+        raw_markets = mdata["markets"]
+
+        hold_prob = 0.0
+        cut_25_prob = 0.0
+        cut_50_prob = 0.0
+        hike_25_prob = 0.0
+        market_details = []
+
+        for m in raw_markets:
+            ticker = m.get("ticker", "")
+            title = (m.get("title") or m.get("question") or "").lower()
+            yes_price_cents = m.get("yes_ask") or m.get("yes_bid") or m.get("last_price") or 0
+            yes_price = yes_price_cents / 100.0 if yes_price_cents > 1 else float(yes_price_cents)
+
+            market_details.append({
+                "ticker": ticker,
+                "title": m.get("title") or m.get("question", ""),
+                "yes_price": yes_price,
+                "volume": m.get("volume") or m.get("volume_24h") or 0,
+            })
+
+            if any(kw in title for kw in ["hold", "unchanged", "no change", "maintain"]):
+                hold_prob = max(hold_prob, yes_price)
+            elif any(kw in title for kw in ["50 basis", "50 bp", "50bp", "-50", "cut 50"]):
+                cut_50_prob = max(cut_50_prob, yes_price)
+            elif any(kw in title for kw in ["25 basis", "25 bp", "25bp", "-25", "cut 25", "lower", "cut", "decrease"]):
+                cut_25_prob = max(cut_25_prob, yes_price)
+            elif any(kw in title for kw in ["hike", "raise", "increase", "+25", "higher"]):
+                hike_25_prob = max(hike_25_prob, yes_price)
+
+        total = hold_prob + cut_25_prob + cut_50_prob + hike_25_prob
+        if total > 0:
+            hold_prob /= total
+            cut_25_prob /= total
+            cut_50_prob /= total
+            hike_25_prob /= total
+        else:
+            logger.warning("KXFED: could not parse probabilities from market titles")
+            return None
+
+        result = {
+            "hold": round(hold_prob, 4),
+            "cut_25": round(cut_25_prob, 4),
+            "cut_50": round(cut_50_prob, 4),
+            "hike_25": round(hike_25_prob, 4),
+            "event_ticker": event_ticker,
+            "event_title": next_event.get("title", ""),
+            "market_count": len(raw_markets),
+            "markets": market_details,
+            "source": "Kalshi KXFED series (CFTC-regulated)",
+            "trust_tier": 3,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+        }
+        _market_cache[cache_key] = result
+        logger.info(
+            "KXFED probabilities: HOLD=%.1f%% CUT25=%.1f%% CUT50=%.1f%% HIKE25=%.1f%%",
+            hold_prob * 100, cut_25_prob * 100, cut_50_prob * 100, hike_25_prob * 100,
+        )
+        return result
+
     async def close(self) -> None:
         if self._client and not self._client.is_closed:
             await self._client.aclose()
