@@ -164,7 +164,30 @@ async def get_fred_series(series_id: str, limit: int = 10) -> dict[str, Any]:
             if result["observations"]:
                 result["last_updated"] = result["observations"][0]["date"]
     else:
-        logger.info("FRED_API_KEY not set — %s unavailable. Set FRED_API_KEY env var for live FRED data.", series_id)
+        # No API key — use FRED's public CSV endpoint (no auth required)
+        try:
+            async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT, headers=_HEADERS) as client:
+                resp = await client.get(
+                    "https://fred.stlouisfed.org/graph/fredgraph.csv",
+                    params={"id": series_id},
+                )
+                resp.raise_for_status()
+                lines = resp.text.strip().split("\n")
+                if len(lines) > 1:
+                    for line in reversed(lines[1:]):
+                        parts = line.split(",")
+                        if len(parts) >= 2 and parts[1].strip() != ".":
+                            result["observations"].append({
+                                "date": parts[0].strip(),
+                                "value": parts[1].strip(),
+                            })
+                            if len(result["observations"]) >= limit:
+                                break
+                    if result["observations"]:
+                        result["last_updated"] = result["observations"][0]["date"]
+                        result["source"] = "FRED (public CSV, no API key)"
+        except Exception as exc:
+            logger.debug("FRED CSV fallback failed for %s: %s", series_id, exc)
 
     _fred_cache[cache_key] = result
     return result
