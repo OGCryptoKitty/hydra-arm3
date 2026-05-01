@@ -573,6 +573,106 @@ async def get_bls_data(series_ids: list[str] | None = None, start_year: int = 20
 
 
 # ─────────────────────────────────────────────────────────────
+# FDIC BankFind — Bank failure and financial institution data
+# ─────────────────────────────────────────────────────────────
+
+_fdic_cache: TTLCache = TTLCache(maxsize=10, ttl=900)
+
+
+async def get_fdic_bank_failures(limit: int = 20) -> dict[str, Any]:
+    """
+    Fetch recent bank failures from the FDIC BankFind API.
+    No API key required. Relevant for bank failure prediction markets.
+    """
+    cache_key = f"fdic_failures_{limit}"
+    if cache_key in _fdic_cache:
+        return _fdic_cache[cache_key]
+
+    result: dict[str, Any] = {
+        "failures": [],
+        "source": "FDIC BankFind Suite",
+        "api_url": "https://banks.data.fdic.gov/api/failures",
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    data = await _async_get(
+        "https://banks.data.fdic.gov/api/failures",
+        params={
+            "$limit": str(limit),
+            "$sort": "-FAILDATE",
+            "$select": "CERT,INSTNAME,CITY,STATE,FAILDATE,SAVR,RESTYPE,COST,QBFASSET,PSTALP",
+        },
+    )
+
+    if data and isinstance(data, dict):
+        for row in data.get("data", []):
+            d = row.get("data", row)
+            result["failures"].append({
+                "cert": d.get("CERT"),
+                "institution": d.get("INSTNAME"),
+                "city": d.get("CITY"),
+                "state": d.get("PSTALP") or d.get("STATE"),
+                "fail_date": d.get("FAILDATE"),
+                "acquiring_institution": d.get("SAVR"),
+                "resolution_type": d.get("RESTYPE"),
+                "estimated_loss_millions": d.get("COST"),
+                "total_assets_millions": d.get("QBFASSET"),
+            })
+        result["total_failures_returned"] = len(result["failures"])
+
+    _fdic_cache[cache_key] = result
+    return result
+
+
+async def get_fdic_financials(cert: str | None = None, limit: int = 10) -> dict[str, Any]:
+    """
+    Fetch FDIC financial data for institutions. Without cert, returns
+    aggregate industry stats. With cert, returns specific bank data.
+    """
+    cache_key = f"fdic_fin_{cert or 'aggregate'}_{limit}"
+    if cache_key in _fdic_cache:
+        return _fdic_cache[cache_key]
+
+    params: dict[str, str] = {
+        "$limit": str(limit),
+        "$sort": "-REPDTE",
+        "$select": "CERT,INSTNAME,REPDTE,ASSET,DEP,NETINC,ROA,ROE,NITEFFL,NCLNLS",
+    }
+    if cert:
+        params["$where"] = f'CERT="{cert}"'
+
+    result: dict[str, Any] = {
+        "institutions": [],
+        "source": "FDIC BankFind Suite — Financial Reports",
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    data = await _async_get(
+        "https://banks.data.fdic.gov/api/financials",
+        params=params,
+    )
+
+    if data and isinstance(data, dict):
+        for row in data.get("data", []):
+            d = row.get("data", row)
+            result["institutions"].append({
+                "cert": d.get("CERT"),
+                "institution": d.get("INSTNAME"),
+                "report_date": d.get("REPDTE"),
+                "total_assets_thousands": d.get("ASSET"),
+                "total_deposits_thousands": d.get("DEP"),
+                "net_income_thousands": d.get("NETINC"),
+                "return_on_assets": d.get("ROA"),
+                "return_on_equity": d.get("ROE"),
+                "net_interest_margin": d.get("NITEFFL"),
+                "noncurrent_loans_pct": d.get("NCLNLS"),
+            })
+
+    _fdic_cache[cache_key] = result
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
 # Composite: Real-Time Economic Snapshot
 # ─────────────────────────────────────────────────────────────
 
@@ -845,6 +945,20 @@ DATA_SOURCE_REGISTRY: list[dict[str, Any]] = [
         "rate_limit": "~60 requests/minute (undocumented)",
         "data_integrity": "CFTC-regulated Designated Contract Market. Prices reflect real money. Regulatory oversight provides integrity guarantee.",
         "coverage": "All active Kalshi markets — economics, politics, climate, finance",
+    },
+    {
+        "id": "fdic_bankfind",
+        "name": "FDIC BankFind Suite API",
+        "operator": "Federal Deposit Insurance Corporation",
+        "trust_tier": 1,
+        "url": "https://banks.data.fdic.gov",
+        "api_url": "https://banks.data.fdic.gov/api/failures",
+        "auth_required": "No",
+        "update_frequency": "Updated within 24 hours of bank closure announcement",
+        "latency": "<24 hours for failure data; quarterly for financial reports",
+        "rate_limit": "No documented limit; standard REST API",
+        "data_integrity": "Official FDIC data. Bank failure records are legally authoritative. Financial reports from Call Reports (FFIEC).",
+        "coverage": "Bank failures, financial reports, institution demographics, historical data back to 1934",
     },
 ]
 

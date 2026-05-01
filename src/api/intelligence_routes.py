@@ -477,3 +477,31 @@ async def regulatory_pulse_live():
     except Exception as exc:
         logger.exception("Regulatory pulse failed: %s", exc)
         return {"error": str(exc)}
+
+
+@router.get(
+    "/bank-failures",
+    summary="FDIC Bank Failure Monitor ($0.25 USDC)",
+    description=(
+        "**$0.25 USDC via x402.** "
+        "Live FDIC bank failure data from the official BankFind API. "
+        "Returns recent bank failures with resolution details, acquiring institutions, "
+        "estimated losses, and total assets. Relevant for bank failure prediction markets."
+    ),
+)
+async def bank_failures(
+    limit: int = Query(default=20, ge=1, le=100, description="Number of recent failures to return"),
+):
+    """
+    Recent bank failures from the FDIC BankFind API.
+    """
+    try:
+        from src.services.realtime_data import get_fdic_bank_failures
+        failures = await get_fdic_bank_failures(limit=limit)
+        return {
+            "endpoint": "/v1/intelligence/bank-failures",
+            **failures,
+        }
+    except Exception as exc:
+        logger.exception("FDIC bank failures fetch failed: %s", exc)
+        return {"error": str(exc)}

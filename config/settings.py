@@ -314,6 +314,11 @@ PRICING: dict[str, dict] = {
         "description": "Live regulatory pulse — SEC EDGAR search, Federal Register API, Congress bill tracker. Real-time at request.",
         "amount_base_units": 500_000,
     },
+    "/v1/intelligence/bank-failures": {
+        "amount_usdc": Decimal("0.25"),
+        "description": "FDIC bank failure monitor — recent failures, resolution details, losses. BankFind API live data.",
+        "amount_base_units": 250_000,
+    },
     # ── Push Alert System ───────────────────────────────────────
     "/v1/alerts/subscribe": {
         "amount_usdc": Decimal("0.10"),
