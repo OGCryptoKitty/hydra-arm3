@@ -223,12 +223,26 @@ async def list_markets(request: Request) -> JSONResponse:
     return JSONResponse(content={
         "total": len(market_list),
         "markets": market_list,
-        "data_freshness": "5-minute cache",
+        "data_freshness": "60-second cache",
+        "sample_signal_preview": {
+            "note": "This is what a $2.00 signal looks like — shown here FREE for the top market",
+            "market": market_list[0]["title"] if market_list else None,
+            "hydra_signal": "Available via POST /v1/markets/signal/{market_id}",
+            "includes": [
+                "Signal direction (bullish_yes / bullish_no / neutral)",
+                "Confidence score (0-100)",
+                "Regulatory context and key dates",
+                "Historical precedent analysis",
+                "Risk factors",
+                "Resolution source URLs",
+            ],
+        },
         "upgrade": {
             "signals": "POST /v1/markets/signals ($5.00 USDC) — full HYDRA regulatory analysis for all markets",
             "single": "POST /v1/markets/signal/{market_id} ($2.00 USDC) — deep signal for one market",
-            "events": "POST /v1/markets/events ($0.50 USDC) — live regulatory events matched to markets",
-            "alpha": "POST /v1/markets/alpha ($10.00 USDC) — full alpha report: edge, entry, risk/reward",
+            "alpha": "POST /v1/markets/alpha ($10.00 USDC) — alpha report: edge, Kelly sizing, trade verdict",
+            "fed_signal": "POST /v1/fed/signal ($5.00 USDC) — KXFED-calibrated rate probabilities",
+            "economic_snapshot": "GET /v1/intelligence/economic-snapshot ($0.50 USDC) — live FRED/BLS/Treasury/FDIC",
         },
         "generated_at": datetime.now(timezone.utc).isoformat(),
     })
