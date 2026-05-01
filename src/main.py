@@ -111,6 +111,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Port    : %d", settings.PORT)
     logger.info("=" * 60)
 
+    # ── Production readiness check ──
+    import os as _os
+    _missing = []
+    if not _os.getenv("FRED_API_KEY"):
+        _missing.append("FRED_API_KEY (28 FRED economic series will return empty)")
+    if not _os.getenv("WALLET_PRIVATE_KEY"):
+        _missing.append("WALLET_PRIVATE_KEY (Aave yield + auto-remittance disabled)")
+    if _missing:
+        logger.warning("PRODUCTION BLOCKERS — set these env vars on Render:")
+        for m in _missing:
+            logger.warning("  ⚠ Missing: %s", m)
+    else:
+        logger.info("All production env vars configured")
+
     # ── Initialise runtime managers and attach to app.state ──
     try:
         app.state.constitution_check = ConstitutionCheck()
@@ -299,7 +313,7 @@ if _mcp_available:
                 "402-native paid work engine for agents. Web extraction, search, "
                 "format conversion, developer tools, web checks, public data, "
                 "regulatory intelligence, prediction market signals, oracle data. "
-                "40 paid tools from $0.001 USDC via x402 on Base L2."
+                "55 paid tools from $0.001 USDC via x402 on Base L2."
             ),
         )
         mcp_server.mount()

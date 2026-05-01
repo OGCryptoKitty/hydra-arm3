@@ -60,11 +60,14 @@ async def subscribe_alerts(request: SubscribeRequest):
     Alerts are delivered as POST requests to webhook_url with structured JSON payloads.
     """
     engine = get_alert_engine()
-    sub = engine.subscribe(
-        webhook_url=request.webhook_url,
-        conditions=request.conditions.model_dump(),
-        max_alerts=request.max_alerts,
-    )
+    try:
+        sub = engine.subscribe(
+            webhook_url=request.webhook_url,
+            conditions=request.conditions.model_dump(),
+            max_alerts=request.max_alerts,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     return JSONResponse(content={
         "subscription_id": sub.subscription_id,
         "webhook_url": sub.webhook_url,

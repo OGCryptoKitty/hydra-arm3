@@ -4,16 +4,22 @@ HYDRA Arm 3 — Agent Discovery & Distribution Engine
 Autonomous registration and discovery maximization. Runs every 24 hours
 via HydraAutomaton heartbeat. Zero human involvement.
 
+55+ paid endpoints across 13 real-time data sources. Kalshi KXFED
+market-calibrated Fed rate probabilities, FDIC bank failure monitoring,
+alpha reports with Kelly sizing, atomic economic snapshots.
+
 Distribution channels:
   x402 ecosystem:
     - x402.org registry — official Linux Foundation x402 registry
     - x402scan.com — open x402 crawler
     - x402list.fun — community x402 directory
     - x402-list.com — x402 service listing
+    - x402.eco — x402 ecosystem directory
   MCP directories (auto-indexed from GitHub repo):
     - Glama (auto-indexes from README.md MCP metadata)
     - Smithery (auto-indexes from smithery.yaml in repo root)
     - mcp.so — community-submitted MCP servers
+    - PulseMCP — MCP server directory
   Agent discovery protocols:
     - Google A2A — /.well-known/agent.json
     - MCP — /.well-known/mcp.json
@@ -26,6 +32,9 @@ Distribution channels:
     - Yandex sitemap ping
   x402 marketplaces:
     - the402.ai — agent marketplace with x402 payments
+  Agent registries:
+    - aiprox.dev — AI proxy registry
+    - agentarena.site — agent marketplace
   Self-verification:
     - All discovery manifests verified on each cycle
 """
@@ -52,7 +61,7 @@ DISCOVERY_ENDPOINTS = [
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
             "name": "HYDRA",
-            "description": "x402 ecosystem hub + autonomous intelligence engine. 48 paid endpoints: composite alpha signals, regulatory risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. $0.001-$50 USDC on Base.",
+            "description": "x402 ecosystem hub + autonomous intelligence engine. 55+ paid endpoints across 13 real-time data sources (SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Federal Reserve, Treasury, FDIC BankFind, Federal Register, BLS, FRED, Kalshi KXFED, Polymarket). Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing, composite risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -63,7 +72,7 @@ DISCOVERY_ENDPOINTS = [
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
             "name": "HYDRA",
-            "description": "x402 ecosystem hub + autonomous intelligence engine. 48 paid endpoints: composite alpha signals, regulatory risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. $0.001-$50 USDC on Base.",
+            "description": "x402 ecosystem hub + autonomous intelligence engine. 55+ paid endpoints across 13 real-time data sources (SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Federal Reserve, Treasury, FDIC BankFind, Federal Register, BLS, FRED, Kalshi KXFED, Polymarket). Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing, composite risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -74,7 +83,7 @@ DISCOVERY_ENDPOINTS = [
             "url": f"{HYDRA_BASE_URL}/mcp",
             "manifest": HYDRA_MANIFEST,
             "name": "HYDRA",
-            "description": "x402 ecosystem hub + intelligence engine. 48 MCP tools: composite alpha signals, risk scores, push alerts, x402 directory/routing, web extraction, search, HTML-to-Markdown, DNS/SSL, hash, diff, Wikipedia, arXiv, EDGAR, regulatory intelligence, prediction markets, oracle data.",
+            "description": "x402 ecosystem hub + intelligence engine. 55+ MCP tools across 13 data sources: Kalshi KXFED-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing, composite risk scores, push alerts, x402 directory/routing, web extraction, search, HTML-to-Markdown, DNS/SSL, hash, diff, Wikipedia, arXiv, EDGAR, regulatory intelligence, prediction markets, oracle data.",
             "openapi_url": HYDRA_OPENAPI,
             "transport": "streamable-http",
         },
@@ -87,7 +96,7 @@ DISCOVERY_ENDPOINTS = [
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
             "name": "HYDRA",
-            "description": "x402 ecosystem hub + autonomous intelligence engine. 48 paid endpoints: composite alpha signals, regulatory risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. $0.001-$50 USDC on Base.",
+            "description": "x402 ecosystem hub + autonomous intelligence engine. 55+ paid endpoints across 13 real-time data sources (SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Federal Reserve, Treasury, FDIC BankFind, Federal Register, BLS, FRED, Kalshi KXFED, Polymarket). Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing, composite risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -98,7 +107,7 @@ DISCOVERY_ENDPOINTS = [
             "url": HYDRA_BASE_URL,
             "manifest": HYDRA_MANIFEST,
             "name": "HYDRA",
-            "description": "x402 ecosystem hub + autonomous intelligence engine. 48 paid endpoints: composite alpha signals, regulatory risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data, regulatory intelligence, prediction markets, Fed signals, oracle data. $0.001-$50 USDC on Base.",
+            "description": "x402 ecosystem hub + autonomous intelligence engine. 55+ paid endpoints across 13 real-time data sources (SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Federal Reserve, Treasury, FDIC BankFind, Federal Register, BLS, FRED, Kalshi KXFED, Polymarket). Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing, composite risk scores, push alerts, x402 directory/routing, web extraction, search, conversion, dev tools, web checks, public data. $0.001-$50 USDC on Base.",
         },
     },
     {
@@ -331,6 +340,70 @@ DISCOVERY_ENDPOINTS = [
             "category": "data",
             "description": "Daily regulatory + market digest for compliance teams and trading agents",
             "network": "base-mainnet",
+        },
+    },
+    # ── Additional discovery platforms ───────────────────────────
+    {
+        "name": "glama_connectors",
+        "url": "https://glama.ai/api/mcp/connectors",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Regulatory Intelligence",
+            "url": f"{HYDRA_BASE_URL}/mcp",
+            "repository": "https://github.com/OGCryptoKitty/hydra-arm3",
+            "description": "55+ MCP tools: Kalshi KXFED-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing, regulatory intelligence, prediction markets, web extraction, search, conversion, dev tools, web checks, public data. 13 real-time data sources. x402 payments on Base.",
+        },
+    },
+    {
+        "name": "aiprox_registry",
+        "url": "https://aiprox.dev/api/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA",
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "category": "intelligence",
+            "description": "Regulatory intelligence + prediction market signals via x402 on Base. 55+ paid endpoints from $0.001 USDC. 13 real-time data sources, Kalshi KXFED-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing.",
+            "chain": "base",
+            "token": "USDC",
+        },
+    },
+    {
+        "name": "agent_arena_registry",
+        "url": "https://agentarena.site/api/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Regulatory Intelligence",
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "capabilities": ["regulatory-intelligence", "prediction-markets", "fed-signals", "kxfed-calibration", "fdic-bank-failures", "alpha-kelly-sizing", "web-extraction", "search", "oracle-data", "economic-data"],
+            "chain_id": 8453,
+            "payment_token": "USDC",
+        },
+    },
+    {
+        "name": "x402_eco",
+        "url": "https://www.x402.eco/api/services",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA",
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "description": "Regulatory intelligence engine — 55+ x402 endpoints on Base. 13 real-time data sources. Kalshi KXFED-calibrated Fed rate probabilities, FDIC bank failure monitoring, alpha reports with Kelly sizing, risk scores, push alerts, web extraction, search.",
+            "category": "data-intelligence",
+            "chain": "base",
+        },
+    },
+    {
+        "name": "pulsemcp_submission",
+        "url": "https://www.pulsemcp.com/api/servers",
+        "method": "POST",
+        "payload": {
+            "name": "OGCryptoKitty/hydra-arm3",
+            "url": f"{HYDRA_BASE_URL}/mcp",
+            "repository": "https://github.com/OGCryptoKitty/hydra-arm3",
+            "description": "HYDRA Regulatory Intelligence — 55+ MCP tools for regulatory risk scoring, prediction markets, Kalshi KXFED-calibrated Fed signals, FDIC bank failure monitoring, alpha reports with Kelly sizing, web extraction, search, and more. 13 real-time data sources. Pay-per-call via x402 on Base L2.",
+            "transport": "streamable-http",
         },
     },
 ]

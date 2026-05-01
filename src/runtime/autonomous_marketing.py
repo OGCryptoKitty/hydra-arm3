@@ -435,22 +435,25 @@ class AutonomousMarketing:
 
         article_body = """## The Problem
 
-Prediction markets like Polymarket and Kalshi have hundreds of regulatory markets — Fed rate decisions, SEC enforcement actions, CFTC rulings, crypto legislation. But building a bot that trades these markets systematically requires:
+Prediction markets like Polymarket and Kalshi have hundreds of regulatory markets — Fed rate decisions, SEC enforcement actions, CFTC rulings, crypto legislation, bank failures. But building a bot that trades these markets systematically requires:
 
 1. Polling two separate APIs with different data formats
 2. Normalizing market structures (Polymarket uses condition IDs, Kalshi uses tickers)
 3. Classifying which markets are actually about regulatory events vs. sports/entertainment
 4. Tracking upcoming resolution dates and relevant agency actions
+5. Integrating real-time data from 13+ government and market sources for signal generation
 
 I got frustrated enough to build a unified data layer. Here's how HYDRA works.
 
 ## The Architecture
 
-HYDRA is a FastAPI application that:
-- Polls the Polymarket Gamma API and Kalshi REST API every few minutes
-- Filters for regulatory/macro markets using keyword and category matching
-- Normalizes both into a common schema
-- Serves them via a single endpoint
+HYDRA is a FastAPI application with 55+ paid endpoints pulling from 13 real-time data sources:
+
+**Tier 1 Government Sources:** SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Federal Reserve (3 feeds), U.S. Treasury, FDIC BankFind API, Federal Register API, BLS, FRED (28 economic series)
+
+**Tier 3 Regulated Markets:** Kalshi KXFED series, Polymarket Gamma API + CLOB
+
+It normalizes everything into a consistent schema and serves it via a single API:
 
 ```bash
 curl https://hydra-api-nlnj.onrender.com/v1/markets
@@ -477,17 +480,35 @@ The client sends the exact amount in USDC on Base, then retries with the transac
 
 No API keys. No subscriptions. No accounts. An AI agent can discover the API, read the payment requirements, and autonomously pay for data — all in one HTTP exchange.
 
-## What It Covers
+## What It Covers (55+ endpoints)
 
-- **Regulatory scan** — maps a business description to applicable regulations ($1)
-- **Regulatory changes** — recent SEC, CFTC, FinCEN filings ($0.50)
-- **Trading signals** — all active regulatory prediction markets, directional signal + confidence ($0.25)
-- **Deep signal** — single market analysis ($0.10)
-- **Fed signals** — rate probability model, FOMC speech analysis ($5)
+**Core Intelligence:**
+- **Alpha report** — HYDRA probability vs market price, quantified edge, Kelly optimal sizing, entry/exit levels, trade verdict ($10)
+- **Regulatory risk score** — real-time 0-100 risk score for any crypto token or DeFi protocol ($2)
+- **Regulatory pulse** — hourly aggregated SEC, CFTC, FinCEN, Fed, Treasury activity with composite risk signal ($0.50)
+- **Economic snapshot** — atomic data from FRED (28 series), BLS, Treasury yields, FDIC, Federal Register ($0.50)
+- **FDIC bank failures** — bank closure tracking via live BankFind API ($0.25)
+- **Daily digest** — comprehensive regulatory + market summary ($1)
+
+**Fed Intelligence (Kalshi KXFED-calibrated):**
+- **Fed signal** — rate probability model blending 60% Kalshi KXFED market prices + 40% HYDRA model, FOMC speech analysis ($5)
 - **Real-time FOMC classification** — HOLD/CUT/HIKE within 30 seconds of release ($25)
-- **Oracle resolution** — evidence chain for UMA Optimistic Oracle bond assertions ($1)
-- **Chainlink adapter** — regulatory data formatted for Chainlink Any API ($0.50)
-- **Full alpha report** — complete trade recommendation for a specific position ($2)
+- **Oracle resolution** — full evidence chain for UMA bond assertion ($50)
+
+**Prediction Markets:**
+- **Trading signals** — all active regulatory prediction markets, directional signal + confidence ($5)
+- **Deep signal** — single market analysis ($2)
+- **Market resolution** — professional resolution verdict ($25)
+
+**Regulatory:**
+- **Regulatory scan** — maps a business description to applicable regulations ($2)
+- **Regulatory changes** — classified SEC, CFTC, FinCEN filings with market impact ($1)
+- **Jurisdiction comparison** — compliance cost modeling ($3)
+
+**Utilities & Infrastructure:**
+- Web extraction, search, format conversion, developer tools, web checks, public data (Wikipedia, arXiv, SEC EDGAR)
+- x402 ecosystem hub — service routing and directory
+- Portfolio intelligence — batch risk scanning up to 20 assets
 
 ## The x402 Ecosystem
 
@@ -501,21 +522,25 @@ Any x402-compatible agent can discover HYDRA, understand its pricing, and pay au
 
 ## The Prediction Market Angle
 
-The most interesting use case is automated prediction market trading. Consider the workflow:
+The most interesting use case is automated prediction market trading. Consider the workflow for the upcoming May 7, 2026 FOMC meeting:
 
 1. Bot calls `/v1/markets` (free) to get all active regulatory prediction markets
-2. Bot finds KXFED-25JUN18 (Fed rate decision, June 2025) trading at 0.72 YES
-3. Bot calls `/v1/markets/signal/KXFED-25JUN18` (pays $0.10 USDC) to get HYDRA's analysis
-4. HYDRA returns: `bullish_yes`, confidence 85, key factors: CME FedWatch 91%, recent Powell speeches hawkish-neutral
-5. Bot sizes position based on edge vs current market price
+2. Bot finds KXFED markets for the May 7 FOMC decision
+3. Bot calls `/v1/fed/signal` (pays $5 USDC) — HYDRA returns Kalshi KXFED-calibrated rate probabilities (60% market / 40% model blend), Fed speech sentiment, economic indicators
+4. Bot calls `/v1/markets/alpha` (pays $10 USDC) for a specific market — gets HYDRA probability vs current market price, quantified edge, Kelly optimal position sizing
+5. Bot sizes position based on Kelly criterion and edge analysis
 
-The whole pipeline — discovery, analysis, decision — happens in three HTTP calls with no human involvement.
+The whole pipeline — discovery, analysis, sizing — happens in three HTTP calls with no human involvement. The Kelly sizing means the bot automatically adjusts position size based on edge magnitude.
+
+## FDIC Bank Failure Monitoring
+
+A newer feature: HYDRA monitors the FDIC BankFind API for bank closures. The `/v1/intelligence/bank-failures` endpoint ($0.25) returns recent failures, resolution methods, estimated losses, and acquiring institutions. Useful for financial stability analysis and stablecoin risk assessment.
 
 ## Code
 
 The full source is at [github.com/OGCryptoKitty/hydra-arm3](https://github.com/OGCryptoKitty/hydra-arm3). The x402 middleware is the interesting part — ~200 lines in `src/x402/middleware.py` that intercepts requests, checks payment status, and verifies on-chain transactions via web3.py.
 
-The prediction market normalization logic (`src/services/prediction_markets.py`) is also worth reading if you're building anything in this space — the Polymarket and Kalshi APIs have very different schemas.
+The prediction market normalization logic (`src/services/prediction_markets.py`) and the Kalshi KXFED calibration in `src/services/fed_intelligence.py` are also worth reading if you're building anything in this space.
 
 Questions welcome in the comments."""
 

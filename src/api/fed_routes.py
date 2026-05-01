@@ -131,7 +131,8 @@ async def fed_signal(
     )
 
     try:
-        signal = _engine.generate_pre_fomc_signal()
+        # Use live data enrichment (async) — falls back to baseline if APIs unavailable
+        signal = await _engine.generate_live_signal()
 
         # Optionally strip verbose fields if caller doesn't want them
         if not request_body.include_speech_analysis:
@@ -194,7 +195,7 @@ async def fed_decision(
     try:
         is_fomc_day = _engine.is_fomc_day()
         decision_data = _engine.get_latest_decision()
-        probs = _engine.calculate_rate_probabilities()
+        probs = await _engine.calculate_live_rate_probabilities()
 
         # Market impact assessment
         market_impact: dict[str, Any] = {}
@@ -248,6 +249,11 @@ async def fed_decision(
                 "statement_summary": decision_data.get("statement_summary"),
                 "dot_plot_shift": decision_data.get("dot_plot_shift"),
                 "market_impact_assessment": market_impact if request_body.include_market_impact else None,
+                "rate_probabilities": {
+                    k: v for k, v in probs.items()
+                    if k in ("hold", "cut_25", "cut_50", "hike_25")
+                },
+                "market_calibrated": probs.get("market_calibrated", False),
                 "timestamp": cryptographic_timestamp,
                 "source": decision_data.get("source"),
                 "source_url": decision_data.get("source_url"),

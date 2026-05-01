@@ -17,6 +17,9 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
+
+from src.utils.url_validation import is_safe_url
 
 logger = logging.getLogger("hydra.ecosystem")
 
@@ -157,6 +160,12 @@ async def x402_service_status(
     Fetches the service's x402 manifest, checks health endpoint,
     and returns a comprehensive status report.
     """
+    if not is_safe_url(url):
+        return JSONResponse(status_code=422, content={
+            "error": "Invalid URL",
+            "detail": "URL must use http(s) and target a public host.",
+        })
+
     cache_key = hashlib.md5(url.encode()).hexdigest()
     if cache_key in _STATUS_CACHE:
         cached = _STATUS_CACHE[cache_key]
@@ -174,7 +183,8 @@ async def x402_service_status(
         try:
             resp = await client.get(f"{base}/health")
             result["health"] = {"status": resp.status_code, "ok": resp.status_code == 200}
-        except Exception:
+        except Exception as exc:
+            logger.debug("Health check for %s failed: %s", base, exc)
             result["health"] = {"status": "unreachable", "ok": False}
 
         # x402 manifest
@@ -191,14 +201,16 @@ async def x402_service_status(
                 }
             else:
                 result["x402"] = {"manifest_ok": False, "status": resp.status_code}
-        except Exception:
+        except Exception as exc:
+            logger.debug("x402 manifest fetch for %s failed: %s", base, exc)
             result["x402"] = {"manifest_ok": False, "status": "error"}
 
         # MCP manifest
         try:
             resp = await client.get(f"{base}/.well-known/mcp.json")
             result["mcp"] = {"available": resp.status_code == 200}
-        except Exception:
+        except Exception as exc:
+            logger.debug("MCP manifest fetch for %s failed: %s", base, exc)
             result["mcp"] = {"available": False}
 
     result["_ts"] = time.time()

@@ -39,7 +39,11 @@ jobs:
                 'a2a',
                 'agent-to-agent',
                 'fastapi',
-                'regulatory-api'
+                'regulatory-api',
+                'fred-api',
+                'ai-agent',
+                'autonomous-agent',
+                'real-time-data'
               ]
             });
             console.log('Repository topics set successfully');
@@ -52,7 +56,7 @@ jobs:
             await github.rest.repos.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              description: 'AI-powered regulatory intelligence API for prediction market traders. Pay-per-use in USDC on Base L2 via x402 protocol. Covers Polymarket, Kalshi, FOMC, SEC, CFTC.',
+              description: 'Autonomous regulatory intelligence API — 50+ x402 endpoints, 13 real-time data sources (FRED, KXFED, FDIC, SEC EDGAR), market-calibrated Fed rate probabilities. Pay USDC on Base L2.',
               homepage: 'https://hydra-api-nlnj.onrender.com/docs'
             });
             console.log('Repository description updated');

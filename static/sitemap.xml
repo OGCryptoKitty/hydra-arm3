@@ -1,30 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://hydra-api-nlnj.onrender.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/docs</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/pricing</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/health</loc><changefreq>always</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/openapi.json</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/status</loc><changefreq>always</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/metrics</loc><changefreq>always</changefreq><priority>0.6</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/x402.json</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/mcp.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agent.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agents.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/llms.txt</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/apis.json</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/discovery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/pricing</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/mcp</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <!-- New v2.0 endpoint categories -->
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/check/url</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/convert/html2md</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/tools/hash</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/data/wikipedia</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/data/arxiv</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
-  <url><loc>https://hydra-api-nlnj.onrender.com/v1/data/edgar</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <!-- ── Core Pages ─────────────────────────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/docs</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/redoc</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/pricing</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/health</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/openapi.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/status</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/metrics</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.6</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/metrics/revenue</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.6</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/mcp</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/apis.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Discovery Manifests ────────────────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/x402.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/mcp.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agent.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agent-card.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/agents.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/llms.txt</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/.well-known/ai-plugin.json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Regulatory Intelligence ($1.00–$3.00) ──────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/regulatory/scan</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/regulatory/changes</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/regulatory/jurisdiction</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/regulatory/query</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+
+  <!-- ── Composite Intelligence ($0.25–$5.00) ───────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/intelligence/pulse</loc><lastmod>2026-05-01</lastmod><changefreq>hourly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/intelligence/alpha</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/intelligence/risk-score</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/intelligence/digest</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/intelligence/economic-snapshot</loc><lastmod>2026-05-01</lastmod><changefreq>hourly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/intelligence/regulatory-pulse-live</loc><lastmod>2026-05-01</lastmod><changefreq>hourly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/intelligence/bank-failures</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Prediction Markets ($0.10–$25.00) ──────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/discovery</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/pricing</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/feed</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/events</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/signal</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/signals</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/alpha</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/markets/resolution</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Fed Decision Package ($5.00–$50.00) ────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/fed/signal</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/fed/decision</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/fed/resolution</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+
+  <!-- ── Oracle Integration ($5.00) ─────────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/oracle/uma</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/oracle/chainlink</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Extraction Services ($0.01–$0.05) ──────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/extract/url</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/extract/multi</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/extract/search</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Web Checks ($0.003–$0.005) ─────────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/check/url</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/check/dns</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/check/ssl</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/check/headers</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Format Conversion ($0.003–$0.005) ──────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/convert/html2md</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/convert/json2csv</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/convert/csv2json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Developer Tools ($0.001–$0.003) ────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/tools/hash</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/tools/encode</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/tools/diff</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/tools/validate/json</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/tools/validate/email</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Public Data ($0.01–$0.02) ──────────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/data/wikipedia</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/data/arxiv</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/data/edgar</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Utility Services ($0.001–$0.01) ────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util/scrape</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util/crypto/price</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util/rss</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util/crypto/balance</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util/gas</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/util/tx</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/batch</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── x402 Ecosystem Hub ($0.001–$0.005) ─────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/x402/directory</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/x402/status</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/x402/route</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Alert System ($0.05–$0.10) ─────────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/alerts/subscribe</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/alerts/status</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/alerts/feed</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Portfolio Intelligence ($2.00–$10.00) ──────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/portfolio/scan</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/portfolio/watchlist</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/portfolio/market-brief</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Task Orchestration ($0.05) ─────────────────────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/orchestrate</loc><lastmod>2026-05-01</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 </urlset>

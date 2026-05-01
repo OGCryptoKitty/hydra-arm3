@@ -19,6 +19,8 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from src.utils.url_validation import is_safe_url
+
 extract_router = APIRouter(tags=["Extraction"])
 
 _http_client: httpx.AsyncClient | None = None
@@ -102,19 +104,26 @@ async def extract_url(req: ExtractURLRequest):
     clean text, links, and OpenGraph metadata. $0.01 USDC.
     """
     start = time.monotonic()
+
+    if not is_safe_url(req.url):
+        return JSONResponse(status_code=422, content={
+            "error": "Invalid URL",
+            "detail": "URL must use http(s) and target a public host.",
+        })
+
     client = await _get_client()
 
     try:
         resp = await client.get(req.url)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        return JSONResponse(status_code=422, content={
+        return JSONResponse(status_code=502, content={
             "error": "Upstream HTTP error",
             "status_code": e.response.status_code,
             "url": req.url,
         })
     except httpx.RequestError as e:
-        return JSONResponse(status_code=422, content={
+        return JSONResponse(status_code=502, content={
             "error": "Request failed",
             "detail": str(type(e).__name__),
             "url": req.url,
@@ -142,6 +151,8 @@ async def extract_multi(req: ExtractMultiRequest):
     client = await _get_client()
 
     async def fetch_one(url: str) -> dict[str, Any]:
+        if not is_safe_url(url):
+            return {"url": url, "error": "invalid_url", "detail": "Must use http(s) and target a public host."}
         try:
             resp = await client.get(url)
             resp.raise_for_status()

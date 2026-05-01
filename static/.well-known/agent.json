@@ -1,8 +1,8 @@
 {
   "name": "HYDRA",
-  "description": "402-native paid work engine for agents and developers. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction market signals, oracle data. 40 paid endpoints from $0.001 USDC via x402 on Base L2.",
+  "description": "402-native regulatory intelligence API for autonomous agents. 55+ paid endpoints from $0.001 USDC via x402 on Base L2. Real-time data from 13 authoritative sources: FRED (28 economic series), BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket Gamma, Polymarket CLOB, Google DNS-over-HTTPS, CoinGecko. Market-calibrated Fed rate probabilities (60% KXFED / 40% model blend), FDIC bank failure monitoring, atomic economic snapshots, live regulatory pulse, alpha reports with edge analysis and Kelly sizing. Tier 1 government + Tier 3 CFTC-regulated data only.",
   "url": "https://hydra-api-nlnj.onrender.com",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "protocol": "a2a",
   "protocolVersion": "0.3.0",
   "capabilities": {
@@ -17,109 +17,389 @@
   "defaultOutputModes": ["application/json"],
   "skills": [
     {
+      "id": "regulatory-scan",
+      "name": "Regulatory Risk Scan",
+      "description": "Full regulatory risk scan against all applicable frameworks with scored impact assessment. $2.00 USDC.",
+      "tags": ["regulatory", "compliance", "risk"],
+      "examples": ["Scan my DeFi protocol for SEC/CFTC exposure"]
+    },
+    {
+      "id": "regulatory-changes",
+      "name": "Regulatory Changes",
+      "description": "Classified regulatory changes — SEC, CFTC, FinCEN, OCC, CFPB filings with event type tags and market impact scores. $1.00 USDC.",
+      "tags": ["regulatory", "compliance", "sec", "cftc"],
+      "examples": ["Recent SEC enforcement actions affecting crypto"]
+    },
+    {
+      "id": "regulatory-jurisdiction",
+      "name": "Jurisdiction Comparison",
+      "description": "Jurisdiction comparison with compliance cost modeling across US states and international frameworks. $3.00 USDC.",
+      "tags": ["regulatory", "jurisdiction", "compliance"],
+      "examples": ["Compare Wyoming vs Delaware crypto regulations"]
+    },
+    {
+      "id": "regulatory-query",
+      "name": "Regulatory Q&A",
+      "description": "Regulatory Q&A — scored answers with statutory citations and confidence levels. $1.00 USDC.",
+      "tags": ["regulatory", "compliance", "legal"],
+      "examples": ["Is staking a security under Howey?"]
+    },
+    {
+      "id": "market-signals",
+      "name": "Prediction Market Signals",
+      "description": "Bulk scored signals for all active regulatory prediction markets. Data from Polymarket Gamma, Polymarket CLOB, and Kalshi KXFED. CFTC-regulated sources only. $5.00 USDC.",
+      "tags": ["prediction-markets", "polymarket", "kalshi", "kxfed"],
+      "examples": ["Get signals for all regulatory prediction markets"]
+    },
+    {
+      "id": "market-signal",
+      "name": "Single Market Signal",
+      "description": "Scored signal for one prediction market — HYDRA probability, expected price impact, risk factors. $2.00 USDC.",
+      "tags": ["prediction-markets", "signal"],
+      "examples": ["Signal for Bitcoin ETF approval market"]
+    },
+    {
+      "id": "market-alpha",
+      "name": "Alpha Report",
+      "description": "Premium alpha — edge vs market price, Kelly sizing, entry price, historical analogues, resolution timeline. KXFED-calibrated. $10.00 USDC.",
+      "tags": ["alpha", "prediction-markets", "kelly", "kxfed", "edge-analysis"],
+      "examples": ["Alpha report for Fed rate decision market"]
+    },
+    {
+      "id": "markets-feed",
+      "name": "Micro Event Feed",
+      "description": "Last 10 regulatory events matched to prediction markets. High-frequency bot polling. $0.10 USDC.",
+      "tags": ["prediction-markets", "feed", "polling"],
+      "examples": ["Latest regulatory events affecting prediction markets"]
+    },
+    {
+      "id": "markets-events",
+      "name": "Classified Regulatory Events",
+      "description": "SEC, CFTC, Fed, FinCEN events tagged by type, agency, and affected prediction markets. $0.50 USDC.",
+      "tags": ["prediction-markets", "regulatory", "events"],
+      "examples": ["Classified regulatory events from last 24 hours"]
+    },
+    {
+      "id": "market-resolution",
+      "name": "Market Resolution Verdict",
+      "description": "Professional resolution verdict — HYDRA's authoritative assessment with evidence chain and confidence score. $25.00 USDC.",
+      "tags": ["prediction-markets", "resolution", "verdict"],
+      "examples": ["Resolution verdict for completed prediction market"]
+    },
+    {
+      "id": "fed-signal",
+      "name": "FOMC Pre-Decision Signal",
+      "description": "Pre-FOMC rate probabilities with Kalshi KXFED market calibration (60% market / 40% model blend), speech analysis, dot plot tracking. $5.00 USDC.",
+      "tags": ["fed", "fomc", "interest-rates", "kxfed", "kalshi"],
+      "examples": ["Rate probabilities for next FOMC meeting"]
+    },
+    {
+      "id": "fed-decision",
+      "name": "FOMC Decision Classification",
+      "description": "Real-time FOMC decision classification — HOLD/CUT/HIKE + basis points within 30 seconds of release. Cryptographic timestamp. $25.00 USDC.",
+      "tags": ["fed", "fomc", "decision", "real-time"],
+      "examples": ["Classify the latest FOMC rate decision"]
+    },
+    {
+      "id": "fed-resolution",
+      "name": "FOMC Resolution Verdict",
+      "description": "FOMC resolution with full evidence chain — formatted for UMA bond assertion. Statement text, vote breakdown, dot plot delta. $50.00 USDC.",
+      "tags": ["fed", "fomc", "resolution", "uma"],
+      "examples": ["FOMC resolution verdict for oracle assertion"]
+    },
+    {
+      "id": "oracle-uma",
+      "name": "UMA Oracle Assertion",
+      "description": "UMA Optimistic Oracle assertion data — evidence chain, proposed price, bond parameters for regulatory market resolution. $5.00 USDC.",
+      "tags": ["oracle", "uma", "on-chain"],
+      "examples": ["UMA assertion data for regulatory market"]
+    },
+    {
+      "id": "oracle-chainlink",
+      "name": "Chainlink External Adapter",
+      "description": "Chainlink External Adapter response — regulatory data formatted for on-chain delivery via Any API Direct Request. $5.00 USDC.",
+      "tags": ["oracle", "chainlink", "on-chain"],
+      "examples": ["Chainlink adapter response for regulatory data"]
+    },
+    {
+      "id": "economic-snapshot",
+      "name": "Real-Time Economic Snapshot",
+      "description": "Atomic real-time data from FRED (28 series), BLS employment, Treasury yields, FDIC bank health, Federal Register rulemakings. All Tier 1 government sources. $0.50 USDC.",
+      "tags": ["economic-data", "fred", "bls", "treasury", "fdic", "real-time"],
+      "examples": ["Get current CPI, unemployment, GDP, yield curve"]
+    },
+    {
+      "id": "regulatory-pulse-live",
+      "name": "Live Regulatory Pulse",
+      "description": "Real-time regulatory activity from SEC EDGAR full-text search, Federal Register API, and Congress.gov bill tracker. Not cached. $0.50 USDC.",
+      "tags": ["regulatory", "sec", "edgar", "congress", "real-time"],
+      "examples": ["Latest crypto regulatory filings and rulemakings"]
+    },
+    {
+      "id": "bank-failures",
+      "name": "FDIC Bank Failure Monitor",
+      "description": "Recent bank failures from FDIC BankFind API — closures, resolution details, estimated losses, acquiring institutions. $0.25 USDC.",
+      "tags": ["fdic", "bank-failures", "financial-stability"],
+      "examples": ["List recent bank failures and losses"]
+    },
+    {
+      "id": "intelligence-pulse",
+      "name": "Regulatory Pulse",
+      "description": "Hourly regulatory pulse — aggregated SEC, CFTC, FinCEN, Fed, Treasury activity with risk signals. $0.50 USDC.",
+      "tags": ["regulatory", "intelligence", "pulse"],
+      "examples": ["Current regulatory activity summary"]
+    },
+    {
+      "id": "intelligence-alpha",
+      "name": "Composite Alpha Signal",
+      "description": "Composite alpha — regulatory risk + KXFED-calibrated Fed rate probability + prediction market sentiment + directional bias. 13-source data fusion. $5.00 USDC.",
+      "tags": ["alpha", "intelligence", "kxfed", "composite"],
+      "examples": ["Composite alpha signal across all sources"]
+    },
+    {
+      "id": "intelligence-risk-score",
+      "name": "Regulatory Risk Score",
+      "description": "Real-time 0-100 risk score for any token or protocol based on regulatory exposure and agency attention. $2.00 USDC.",
+      "tags": ["risk", "regulatory", "scoring"],
+      "examples": ["Risk score for Uniswap protocol"]
+    },
+    {
+      "id": "intelligence-digest",
+      "name": "Daily Market Digest",
+      "description": "Daily market + regulatory digest for compliance teams and trading agents. $1.00 USDC.",
+      "tags": ["digest", "daily", "compliance"],
+      "examples": ["Today's regulatory and market digest"]
+    },
+    {
+      "id": "portfolio-scan",
+      "name": "Portfolio Risk Scan",
+      "description": "Portfolio-level regulatory risk — up to 20 tokens/protocols with aggregate risk and cross-correlation analysis. $10.00 USDC.",
+      "tags": ["portfolio", "risk", "compliance"],
+      "examples": ["Scan portfolio: ETH, UNI, AAVE, MKR"]
+    },
+    {
+      "id": "portfolio-watchlist",
+      "name": "Portfolio Watchlist",
+      "description": "Regulatory watchlist — recent agency mentions and alert levels for up to 20 assets. $2.00 USDC.",
+      "tags": ["portfolio", "watchlist", "monitoring"],
+      "examples": ["Watchlist alerts for my DeFi portfolio"]
+    },
+    {
+      "id": "portfolio-market-brief",
+      "name": "Executive Market Brief",
+      "description": "Executive brief — regulatory events + KXFED-calibrated Fed signal + prediction markets in one comprehensive view. $3.00 USDC.",
+      "tags": ["portfolio", "executive", "brief"],
+      "examples": ["Executive market brief for trading desk"]
+    },
+    {
+      "id": "alerts-subscribe",
+      "name": "Alert Subscription",
+      "description": "Register for push alerts — webhook delivery of regulatory events matching your conditions. $0.10 per 100 alerts.",
+      "tags": ["alerts", "webhook", "push"],
+      "examples": ["Subscribe to SEC crypto enforcement alerts"]
+    },
+    {
+      "id": "alerts-feed",
+      "name": "Alert Feed",
+      "description": "Real-time regulatory alert feed — last 24 hours of detected events across all monitored sources. $0.05 USDC.",
+      "tags": ["alerts", "feed", "real-time"],
+      "examples": ["Last 24 hours of regulatory alerts"]
+    },
+    {
       "id": "extract-url",
       "name": "Web Extraction",
-      "description": "Structured web extraction — title, headings, clean text, links, metadata from any URL. $0.01 USDC.",
+      "description": "Structured web extraction — title, headings, clean text, links, OpenGraph metadata from any URL. $0.01 USDC.",
       "tags": ["extraction", "web", "scraping"],
       "examples": ["Extract content from https://example.com"]
     },
     {
+      "id": "extract-multi",
+      "name": "Multi-URL Extraction",
+      "description": "Batch extraction from up to 5 URLs in parallel. Structured output per URL. $0.05 USDC.",
+      "tags": ["extraction", "batch", "web"],
+      "examples": ["Extract content from 5 news articles"]
+    },
+    {
       "id": "extract-search",
       "name": "Web Search",
-      "description": "Web search with structured result extraction. $0.02 USDC.",
+      "description": "Web search with structured result extraction — titles, snippets, URLs. $0.02 USDC.",
       "tags": ["search", "web"],
       "examples": ["Search for 'x402 payment protocol'"]
     },
     {
-      "id": "convert-html2md",
-      "name": "HTML to Markdown",
-      "description": "Convert HTML to clean Markdown preserving structure. $0.005 USDC.",
-      "tags": ["conversion", "markdown", "html"],
-      "examples": ["Convert this HTML page to Markdown"]
-    },
-    {
       "id": "check-url",
       "name": "URL Health Check",
-      "description": "Check URL status, redirects, response time. $0.005 USDC.",
+      "description": "URL health check — status code, response time, redirect chain, content type. $0.005 USDC.",
       "tags": ["web-checks", "monitoring"],
       "examples": ["Is https://example.com up?"]
     },
     {
       "id": "check-dns",
       "name": "DNS Lookup",
-      "description": "DNS record lookup — A, MX, TXT, NS, CNAME. $0.005 USDC.",
+      "description": "DNS record lookup via Google DNS-over-HTTPS — A, AAAA, MX, TXT, NS, CNAME. $0.005 USDC.",
       "tags": ["dns", "web-checks"],
       "examples": ["Get MX records for gmail.com"]
     },
     {
       "id": "check-ssl",
       "name": "SSL Certificate Check",
-      "description": "SSL cert inspection — issuer, expiry, SANs. $0.005 USDC.",
+      "description": "SSL certificate inspection — issuer, expiry, SANs, protocol, days remaining. $0.005 USDC.",
       "tags": ["ssl", "security", "web-checks"],
       "examples": ["Check SSL cert for github.com"]
     },
     {
+      "id": "check-headers",
+      "name": "HTTP Headers Check",
+      "description": "HTTP response headers with security headers analysis and score. $0.003 USDC.",
+      "tags": ["security", "web-checks", "headers"],
+      "examples": ["Security headers for example.com"]
+    },
+    {
+      "id": "convert-html2md",
+      "name": "HTML to Markdown",
+      "description": "Convert HTML to clean Markdown preserving headings, lists, links, code blocks, tables. $0.005 USDC.",
+      "tags": ["conversion", "markdown", "html"],
+      "examples": ["Convert this HTML page to Markdown"]
+    },
+    {
+      "id": "convert-json2csv",
+      "name": "JSON to CSV",
+      "description": "JSON array of objects to CSV with auto-detected headers. $0.003 USDC.",
+      "tags": ["conversion", "json", "csv"],
+      "examples": ["Convert JSON data to CSV"]
+    },
+    {
+      "id": "convert-csv2json",
+      "name": "CSV to JSON",
+      "description": "CSV text to JSON array of objects. First row used as headers. $0.003 USDC.",
+      "tags": ["conversion", "csv", "json"],
+      "examples": ["Convert CSV to JSON"]
+    },
+    {
       "id": "tools-hash",
       "name": "Hash Text",
-      "description": "SHA-256, SHA-512, MD5, SHA-1 hash. $0.001 USDC.",
+      "description": "Hash text with SHA-256, SHA-512, MD5, SHA-1, or SHA3-256. $0.001 USDC.",
       "tags": ["developer-tools", "hash", "crypto"],
       "examples": ["SHA-256 hash of 'hello world'"]
     },
     {
+      "id": "tools-encode",
+      "name": "Encode/Decode Text",
+      "description": "Encode/decode text — Base64, URL encoding, hex. $0.001 USDC.",
+      "tags": ["developer-tools", "encoding"],
+      "examples": ["Base64 encode 'hello world'"]
+    },
+    {
       "id": "tools-diff",
       "name": "Text Diff",
-      "description": "Unified diff with stats and similarity ratio. $0.003 USDC.",
+      "description": "Unified diff between two texts with change stats and similarity ratio. $0.003 USDC.",
       "tags": ["developer-tools", "diff"],
       "examples": ["Diff these two texts"]
     },
     {
+      "id": "tools-validate-json",
+      "name": "JSON Validator",
+      "description": "JSON syntax validation with pretty-print and structure info. $0.001 USDC.",
+      "tags": ["developer-tools", "validation", "json"],
+      "examples": ["Validate this JSON string"]
+    },
+    {
+      "id": "tools-validate-email",
+      "name": "Email Validator",
+      "description": "Email format validation with MX record check. $0.002 USDC.",
+      "tags": ["developer-tools", "validation", "email"],
+      "examples": ["Validate user@example.com"]
+    },
+    {
       "id": "data-wikipedia",
       "name": "Wikipedia Summary",
-      "description": "Wikipedia article summary with thumbnail. $0.01 USDC.",
+      "description": "Wikipedia article summary — extract, thumbnail, description, page URL. $0.01 USDC.",
       "tags": ["public-data", "wikipedia", "research"],
       "examples": ["Wikipedia summary for Bitcoin"]
     },
     {
       "id": "data-arxiv",
       "name": "arXiv Search",
-      "description": "Academic paper search — titles, authors, abstracts, PDFs. $0.02 USDC.",
+      "description": "Search arXiv for academic papers — titles, authors, abstracts, PDF links. $0.02 USDC.",
       "tags": ["public-data", "arxiv", "research"],
       "examples": ["Search arXiv for 'transformer architecture'"]
     },
     {
       "id": "data-edgar",
       "name": "SEC EDGAR Filings",
-      "description": "SEC filing search — 10-K, 10-Q, 8-K. $0.02 USDC.",
+      "description": "Search SEC EDGAR for company filings — 10-K, 10-Q, 8-K by company, ticker, or keyword. $0.02 USDC.",
       "tags": ["public-data", "sec", "edgar", "finance"],
       "examples": ["Find Apple's latest 10-K filing"]
     },
     {
-      "id": "regulatory-scan",
-      "name": "Regulatory Risk Scan",
-      "description": "Full regulatory risk scan with scored impact. $2.00 USDC.",
-      "tags": ["regulatory", "compliance", "risk"],
-      "examples": ["Scan my DeFi protocol for SEC/CFTC exposure"]
-    },
-    {
-      "id": "market-signals",
-      "name": "Prediction Market Signals",
-      "description": "Scored regulatory signals for Polymarket/Kalshi. $5.00 USDC.",
-      "tags": ["prediction-markets", "polymarket", "kalshi"],
-      "examples": ["Get signals for all regulatory prediction markets"]
-    },
-    {
-      "id": "fed-signal",
-      "name": "FOMC Pre-Decision Signal",
-      "description": "Pre-FOMC rate probabilities and speech analysis. $5.00 USDC.",
-      "tags": ["fed", "fomc", "interest-rates"],
-      "examples": ["Rate probabilities for next FOMC meeting"]
+      "id": "util-scrape",
+      "name": "Web Scrape",
+      "description": "URL to clean structured text. HTML parsed, scripts removed. $0.005 USDC.",
+      "tags": ["utility", "web", "scraping"],
+      "examples": ["Scrape clean text from a URL"]
     },
     {
       "id": "crypto-price",
       "name": "Token Price",
-      "description": "Current price, 24h change, market cap. $0.001 USDC.",
+      "description": "Current price, 24h change, market cap, volume via CoinGecko. $0.001 USDC.",
       "tags": ["utility", "crypto", "price"],
       "examples": ["Get ETH price"]
+    },
+    {
+      "id": "util-rss",
+      "name": "RSS Feed Parser",
+      "description": "RSS/Atom feed URL to structured JSON with parsed entries and metadata. $0.002 USDC.",
+      "tags": ["utility", "rss", "feed"],
+      "examples": ["Parse SEC RSS feed"]
+    },
+    {
+      "id": "util-balance",
+      "name": "Wallet Balance",
+      "description": "ETH and USDC balance for any wallet address on Base L2. $0.001 USDC.",
+      "tags": ["utility", "crypto", "balance"],
+      "examples": ["Check USDC balance of 0x..."]
+    },
+    {
+      "id": "util-gas",
+      "name": "Base L2 Gas Prices",
+      "description": "Current gas price, base fee, estimated costs for transfers/swaps/mints on Base. $0.001 USDC.",
+      "tags": ["utility", "gas", "base"],
+      "examples": ["Current Base L2 gas prices"]
+    },
+    {
+      "id": "util-tx",
+      "name": "Transaction Receipt",
+      "description": "Transaction receipt lookup — confirmation status, gas used, block number, log count. $0.001 USDC.",
+      "tags": ["utility", "transaction", "base"],
+      "examples": ["Look up transaction 0x..."]
+    },
+    {
+      "id": "batch",
+      "name": "Batch Request",
+      "description": "Batch up to 5 utility calls in one request. Saves gas costs vs individual x402 payments. $0.01 USDC.",
+      "tags": ["utility", "batch"],
+      "examples": ["Batch price + gas + balance queries"]
+    },
+    {
+      "id": "x402-status",
+      "name": "x402 Service Health",
+      "description": "Health and capability check of any x402 service — manifest, endpoints, pricing. $0.005 USDC.",
+      "tags": ["x402", "ecosystem", "discovery"],
+      "examples": ["Check health of another x402 service"]
+    },
+    {
+      "id": "x402-route",
+      "name": "x402 Service Router",
+      "description": "Intelligent x402 service routing — find the best service for a capability request. $0.001 USDC.",
+      "tags": ["x402", "ecosystem", "routing"],
+      "examples": ["Find x402 service for web extraction"]
+    },
+    {
+      "id": "orchestrate",
+      "name": "Task Orchestration",
+      "description": "Multi-step task orchestration — execute up to 10 HYDRA endpoint calls in one request. $0.05 USDC.",
+      "tags": ["orchestration", "batch", "workflow"],
+      "examples": ["Run regulatory scan then alpha report"]
     }
   ],
   "payment": {
