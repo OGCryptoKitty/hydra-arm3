@@ -460,6 +460,366 @@ async def get_forex_rates() -> dict[str, Any]:
 
 
 # ─────────────────────────────────────────────────────────────
+# Binance — Real-time CEX data (no key, 6000 weight/min)
+# ─────────────────────────────────────────────────────────────
+
+_binance_cache: TTLCache = TTLCache(maxsize=50, ttl=30)
+
+
+async def get_binance_prices(symbols: list[str] | None = None) -> dict[str, Any]:
+    cache_key = f"binance_prices_{'_'.join(sorted(symbols or []))}"
+    if cache_key in _binance_cache:
+        return _binance_cache[cache_key]
+
+    result: dict[str, Any] = {
+        "tickers": [],
+        "source": "Binance (no API key, real-time)",
+        "trust_tier": 3,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if symbols:
+        import asyncio
+        tasks = []
+        for sym in symbols[:20]:
+            tasks.append(_async_get(
+                "https://api.binance.com/api/v3/ticker/24hr",
+                params={"symbol": sym.upper()},
+            ))
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for r in results:
+            if isinstance(r, dict):
+                result["tickers"].append({
+                    "symbol": r.get("symbol"),
+                    "price": r.get("lastPrice"),
+                    "change_24h_pct": r.get("priceChangePercent"),
+                    "high_24h": r.get("highPrice"),
+                    "low_24h": r.get("lowPrice"),
+                    "volume_24h": r.get("volume"),
+                    "quote_volume_24h": r.get("quoteVolume"),
+                    "trades_24h": r.get("count"),
+                    "bid": r.get("bidPrice"),
+                    "ask": r.get("askPrice"),
+                })
+    else:
+        data = await _async_get("https://api.binance.com/api/v3/ticker/24hr")
+        if data and isinstance(data, list):
+            usdt_pairs = [t for t in data if isinstance(t, dict) and str(t.get("symbol", "")).endswith("USDT")]
+            sorted_pairs = sorted(usdt_pairs, key=lambda x: float(x.get("quoteVolume") or 0), reverse=True)
+            for t in sorted_pairs[:30]:
+                result["tickers"].append({
+                    "symbol": t.get("symbol"),
+                    "price": t.get("lastPrice"),
+                    "change_24h_pct": t.get("priceChangePercent"),
+                    "high_24h": t.get("highPrice"),
+                    "low_24h": t.get("lowPrice"),
+                    "volume_24h": t.get("volume"),
+                    "quote_volume_24h": t.get("quoteVolume"),
+                    "trades_24h": t.get("count"),
+                })
+
+    _binance_cache[cache_key] = result
+    return result
+
+
+async def get_binance_orderbook(symbol: str, limit: int = 20) -> dict[str, Any]:
+    cache_key = f"binance_book_{symbol}_{limit}"
+    if cache_key in _binance_cache:
+        return _binance_cache[cache_key]
+
+    data = await _async_get(
+        "https://api.binance.com/api/v3/depth",
+        params={"symbol": symbol.upper(), "limit": min(limit, 100)},
+    )
+
+    result: dict[str, Any] = {
+        "symbol": symbol.upper(),
+        "bids": [],
+        "asks": [],
+        "source": "Binance (no API key, real-time)",
+        "trust_tier": 3,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if data and isinstance(data, dict):
+        for bid in (data.get("bids") or [])[:limit]:
+            result["bids"].append({"price": bid[0], "quantity": bid[1]})
+        for ask in (data.get("asks") or [])[:limit]:
+            result["asks"].append({"price": ask[0], "quantity": ask[1]})
+        spread = None
+        if result["bids"] and result["asks"]:
+            try:
+                spread = round(float(result["asks"][0]["price"]) - float(result["bids"][0]["price"]), 8)
+            except (ValueError, TypeError):
+                pass
+        result["spread"] = spread
+
+    _binance_cache[cache_key] = result
+    return result
+
+
+async def get_binance_klines(symbol: str, interval: str = "1h", limit: int = 24) -> dict[str, Any]:
+    cache_key = f"binance_klines_{symbol}_{interval}_{limit}"
+    if cache_key in _binance_cache:
+        return _binance_cache[cache_key]
+
+    data = await _async_get(
+        "https://api.binance.com/api/v3/klines",
+        params={"symbol": symbol.upper(), "interval": interval, "limit": min(limit, 100)},
+    )
+
+    result: dict[str, Any] = {
+        "symbol": symbol.upper(),
+        "interval": interval,
+        "candles": [],
+        "source": "Binance (no API key, real-time)",
+        "trust_tier": 3,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if data and isinstance(data, list):
+        for k in data:
+            if isinstance(k, list) and len(k) >= 6:
+                result["candles"].append({
+                    "open_time": k[0],
+                    "open": k[1],
+                    "high": k[2],
+                    "low": k[3],
+                    "close": k[4],
+                    "volume": k[5],
+                })
+
+    _binance_cache[cache_key] = result
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
+# DexScreener — DEX pair data across all chains (no key)
+# ─────────────────────────────────────────────────────────────
+
+_dex_cache: TTLCache = TTLCache(maxsize=50, ttl=60)
+
+
+async def get_dex_token_pairs(token_address: str) -> dict[str, Any]:
+    cache_key = f"dex_token_{token_address}"
+    if cache_key in _dex_cache:
+        return _dex_cache[cache_key]
+
+    data = await _async_get(f"https://api.dexscreener.com/latest/dex/tokens/{token_address}")
+
+    result: dict[str, Any] = {
+        "token_address": token_address,
+        "pairs": [],
+        "source": "DexScreener (free, no API key, real-time DEX data)",
+        "trust_tier": 4,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if data and isinstance(data, dict):
+        for pair in (data.get("pairs") or [])[:20]:
+            result["pairs"].append({
+                "chain": pair.get("chainId"),
+                "dex": pair.get("dexId"),
+                "pair_address": pair.get("pairAddress"),
+                "base_token": pair.get("baseToken", {}).get("symbol"),
+                "quote_token": pair.get("quoteToken", {}).get("symbol"),
+                "price_usd": pair.get("priceUsd"),
+                "price_native": pair.get("priceNative"),
+                "txns_24h": pair.get("txns", {}).get("h24", {}),
+                "volume_24h": pair.get("volume", {}).get("h24"),
+                "liquidity_usd": pair.get("liquidity", {}).get("usd"),
+                "price_change_5m": pair.get("priceChange", {}).get("m5"),
+                "price_change_1h": pair.get("priceChange", {}).get("h1"),
+                "price_change_24h": pair.get("priceChange", {}).get("h24"),
+                "fdv": pair.get("fdv"),
+            })
+
+    _dex_cache[cache_key] = result
+    return result
+
+
+async def get_dex_search(query: str) -> dict[str, Any]:
+    cache_key = f"dex_search_{query}"
+    if cache_key in _dex_cache:
+        return _dex_cache[cache_key]
+
+    data = await _async_get(
+        f"https://api.dexscreener.com/latest/dex/search",
+        params={"q": query},
+    )
+
+    result: dict[str, Any] = {
+        "query": query,
+        "pairs": [],
+        "source": "DexScreener (free, no API key)",
+        "trust_tier": 4,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if data and isinstance(data, dict):
+        for pair in (data.get("pairs") or [])[:15]:
+            result["pairs"].append({
+                "chain": pair.get("chainId"),
+                "dex": pair.get("dexId"),
+                "base_token": pair.get("baseToken", {}).get("symbol"),
+                "base_token_name": pair.get("baseToken", {}).get("name"),
+                "quote_token": pair.get("quoteToken", {}).get("symbol"),
+                "price_usd": pair.get("priceUsd"),
+                "volume_24h": pair.get("volume", {}).get("h24"),
+                "liquidity_usd": pair.get("liquidity", {}).get("usd"),
+                "price_change_24h": pair.get("priceChange", {}).get("h24"),
+                "url": pair.get("url"),
+            })
+
+    _dex_cache[cache_key] = result
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
+# Mempool.space — Bitcoin fees, mempool, Lightning (no key)
+# ─────────────────────────────────────────────────────────────
+
+_btc_cache: TTLCache = TTLCache(maxsize=20, ttl=30)
+
+
+async def get_btc_fees() -> dict[str, Any]:
+    cache_key = "btc_fees"
+    if cache_key in _btc_cache:
+        return _btc_cache[cache_key]
+
+    import asyncio
+    fees_task = _async_get("https://mempool.space/api/v1/fees/recommended")
+    mempool_task = _async_get("https://mempool.space/api/mempool")
+    hashrate_task = _async_get("https://mempool.space/api/v1/mining/hashrate/1m")
+
+    results = await asyncio.gather(fees_task, mempool_task, hashrate_task, return_exceptions=True)
+
+    fees = results[0] if not isinstance(results[0], Exception) else None
+    mempool = results[1] if not isinstance(results[1], Exception) else None
+    hashrate = results[2] if not isinstance(results[2], Exception) else None
+
+    result: dict[str, Any] = {
+        "recommended_fees": {},
+        "mempool": {},
+        "mining": {},
+        "source": "mempool.space (free, no API key, real-time)",
+        "trust_tier": 4,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if fees and isinstance(fees, dict):
+        result["recommended_fees"] = {
+            "fastest_sat_vb": fees.get("fastestFee"),
+            "half_hour_sat_vb": fees.get("halfHourFee"),
+            "hour_sat_vb": fees.get("hourFee"),
+            "economy_sat_vb": fees.get("economyFee"),
+            "minimum_sat_vb": fees.get("minimumFee"),
+        }
+
+    if mempool and isinstance(mempool, dict):
+        result["mempool"] = {
+            "tx_count": mempool.get("count"),
+            "vsize_bytes": mempool.get("vsize"),
+            "total_fee_btc": mempool.get("total_fee"),
+        }
+
+    if hashrate and isinstance(hashrate, dict):
+        hr = hashrate.get("hashrates", [])
+        if hr:
+            latest = hr[-1] if isinstance(hr, list) else {}
+            result["mining"] = {
+                "current_hashrate": latest.get("avgHashrate") if isinstance(latest, dict) else None,
+                "current_difficulty": hashrate.get("currentDifficulty"),
+            }
+
+    _btc_cache[cache_key] = result
+    return result
+
+
+async def get_btc_lightning() -> dict[str, Any]:
+    cache_key = "btc_lightning"
+    if cache_key in _btc_cache:
+        return _btc_cache[cache_key]
+
+    data = await _async_get("https://mempool.space/api/v1/lightning/statistics/latest")
+
+    result: dict[str, Any] = {
+        "lightning": {},
+        "source": "mempool.space Lightning (free, no API key)",
+        "trust_tier": 4,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if data and isinstance(data, dict):
+        latest = data.get("latest", data)
+        result["lightning"] = {
+            "channel_count": latest.get("channel_count"),
+            "node_count": latest.get("node_count"),
+            "total_capacity_btc": latest.get("total_capacity"),
+            "average_capacity_sat": latest.get("avg_capacity"),
+            "median_base_fee_msat": latest.get("med_base_fee_mtokens"),
+            "median_fee_rate_ppm": latest.get("med_fee_rate"),
+        }
+
+    _btc_cache[cache_key] = result
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
+# TreasuryDirect — Auction results (Tier 1 government, no key)
+# ─────────────────────────────────────────────────────────────
+
+_auction_cache: TTLCache = TTLCache(maxsize=10, ttl=900)
+
+
+async def get_treasury_auctions(security_type: str = "", limit: int = 10) -> dict[str, Any]:
+    cache_key = f"auctions_{security_type}_{limit}"
+    if cache_key in _auction_cache:
+        return _auction_cache[cache_key]
+
+    params: dict[str, str] = {
+        "format": "json",
+        "pagesize": str(min(limit, 25)),
+    }
+    if security_type:
+        params["type"] = security_type
+
+    data = await _async_get(
+        "https://www.treasurydirect.gov/TA_WS/securities/auctioned",
+        params=params,
+    )
+
+    result: dict[str, Any] = {
+        "auctions": [],
+        "security_type_filter": security_type or "all",
+        "source": "TreasuryDirect (U.S. Department of the Treasury)",
+        "trust_tier": 1,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if data and isinstance(data, list):
+        for auction in data[:limit]:
+            if isinstance(auction, dict):
+                result["auctions"].append({
+                    "cusip": auction.get("cusip"),
+                    "security_type": auction.get("securityType"),
+                    "security_term": auction.get("securityTerm"),
+                    "auction_date": auction.get("auctionDate"),
+                    "issue_date": auction.get("issueDate"),
+                    "maturity_date": auction.get("maturityDate"),
+                    "high_yield": auction.get("highYield"),
+                    "interest_rate": auction.get("interestRate"),
+                    "bid_to_cover_ratio": auction.get("bidToCoverRatio"),
+                    "competitive_accepted": auction.get("competitiveAccepted"),
+                    "total_accepted": auction.get("totalAccepted"),
+                    "total_tendered": auction.get("totalTendered"),
+                })
+
+    _auction_cache[cache_key] = result
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
 # Composite: Full Market Snapshot
 # ─────────────────────────────────────────────────────────────
 

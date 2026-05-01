@@ -66,6 +66,14 @@ CURRENT_PRICING = {
     "/v1/market/defi/tvl": Decimal("0.002"),
     "/v1/market/defi/yields": Decimal("0.005"),
     "/v1/market/snapshot": Decimal("0.05"),
+    "/v1/market/binance/prices": Decimal("0.002"),
+    "/v1/market/binance/orderbook": Decimal("0.005"),
+    "/v1/market/binance/klines": Decimal("0.005"),
+    "/v1/market/dex/token": Decimal("0.01"),
+    "/v1/market/dex/search": Decimal("0.005"),
+    "/v1/market/bitcoin/fees": Decimal("0.002"),
+    "/v1/market/bitcoin/lightning": Decimal("0.002"),
+    "/v1/market/treasury/auctions": Decimal("0.005"),
     # Mid tier ($0.01 - $0.10)
     "/v1/batch": Decimal("0.01"),
     "/v1/extract/url": Decimal("0.01"),
@@ -141,6 +149,10 @@ MARKET_DATA_ENDPOINTS = {
     "/v1/market/fear-greed", "/v1/market/gas", "/v1/market/stablecoins",
     "/v1/market/defi/tvl", "/v1/market/defi/yields", "/v1/market/defi/chains",
     "/v1/market/forex", "/v1/market/snapshot",
+    "/v1/market/binance/prices", "/v1/market/binance/orderbook", "/v1/market/binance/klines",
+    "/v1/market/dex/token", "/v1/market/dex/search",
+    "/v1/market/bitcoin/fees", "/v1/market/bitcoin/lightning",
+    "/v1/market/treasury/auctions",
 }
 ECOSYSTEM_ENDPOINTS = {"/v1/x402/status", "/v1/x402/route"}
 ALERT_ENDPOINTS = {"/v1/alerts/subscribe", "/v1/alerts/feed"}

@@ -82,7 +82,15 @@
     {"path": "/v1/market/defi/yields", "method": "GET", "price": "0.005", "description": "Top DeFi yield opportunities — APY, TVL, IL risk across all chains"},
     {"path": "/v1/market/defi/chains", "method": "GET", "price": "0.001", "description": "Top 30 blockchains ranked by total DeFi TVL"},
     {"path": "/v1/market/forex", "method": "GET", "price": "0.001", "description": "Major forex rates from the European Central Bank — ~30 pairs"},
-    {"path": "/v1/market/snapshot", "method": "GET", "price": "0.05", "description": "Complete market snapshot — crypto, global, fear/greed, gas, stablecoins"}
+    {"path": "/v1/market/snapshot", "method": "GET", "price": "0.05", "description": "Complete market snapshot — crypto, global, fear/greed, gas, stablecoins"},
+    {"path": "/v1/market/binance/prices", "method": "GET", "price": "0.002", "description": "Real-time Binance prices with 24h volume, high/low, trades, bid/ask"},
+    {"path": "/v1/market/binance/orderbook", "method": "GET", "price": "0.005", "description": "Binance order book — bids, asks, spread for any trading pair"},
+    {"path": "/v1/market/binance/klines", "method": "GET", "price": "0.005", "description": "Binance OHLCV candlestick data for charting and technical analysis"},
+    {"path": "/v1/market/dex/token", "method": "GET", "price": "0.01", "description": "All DEX pairs for a token across all chains via DexScreener"},
+    {"path": "/v1/market/dex/search", "method": "GET", "price": "0.005", "description": "Search DEX pairs by name, symbol, or address across all chains"},
+    {"path": "/v1/market/bitcoin/fees", "method": "GET", "price": "0.002", "description": "Bitcoin fees, mempool stats, hashrate, difficulty — real-time"},
+    {"path": "/v1/market/bitcoin/lightning", "method": "GET", "price": "0.002", "description": "Bitcoin Lightning Network — nodes, channels, capacity, fee rates"},
+    {"path": "/v1/market/treasury/auctions", "method": "GET", "price": "0.005", "description": "U.S. Treasury auction results — yield, bid-to-cover ratio (Tier 1 gov)"}
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
@@ -95,5 +103,5 @@
     "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
     "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml"
   },
-  "tags": ["x402-hub", "ecosystem-directory", "composite-intelligence", "alpha-signal", "risk-score", "push-alerts", "extraction", "search", "web-scraping", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "fomc", "kxfed", "fred", "bls", "treasury", "fdic", "real-time-data", "defi", "crypto-prices", "coingecko", "defi-llama", "tvl", "yields", "stablecoins", "gas-prices", "fear-greed", "forex", "ecb", "market-data"]
+  "tags": ["x402-hub", "ecosystem-directory", "composite-intelligence", "alpha-signal", "risk-score", "push-alerts", "extraction", "search", "web-scraping", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "fomc", "kxfed", "fred", "bls", "treasury", "fdic", "real-time-data", "defi", "crypto-prices", "coingecko", "defi-llama", "tvl", "yields", "stablecoins", "gas-prices", "fear-greed", "forex", "ecb", "market-data", "binance", "orderbook", "klines", "dexscreener", "dex", "bitcoin", "mempool", "lightning", "treasury-auctions"]
 }

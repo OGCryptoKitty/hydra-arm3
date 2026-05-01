@@ -43,8 +43,10 @@ USDC_DECIMALS: int = 6
 APP_NAME: str = "HYDRA — 402-native paid work engine"
 APP_VERSION: str = "2.0.0"
 APP_DESCRIPTION: str = (
-    "Autonomous regulatory + market intelligence API with 66+ paid endpoints delivering real-time data "
-    "from 18+ authoritative sources. Live crypto prices (CoinGecko), DeFi TVL/yields (DeFi Llama), "
+    "Autonomous regulatory + market intelligence API with 75+ paid endpoints delivering real-time data "
+    "from 22+ authoritative sources. Binance real-time prices/orderbook/klines, DexScreener DEX pairs, "
+    "Bitcoin fees/mempool/Lightning (mempool.space), Treasury auction results, "
+    "live crypto prices (CoinGecko), DeFi TVL/yields (DeFi Llama), "
     "stablecoin peg tracking, multi-chain gas, Fear & Greed Index, ECB forex rates, "
     "Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, "
     "FRED economic data, SEC EDGAR, and prediction market signals. "
@@ -404,6 +406,46 @@ PRICING: dict[str, dict] = {
         "amount_usdc": Decimal("0.05"),
         "description": "Complete market snapshot — crypto prices, global market, fear/greed, gas, stablecoins in one call.",
         "amount_base_units": 50_000,
+    },
+    "/v1/market/binance/prices": {
+        "amount_usdc": Decimal("0.002"),
+        "description": "Real-time Binance prices with 24h stats — volume, high/low, trades, bid/ask.",
+        "amount_base_units": 2_000,
+    },
+    "/v1/market/binance/orderbook": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "Binance order book with bids, asks, and spread for any trading pair.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/market/binance/klines": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "Binance candlestick/OHLCV data for charting and technical analysis.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/market/dex/token": {
+        "amount_usdc": Decimal("0.01"),
+        "description": "All DEX trading pairs for a token across all chains — price, volume, liquidity via DexScreener.",
+        "amount_base_units": 10_000,
+    },
+    "/v1/market/dex/search": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "Search DEX pairs by name, symbol, or address across all chains via DexScreener.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/market/bitcoin/fees": {
+        "amount_usdc": Decimal("0.002"),
+        "description": "Bitcoin fees, mempool stats, hashrate, difficulty via mempool.space. Real-time.",
+        "amount_base_units": 2_000,
+    },
+    "/v1/market/bitcoin/lightning": {
+        "amount_usdc": Decimal("0.002"),
+        "description": "Bitcoin Lightning Network stats — nodes, channels, capacity, fee rates.",
+        "amount_base_units": 2_000,
+    },
+    "/v1/market/treasury/auctions": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "U.S. Treasury auction results — yield, bid-to-cover, accepted/tendered. Tier 1 government data.",
+        "amount_base_units": 5_000,
     },
     # ── Task Orchestration ──────────────────────────────────────
     "/v1/orchestrate": {

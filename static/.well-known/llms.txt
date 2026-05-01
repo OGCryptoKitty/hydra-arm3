@@ -79,6 +79,22 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `GET /v1/market/forex` ($0.001) — Major forex rates from the European Central Bank (~30 pairs).
 - `GET /v1/market/snapshot` ($0.05) — Complete market snapshot: crypto prices, global, fear/greed, gas, stablecoins.
 
+### Binance CEX Data ($0.002 - $0.005 USDC)
+- `GET /v1/market/binance/prices?symbols=BTCUSDT,ETHUSDT` ($0.002) — Real-time Binance prices with 24h volume, high/low, trades, bid/ask.
+- `GET /v1/market/binance/orderbook?symbol=BTCUSDT&limit=20` ($0.005) — Binance order book: bids, asks, and spread.
+- `GET /v1/market/binance/klines?symbol=BTCUSDT&interval=1h&limit=24` ($0.005) — Binance OHLCV candlestick data for charting.
+
+### DEX Data ($0.005 - $0.01 USDC)
+- `GET /v1/market/dex/token?address=0x...` ($0.01) — All DEX pairs for a token across all chains via DexScreener.
+- `GET /v1/market/dex/search?q=uniswap` ($0.005) — Search DEX pairs by token name, symbol, or address.
+
+### Bitcoin Network ($0.002 USDC)
+- `GET /v1/market/bitcoin/fees` ($0.002) — Bitcoin recommended fees, mempool stats, hashrate, difficulty.
+- `GET /v1/market/bitcoin/lightning` ($0.002) — Lightning Network: nodes, channels, capacity, fee rates.
+
+### Treasury Auctions ($0.005 USDC)
+- `GET /v1/market/treasury/auctions?security_type=Note&limit=10` ($0.005) — U.S. Treasury auction results: yield, bid-to-cover. Tier 1 government.
+
 ### Agent Utility Tier ($0.001 - $0.01 USDC)
 - `POST /v1/util/scrape` ($0.005) — URL to clean structured text. HTML parsed, scripts removed.
 - `GET /v1/util/crypto/price?token=ETH` ($0.001) — Token price, 24h change, market cap, volume. Cached 30s.

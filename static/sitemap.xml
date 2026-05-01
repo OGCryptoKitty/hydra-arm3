@@ -125,4 +125,20 @@
   <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/defi/chains</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.7</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/forex</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/snapshot</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.9</priority></url>
+
+  <!-- ── Binance CEX Data (real-time, no API key) ──────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/binance/prices</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/binance/orderbook</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/binance/klines</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.8</priority></url>
+
+  <!-- ── DexScreener DEX Data (all chains, no key) ─────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/dex/token</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/dex/search</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.8</priority></url>
+
+  <!-- ── Bitcoin Network (mempool.space, no key) ───────────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/bitcoin/fees</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.8</priority></url>
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/bitcoin/lightning</loc><lastmod>2026-05-01</lastmod><changefreq>always</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Treasury Auctions (Tier 1 government, no key) ─────── -->
+  <url><loc>https://hydra-api-nlnj.onrender.com/v1/market/treasury/auctions</loc><lastmod>2026-05-01</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
 </urlset>

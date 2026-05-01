@@ -150,3 +150,125 @@ async def full_market_snapshot() -> dict:
     from src.services.live_market_data import get_full_market_snapshot
 
     return await get_full_market_snapshot()
+
+
+# ── Binance (real-time CEX data, no API key) ────────────────
+
+@market_data_router.get("/v1/market/binance/prices")
+async def binance_prices(
+    symbols: Optional[str] = Query(
+        None,
+        description="Comma-separated Binance symbols (e.g., BTCUSDT,ETHUSDT). Omit for top 30 by volume.",
+    ),
+) -> dict:
+    """
+    Real-time Binance prices with 24h stats (volume, high/low, trades, bid/ask).
+    Source: Binance public API (no key, real-time). $0.002 USDC.
+    """
+    from src.services.live_market_data import get_binance_prices
+
+    sym_list = [s.strip() for s in symbols.split(",") if s.strip()] if symbols else None
+    return await get_binance_prices(sym_list)
+
+
+@market_data_router.get("/v1/market/binance/orderbook")
+async def binance_orderbook(
+    symbol: str = Query("BTCUSDT", description="Binance trading pair symbol"),
+    limit: int = Query(20, ge=5, le=100, description="Order book depth"),
+) -> dict:
+    """
+    Binance order book with bids, asks, and spread.
+    Source: Binance public API (no key, real-time). $0.005 USDC.
+    """
+    from src.services.live_market_data import get_binance_orderbook
+
+    return await get_binance_orderbook(symbol, limit)
+
+
+@market_data_router.get("/v1/market/binance/klines")
+async def binance_klines(
+    symbol: str = Query("BTCUSDT", description="Binance trading pair symbol"),
+    interval: str = Query("1h", description="Candle interval: 1m, 5m, 15m, 1h, 4h, 1d"),
+    limit: int = Query(24, ge=1, le=100, description="Number of candles"),
+) -> dict:
+    """
+    Binance candlestick/OHLCV data for charting and technical analysis.
+    Source: Binance public API (no key, real-time). $0.005 USDC.
+    """
+    from src.services.live_market_data import get_binance_klines
+
+    return await get_binance_klines(symbol, interval, limit)
+
+
+# ── DexScreener (DEX pair data across all chains) ───────────
+
+@market_data_router.get("/v1/market/dex/token")
+async def dex_token_pairs(
+    address: str = Query(..., description="Token contract address (any chain)"),
+) -> dict:
+    """
+    All DEX trading pairs for a token across all chains and DEXes.
+    Includes price, volume, liquidity, and price changes.
+    Source: DexScreener (free, no key, real-time). $0.01 USDC.
+    """
+    from src.services.live_market_data import get_dex_token_pairs
+
+    return await get_dex_token_pairs(address)
+
+
+@market_data_router.get("/v1/market/dex/search")
+async def dex_search(
+    q: str = Query(..., description="Search query (token name, symbol, or address)"),
+) -> dict:
+    """
+    Search DEX pairs by token name, symbol, or address across all chains.
+    Source: DexScreener (free, no key). $0.005 USDC.
+    """
+    from src.services.live_market_data import get_dex_search
+
+    return await get_dex_search(q)
+
+
+# ── Mempool.space (Bitcoin network data) ────────────────────
+
+@market_data_router.get("/v1/market/bitcoin/fees")
+async def bitcoin_fees() -> dict:
+    """
+    Bitcoin recommended fees, mempool stats, and mining hashrate/difficulty.
+    Source: mempool.space (free, no key, real-time). $0.002 USDC.
+    """
+    from src.services.live_market_data import get_btc_fees
+
+    return await get_btc_fees()
+
+
+@market_data_router.get("/v1/market/bitcoin/lightning")
+async def bitcoin_lightning() -> dict:
+    """
+    Bitcoin Lightning Network statistics: node count, channel count,
+    total capacity, fee rates.
+    Source: mempool.space (free, no key). $0.002 USDC.
+    """
+    from src.services.live_market_data import get_btc_lightning
+
+    return await get_btc_lightning()
+
+
+# ── TreasuryDirect (Tier 1 government auction data) ─────────
+
+@market_data_router.get("/v1/market/treasury/auctions")
+async def treasury_auctions(
+    security_type: Optional[str] = Query(
+        None,
+        description="Filter: Bill, Note, Bond, TIPS, FRN, CMB",
+    ),
+    limit: int = Query(10, ge=1, le=25, description="Number of recent auctions"),
+) -> dict:
+    """
+    U.S. Treasury auction results: high yield, bid-to-cover ratio,
+    accepted/tendered amounts. Tier 1 government data.
+    Source: TreasuryDirect (no key). $0.005 USDC.
+    """
+    from src.services.live_market_data import get_treasury_auctions
+
+    return await get_treasury_auctions(security_type or "", limit)
