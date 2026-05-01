@@ -299,7 +299,7 @@ if _mcp_available:
                 "402-native paid work engine for agents. Web extraction, search, "
                 "format conversion, developer tools, web checks, public data, "
                 "regulatory intelligence, prediction market signals, oracle data. "
-                "40 paid tools from $0.001 USDC via x402 on Base L2."
+                "55 paid tools from $0.001 USDC via x402 on Base L2."
             ),
         )
         mcp_server.mount()

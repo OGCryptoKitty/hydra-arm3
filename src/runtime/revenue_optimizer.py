@@ -29,37 +29,103 @@ TRANSACTION_LOG = _STATE_DIR / "transaction_log.jsonl"
 REVENUE_REPORT_DIR = _STATE_DIR / "reports"
 MARKETING_LOG = _STATE_DIR / "marketing_log.jsonl"
 
-# Current pricing (USDC)
+# Current pricing (USDC) — synced from config/settings.py PRICING dict
+# Kept in sync so revenue_optimizer can reference prices without importing settings
+# at module level (avoids circular imports in some test configurations).
 CURRENT_PRICING = {
+    # Utility tier ($0.001 - $0.005)
     "/v1/util/crypto/price": Decimal("0.001"),
     "/v1/util/crypto/balance": Decimal("0.001"),
     "/v1/util/gas": Decimal("0.001"),
     "/v1/util/tx": Decimal("0.001"),
+    "/v1/tools/hash": Decimal("0.001"),
+    "/v1/tools/encode": Decimal("0.001"),
+    "/v1/tools/validate/json": Decimal("0.001"),
+    "/v1/x402/route": Decimal("0.001"),
     "/v1/util/rss": Decimal("0.002"),
+    "/v1/tools/validate/email": Decimal("0.002"),
+    "/v1/check/headers": Decimal("0.003"),
+    "/v1/convert/json2csv": Decimal("0.003"),
+    "/v1/convert/csv2json": Decimal("0.003"),
+    "/v1/tools/diff": Decimal("0.003"),
     "/v1/util/scrape": Decimal("0.005"),
+    "/v1/check/url": Decimal("0.005"),
+    "/v1/check/dns": Decimal("0.005"),
+    "/v1/check/ssl": Decimal("0.005"),
+    "/v1/convert/html2md": Decimal("0.005"),
+    "/v1/x402/status": Decimal("0.005"),
+    # Mid tier ($0.01 - $0.10)
     "/v1/batch": Decimal("0.01"),
+    "/v1/extract/url": Decimal("0.01"),
+    "/v1/data/wikipedia": Decimal("0.01"),
+    "/v1/extract/search": Decimal("0.02"),
+    "/v1/data/arxiv": Decimal("0.02"),
+    "/v1/data/edgar": Decimal("0.02"),
+    "/v1/extract/multi": Decimal("0.05"),
+    "/v1/alerts/feed": Decimal("0.05"),
+    "/v1/orchestrate": Decimal("0.05"),
     "/v1/markets/feed": Decimal("0.10"),
+    "/v1/alerts/subscribe": Decimal("0.10"),
+    # Intelligence tier ($0.25 - $1.00)
+    "/v1/intelligence/bank-failures": Decimal("0.25"),
     "/v1/markets/events": Decimal("0.50"),
+    "/v1/intelligence/pulse": Decimal("0.50"),
+    "/v1/intelligence/economic-snapshot": Decimal("0.50"),
+    "/v1/intelligence/regulatory-pulse-live": Decimal("0.50"),
     "/v1/regulatory/changes": Decimal("1.00"),
     "/v1/regulatory/query": Decimal("1.00"),
+    "/v1/intelligence/digest": Decimal("1.00"),
+    # Signal tier ($2.00 - $5.00)
     "/v1/markets/signal/{market_id}": Decimal("2.00"),
     "/v1/regulatory/scan": Decimal("2.00"),
+    "/v1/intelligence/risk-score": Decimal("2.00"),
+    "/v1/portfolio/watchlist": Decimal("2.00"),
     "/v1/regulatory/jurisdiction": Decimal("3.00"),
+    "/v1/portfolio/market-brief": Decimal("3.00"),
     "/v1/fed/signal": Decimal("5.00"),
     "/v1/markets/signals": Decimal("5.00"),
     "/v1/oracle/uma": Decimal("5.00"),
     "/v1/oracle/chainlink": Decimal("5.00"),
+    "/v1/intelligence/alpha": Decimal("5.00"),
+    # Premium tier ($10.00 - $50.00)
     "/v1/markets/alpha": Decimal("10.00"),
+    "/v1/portfolio/scan": Decimal("10.00"),
     "/v1/markets/resolution": Decimal("25.00"),
     "/v1/fed/decision": Decimal("25.00"),
     "/v1/fed/resolution": Decimal("50.00"),
 }
 
 # High-value endpoint categories
-HIGH_VALUE_ENDPOINTS = {"/v1/fed/decision", "/v1/fed/resolution", "/v1/markets/alpha", "/v1/markets/resolution"}
-SIGNAL_ENDPOINTS = {"/v1/markets/signals", "/v1/markets/signal/{market_id}", "/v1/markets/feed"}
-UTILITY_ENDPOINTS = {"/v1/util/scrape", "/v1/util/crypto/price", "/v1/util/rss", "/v1/util/crypto/balance", "/v1/util/gas", "/v1/util/tx", "/v1/batch"}
+HIGH_VALUE_ENDPOINTS = {
+    "/v1/fed/decision", "/v1/fed/resolution", "/v1/markets/alpha",
+    "/v1/markets/resolution", "/v1/portfolio/scan",
+}
+SIGNAL_ENDPOINTS = {
+    "/v1/markets/signals", "/v1/markets/signal/{market_id}", "/v1/markets/feed",
+    "/v1/markets/events",
+}
+UTILITY_ENDPOINTS = {
+    "/v1/util/scrape", "/v1/util/crypto/price", "/v1/util/rss",
+    "/v1/util/crypto/balance", "/v1/util/gas", "/v1/util/tx", "/v1/batch",
+    "/v1/tools/hash", "/v1/tools/encode", "/v1/tools/diff",
+    "/v1/tools/validate/json", "/v1/tools/validate/email",
+    "/v1/check/url", "/v1/check/dns", "/v1/check/ssl", "/v1/check/headers",
+    "/v1/convert/html2md", "/v1/convert/json2csv", "/v1/convert/csv2json",
+    "/v1/extract/url", "/v1/extract/multi", "/v1/extract/search",
+    "/v1/data/wikipedia", "/v1/data/arxiv", "/v1/data/edgar",
+}
 ORACLE_ENDPOINTS = {"/v1/oracle/uma", "/v1/oracle/chainlink", "/v1/markets/resolution"}
+INTELLIGENCE_ENDPOINTS = {
+    "/v1/intelligence/pulse", "/v1/intelligence/alpha",
+    "/v1/intelligence/risk-score", "/v1/intelligence/digest",
+    "/v1/intelligence/economic-snapshot", "/v1/intelligence/regulatory-pulse-live",
+    "/v1/intelligence/bank-failures",
+}
+PORTFOLIO_ENDPOINTS = {
+    "/v1/portfolio/scan", "/v1/portfolio/watchlist", "/v1/portfolio/market-brief",
+}
+ECOSYSTEM_ENDPOINTS = {"/v1/x402/status", "/v1/x402/route"}
+ALERT_ENDPOINTS = {"/v1/alerts/subscribe", "/v1/alerts/feed"}
 
 
 # ---------------------------------------------------------------------------
@@ -536,25 +602,67 @@ class RevenueOptimizer:
     def _cold_start_pricing_recommendations(self) -> Dict[str, Any]:
         """
         Pricing recommendations for cold-start (no usage data yet).
+
+        Revenue = $0.  The bottleneck is discovery + first-call friction.
+        Recommendations target:
+          1. Getting the first agent to complete a paid call at all
+          2. Making utility endpoints ultra-low-friction on-ramps
+          3. Demonstrating value via free sample responses in 402 bodies
+          4. Bundle pricing to reduce per-call payment friction
         """
         return {
             "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
             "current_total_revenue_usdc": 0.0,
+            "cold_start_strategy": (
+                "HYDRA has 55+ endpoints and $0 revenue.  The bottleneck is not pricing — "
+                "it is distribution.  No agents have discovered HYDRA yet.  "
+                "Priority 1: get listed on every x402 directory, MCP registry, and agent hub.  "
+                "Priority 2: ensure 402 responses include sample data so agents see value before paying.  "
+                "Priority 3: keep utility endpoints at $0.001-$0.005 as low-friction on-ramps."
+            ),
             "recommendations": [
                 {
-                    "endpoint": "/v1/markets/signals",
-                    "action": "add_free_trial",
-                    "current_price_usdc": 0.25,
-                    "suggested_price_usdc": 0.0,
-                    "reasoning": "First call free to drive initial adoption and demonstrate value",
+                    "endpoint": "utility_tier",
+                    "action": "maintain_low_prices",
+                    "endpoints": list(UTILITY_ENDPOINTS),
+                    "current_price_range_usdc": "0.001 - 0.02",
+                    "reasoning": (
+                        "Utility endpoints ($0.001-$0.02) are the on-ramp.  "
+                        "An agent that pays $0.001 for a gas price lookup proves the x402 flow works, "
+                        "then upgrades to $0.50+ intelligence endpoints.  Do not raise these prices."
+                    ),
                     "priority": "high",
                 },
                 {
-                    "endpoint": "/v1/markets/signal/{market_id}",
-                    "action": "reduce_price_temporarily",
-                    "current_price_usdc": 0.10,
-                    "suggested_price_usdc": 0.01,
-                    "reasoning": "Minimal friction for first-time bot integrators during bootstrap phase",
+                    "endpoint": "intelligence_tier",
+                    "action": "verify_sample_responses",
+                    "endpoints": list(INTELLIGENCE_ENDPOINTS),
+                    "current_price_range_usdc": "0.25 - 5.00",
+                    "reasoning": (
+                        "Intelligence endpoints are unique products.  Ensure every 402 response "
+                        "includes a truncated sample so agents can evaluate quality before paying."
+                    ),
+                    "priority": "high",
+                },
+                {
+                    "endpoint": "/v1/intelligence/economic-snapshot",
+                    "action": "promote_as_flagship",
+                    "current_price_usdc": 0.50,
+                    "reasoning": (
+                        "Atomic economic data from FRED/BLS/Treasury in one call.  "
+                        "No other x402 service offers this.  Feature prominently in llms.txt and agents.json."
+                    ),
+                    "priority": "high",
+                },
+                {
+                    "endpoint": "/v1/intelligence/bank-failures",
+                    "action": "promote_as_flagship",
+                    "current_price_usdc": 0.25,
+                    "reasoning": (
+                        "FDIC bank failure data is directly actionable for prediction market traders.  "
+                        "At $0.25, this is cheaper than any alternative and drives conversion to "
+                        "the $10 portfolio scan and $25 resolution endpoints."
+                    ),
                     "priority": "high",
                 },
                 {
@@ -563,8 +671,27 @@ class RevenueOptimizer:
                     "suggested_price_usdc": 1.00,
                     "description": "Bootstrap trial: $1 USDC for access to all endpoints for 1 hour",
                     "reasoning": "Remove adoption friction by bundling discovery into one payment",
-                    "priority": "high",
+                    "priority": "medium",
+                },
+                {
+                    "endpoint": "premium_tier",
+                    "action": "keep_premium_pricing",
+                    "endpoints": list(HIGH_VALUE_ENDPOINTS),
+                    "current_price_range_usdc": "10.00 - 50.00",
+                    "reasoning": (
+                        "Fed resolution ($50), FOMC decision ($25), alpha reports ($10) are "
+                        "correctly priced for the value delivered.  A $10 alpha report for a $10K "
+                        "position is 0.1% cost.  Do not reduce — premium pricing signals quality."
+                    ),
+                    "priority": "low",
                 },
             ],
-            "recommendation_count": 3,
+            "recommendation_count": 6,
+            "distribution_actions": [
+                "Register on x402scan.com, x402list.fun, the402.ai, x402-list.com",
+                "Submit to Glama, Smithery, and other MCP directories",
+                "Ensure /.well-known/x402.json, agents.json, mcp.json, llms.txt are all serving",
+                "Post to Dev.to and Hacker News about x402-native regulatory intelligence",
+                "Add HYDRA to APIs.guru, public-apis, and RapidAPI directories",
+            ],
         }

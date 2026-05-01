@@ -62,7 +62,7 @@ jobs:
           import re
           with open("README.md") as f:
               content = f.read()
-          entry = "- [HYDRA Regulatory Intelligence](https://github.com/OGCryptoKitty/hydra-arm3) - Real-time SEC/CFTC/Fed regulatory risk scoring, FOMC signals, and prediction market data. 22 x402-paid endpoints on Base L2."
+          entry = "- [HYDRA Regulatory Intelligence](https://github.com/OGCryptoKitty/hydra-arm3) - Autonomous regulatory intelligence API with 55 x402-paid endpoints on Base L2. 13 real-time data sources (FRED, BLS, Treasury, SEC EDGAR, FDIC, Kalshi KXFED), FOMC rate probability model, prediction market signals, composite alpha. Pay-per-call in USDC."
           for pat in [r"(###?\s*Finance[^\n]*\n(?:[-*] \[.*\n)*)", r"(###?\s*Financial[^\n]*\n(?:[-*] \[.*\n)*)"]:
               m = re.search(pat, content, re.IGNORECASE)
               if m:
@@ -86,7 +86,7 @@ jobs:
 
           Server URL: https://hydra-api-nlnj.onrender.com/mcp
           Transport: Streamable HTTP
-          Tools: 22 paid + 12 free (regulatory scan, FOMC signals, prediction market data, oracle feeds)
+          Tools: 55 paid + 12 free (composite alpha, FOMC signals, regulatory scan, prediction market data, web extraction, economic data)
           Payment: USDC on Base via x402 ($0.001-$50)
           GitHub: https://github.com/OGCryptoKitty/hydra-arm3
           PRBODY
@@ -153,14 +153,14 @@ jobs:
           fi
 
           echo "" >> README.md
-          echo "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data. 22 paid endpoints via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))" >> README.md
+          echo "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Autonomous regulatory intelligence API with 55 x402-paid endpoints. 13 real-time data sources, FOMC rate model, prediction market signals, composite alpha. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))" >> README.md
 
           git add README.md
           git commit -m "Add HYDRA Regulatory Intelligence"
           git push -f origin "$BRANCH"
 
           cat > /tmp/pr_body.txt << 'PRBODY'
-          HYDRA: 22 x402-paid regulatory intelligence endpoints on Base L2.
+          HYDRA: 55 x402-paid regulatory intelligence endpoints on Base L2.
           SEC/CFTC/Fed/FinCEN monitoring, prediction market signals, FOMC data.
           Live: https://hydra-api-nlnj.onrender.com
           x402 Manifest: https://hydra-api-nlnj.onrender.com/.well-known/x402.json
@@ -228,7 +228,7 @@ jobs:
           fi
 
           echo "" >> README.md
-          echo "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Real-time regulatory risk scoring, FOMC signals, and prediction market data. 22 paid endpoints via x402. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))" >> README.md
+          echo "- [HYDRA Regulatory Intelligence](https://hydra-api-nlnj.onrender.com) - Autonomous regulatory intelligence API with 55 x402-paid endpoints. 13 real-time data sources, FOMC rate model, prediction market signals, composite alpha. ([GitHub](https://github.com/OGCryptoKitty/hydra-arm3))" >> README.md
 
           git add README.md
           git commit -m "Add HYDRA Regulatory Intelligence"
@@ -238,6 +238,6 @@ jobs:
             --repo "$REPO" \
             --head "$FORK_OWNER:$BRANCH" \
             --title "Add HYDRA Regulatory Intelligence" \
-            --body "HYDRA: 22 x402-paid regulatory intelligence endpoints on Base L2. Live at https://hydra-api-nlnj.onrender.com"
+            --body "HYDRA: 55 x402-paid regulatory intelligence endpoints on Base L2. Live at https://hydra-api-nlnj.onrender.com"
 
           echo "PR submitted to $REPO"
