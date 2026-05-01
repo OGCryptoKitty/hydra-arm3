@@ -54,6 +54,18 @@ CURRENT_PRICING = {
     "/v1/check/ssl": Decimal("0.005"),
     "/v1/convert/html2md": Decimal("0.005"),
     "/v1/x402/status": Decimal("0.005"),
+    # Market data tier ($0.001 - $0.05)
+    "/v1/market/prices": Decimal("0.001"),
+    "/v1/market/global": Decimal("0.001"),
+    "/v1/market/trending": Decimal("0.001"),
+    "/v1/market/fear-greed": Decimal("0.001"),
+    "/v1/market/gas": Decimal("0.001"),
+    "/v1/market/defi/chains": Decimal("0.001"),
+    "/v1/market/forex": Decimal("0.001"),
+    "/v1/market/stablecoins": Decimal("0.002"),
+    "/v1/market/defi/tvl": Decimal("0.002"),
+    "/v1/market/defi/yields": Decimal("0.005"),
+    "/v1/market/snapshot": Decimal("0.05"),
     # Mid tier ($0.01 - $0.10)
     "/v1/batch": Decimal("0.01"),
     "/v1/extract/url": Decimal("0.01"),
@@ -123,6 +135,12 @@ INTELLIGENCE_ENDPOINTS = {
 }
 PORTFOLIO_ENDPOINTS = {
     "/v1/portfolio/scan", "/v1/portfolio/watchlist", "/v1/portfolio/market-brief",
+}
+MARKET_DATA_ENDPOINTS = {
+    "/v1/market/prices", "/v1/market/global", "/v1/market/trending",
+    "/v1/market/fear-greed", "/v1/market/gas", "/v1/market/stablecoins",
+    "/v1/market/defi/tvl", "/v1/market/defi/yields", "/v1/market/defi/chains",
+    "/v1/market/forex", "/v1/market/snapshot",
 }
 ECOSYSTEM_ENDPOINTS = {"/v1/x402/status", "/v1/x402/route"}
 ALERT_ENDPOINTS = {"/v1/alerts/subscribe", "/v1/alerts/feed"}

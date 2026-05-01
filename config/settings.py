@@ -43,10 +43,11 @@ USDC_DECIMALS: int = 6
 APP_NAME: str = "HYDRA — 402-native paid work engine"
 APP_VERSION: str = "2.0.0"
 APP_DESCRIPTION: str = (
-    "Autonomous regulatory intelligence API with 55+ paid endpoints delivering real-time data "
-    "from 13 authoritative sources. Kalshi KXFED market-calibrated Fed rate probabilities, "
-    "FDIC bank failure monitoring, atomic economic snapshots, live regulatory pulse, "
-    "alpha reports with edge analysis and Kelly sizing. "
+    "Autonomous regulatory + market intelligence API with 66+ paid endpoints delivering real-time data "
+    "from 18+ authoritative sources. Live crypto prices (CoinGecko), DeFi TVL/yields (DeFi Llama), "
+    "stablecoin peg tracking, multi-chain gas, Fear & Greed Index, ECB forex rates, "
+    "Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, "
+    "FRED economic data, SEC EDGAR, and prediction market signals. "
     "Pay-per-call from $0.001 USDC via x402 on Base L2."
 )
 
@@ -347,6 +348,62 @@ PRICING: dict[str, dict] = {
         "amount_usdc": Decimal("3.00"),
         "description": "Executive market brief — regulatory events + Fed signal + prediction markets in one comprehensive view.",
         "amount_base_units": 3_000_000,
+    },
+    # ── Live Market Data (perpetually live, no API key) ─────────
+    "/v1/market/prices": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Live crypto prices, market caps, 24h change via CoinGecko. Up to 20 coins.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/market/global": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Global crypto market overview — total market cap, BTC/ETH dominance, 24h volume.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/market/trending": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Top trending cryptocurrencies (most searched last 24h) via CoinGecko.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/market/fear-greed": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Crypto Fear & Greed Index — 0-100 score with 7-day history.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/market/gas": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Live gas prices across Ethereum, Base, Arbitrum, Optimism, Polygon from public RPCs.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/market/stablecoins": {
+        "amount_usdc": Decimal("0.002"),
+        "description": "Top 20 stablecoins with circulating supply and real-time peg deviation tracking.",
+        "amount_base_units": 2_000,
+    },
+    "/v1/market/defi/tvl": {
+        "amount_usdc": Decimal("0.002"),
+        "description": "Top 25 DeFi protocols by TVL with 1d/7d change via DeFi Llama.",
+        "amount_base_units": 2_000,
+    },
+    "/v1/market/defi/yields": {
+        "amount_usdc": Decimal("0.005"),
+        "description": "Top DeFi yield opportunities across all chains — APY, TVL, IL risk, stablecoin flag.",
+        "amount_base_units": 5_000,
+    },
+    "/v1/market/defi/chains": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Top 30 blockchains ranked by total DeFi TVL via DeFi Llama.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/market/forex": {
+        "amount_usdc": Decimal("0.001"),
+        "description": "Major forex rates from the European Central Bank — ~30 currency pairs vs EUR.",
+        "amount_base_units": 1_000,
+    },
+    "/v1/market/snapshot": {
+        "amount_usdc": Decimal("0.05"),
+        "description": "Complete market snapshot — crypto prices, global market, fear/greed, gas, stablecoins in one call.",
+        "amount_base_units": 50_000,
     },
     # ── Task Orchestration ──────────────────────────────────────
     "/v1/orchestrate": {

@@ -1,8 +1,8 @@
 # HYDRA
 
-> Autonomous regulatory intelligence API with 50+ paid endpoints. Real-time data from 13 authoritative sources. Market-calibrated Fed rate probabilities. Alpha signals with edge analysis. From $0.001 USDC on Base L2.
+> Autonomous regulatory + market intelligence API with 66+ paid endpoints. Live crypto prices, DeFi yields, stablecoin pegs, multi-chain gas, Fear & Greed, forex. Real-time data from 18+ sources. Market-calibrated Fed rate probabilities. Alpha signals with edge analysis. From $0.001 USDC on Base L2.
 
-HYDRA is the infrastructure layer of the x402 economy. It provides real-time economic data from 13 authoritative sources (FRED, BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket), composite intelligence products (alpha signals with Kelly sizing, market-calibrated risk scores, regulatory pulse), prediction market signals with Kalshi KXFED-calibrated Fed rate probabilities (60% market / 40% model blend), FOMC decision classification within 30 seconds, push alerts, web extraction, format conversion, developer tools, and oracle data for UMA/Chainlink. All data sourced from Tier 1 (US government) and Tier 3 (CFTC-regulated) sources — no unverified data in signal generation.
+HYDRA is the infrastructure layer of the x402 economy. It provides live market data (CoinGecko crypto prices, DeFi Llama TVL/yields/stablecoins, Fear & Greed Index, multi-chain gas from public RPCs, ECB forex rates), real-time economic data from 18+ authoritative sources (FRED, BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket, CoinGecko, DeFi Llama, Alternative.me, ECB), composite intelligence products (alpha signals with Kelly sizing, market-calibrated risk scores, regulatory pulse), prediction market signals with Kalshi KXFED-calibrated Fed rate probabilities (60% market / 40% model blend), FOMC decision classification within 30 seconds, push alerts, web extraction, format conversion, developer tools, and oracle data for UMA/Chainlink.
 
 ## Payment
 
@@ -65,6 +65,19 @@ All paid endpoints use the x402 HTTP payment protocol. Send USDC on Base (chain 
 - `GET /v1/data/wikipedia?q=...` ($0.01) — Wikipedia article summary: extract, thumbnail, description, page URL.
 - `GET /v1/data/arxiv?q=...` ($0.02) — arXiv academic paper search: titles, authors, abstracts, PDF links.
 - `GET /v1/data/edgar?q=...` ($0.02) — SEC EDGAR filing search: 10-K, 10-Q, 8-K by company, ticker, or keyword.
+
+### Live Market Data Tier ($0.001 - $0.05 USDC)
+- `GET /v1/market/prices?ids=bitcoin,ethereum,solana` ($0.001) — Live crypto prices, market caps, 24h change via CoinGecko. Up to 20 coins.
+- `GET /v1/market/global` ($0.001) — Global crypto market: total market cap, BTC/ETH dominance, 24h volume.
+- `GET /v1/market/trending` ($0.001) — Top trending cryptocurrencies (most searched last 24h).
+- `GET /v1/market/fear-greed` ($0.001) — Crypto Fear & Greed Index: 0-100 score with 7-day history.
+- `GET /v1/market/gas` ($0.001) — Live gas prices across Ethereum, Base, Arbitrum, Optimism, Polygon. 15s cache.
+- `GET /v1/market/stablecoins` ($0.002) — Top 20 stablecoins with circulating supply and peg deviation tracking.
+- `GET /v1/market/defi/tvl` ($0.002) — Top 25 DeFi protocols by TVL with 1d/7d change via DeFi Llama.
+- `GET /v1/market/defi/yields?min_tvl=1000000` ($0.005) — Top DeFi yield opportunities: APY, TVL, IL risk, stablecoin flag.
+- `GET /v1/market/defi/chains` ($0.001) — Top 30 blockchains ranked by total DeFi TVL.
+- `GET /v1/market/forex` ($0.001) — Major forex rates from the European Central Bank (~30 pairs).
+- `GET /v1/market/snapshot` ($0.05) — Complete market snapshot: crypto prices, global, fear/greed, gas, stablecoins.
 
 ### Agent Utility Tier ($0.001 - $0.01 USDC)
 - `POST /v1/util/scrape` ($0.005) — URL to clean structured text. HTML parsed, scripts removed.
