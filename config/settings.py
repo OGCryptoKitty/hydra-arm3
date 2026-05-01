@@ -43,9 +43,11 @@ USDC_DECIMALS: int = 6
 APP_NAME: str = "HYDRA — 402-native paid work engine"
 APP_VERSION: str = "2.0.0"
 APP_DESCRIPTION: str = (
-    "Web extraction, search, format conversion, developer tools, public data, "
-    "web checks, regulatory intelligence, prediction market signals, and oracle data. "
-    "40 paid endpoints from $0.001 USDC via x402 on Base L2."
+    "Autonomous regulatory intelligence API with 55+ paid endpoints delivering real-time data "
+    "from 13 authoritative sources. Kalshi KXFED market-calibrated Fed rate probabilities, "
+    "FDIC bank failure monitoring, atomic economic snapshots, live regulatory pulse, "
+    "alpha reports with edge analysis and Kelly sizing. "
+    "Pay-per-call from $0.001 USDC via x402 on Base L2."
 )
 
 HOST: str = os.getenv("HOST", "0.0.0.0")

@@ -224,7 +224,304 @@
       "price_usdc": "3.00",
       "input": {"type": "object"},
       "output": {"type": "object"}
+    },
+    {
+      "id": "regulatory-changes",
+      "name": "Regulatory Changes",
+      "description": "Classified regulatory changes — SEC, CFTC, FinCEN, OCC, CFPB filings with event type tags and market impact scores.",
+      "endpoint": "POST /v1/regulatory/changes",
+      "price_usdc": "1.00",
+      "input": {"type": "object", "properties": {"query": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "regulatory-jurisdiction",
+      "name": "Jurisdiction Comparison",
+      "description": "Jurisdiction comparison with compliance cost modeling across US states and international frameworks.",
+      "endpoint": "POST /v1/regulatory/jurisdiction",
+      "price_usdc": "3.00",
+      "input": {"type": "object", "properties": {"query": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "regulatory-query",
+      "name": "Regulatory Q&A",
+      "description": "Regulatory Q&A — scored answers with statutory citations and confidence levels.",
+      "endpoint": "POST /v1/regulatory/query",
+      "price_usdc": "1.00",
+      "input": {"type": "object", "properties": {"query": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "markets-feed",
+      "name": "Micro Regulatory Event Feed",
+      "description": "Micro regulatory event feed — last 10 events matched to prediction markets. High-frequency bot polling.",
+      "endpoint": "GET /v1/markets/feed",
+      "price_usdc": "0.10",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "markets-events",
+      "name": "Classified Regulatory Events",
+      "description": "Classified regulatory event feed — SEC, CFTC, Fed, FinCEN events tagged by type, agency, and affected prediction markets.",
+      "endpoint": "GET /v1/markets/events",
+      "price_usdc": "0.50",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "market-signal",
+      "name": "Single Market Signal",
+      "description": "Scored market signal — HYDRA regulatory probability, expected price impact, risk factors for one prediction market.",
+      "endpoint": "POST /v1/markets/signal",
+      "price_usdc": "2.00",
+      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "market-resolution",
+      "name": "Market Resolution Verdict",
+      "description": "Professional resolution verdict — HYDRA's authoritative assessment of how a prediction market should resolve, with evidence chain and confidence score.",
+      "endpoint": "POST /v1/markets/resolution",
+      "price_usdc": "25.00",
+      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "fed-signal",
+      "name": "FOMC Pre-Decision Signal",
+      "description": "Pre-FOMC rate probabilities with Kalshi KXFED market calibration (60% market / 40% model blend), speech analysis, dot plot tracking.",
+      "endpoint": "GET /v1/fed/signal",
+      "price_usdc": "5.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "fed-decision",
+      "name": "FOMC Decision Classification",
+      "description": "Real-time FOMC decision classification — HOLD/CUT/HIKE + basis points within 30 seconds of release. Cryptographic timestamp.",
+      "endpoint": "GET /v1/fed/decision",
+      "price_usdc": "25.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "fed-resolution",
+      "name": "FOMC Resolution Verdict",
+      "description": "FOMC resolution verdict with full evidence chain — formatted for UMA bond assertion. Includes statement text, vote breakdown, and dot plot delta.",
+      "endpoint": "GET /v1/fed/resolution",
+      "price_usdc": "50.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "oracle-uma",
+      "name": "UMA Oracle Assertion",
+      "description": "UMA Optimistic Oracle assertion data — evidence chain, proposed price, bond parameters for regulatory market resolution.",
+      "endpoint": "GET /v1/oracle/uma",
+      "price_usdc": "5.00",
+      "input": {"type": "object", "properties": {"market_id": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "oracle-chainlink",
+      "name": "Chainlink External Adapter",
+      "description": "Chainlink External Adapter response — regulatory data formatted for on-chain delivery via Any API Direct Request.",
+      "endpoint": "GET /v1/oracle/chainlink",
+      "price_usdc": "5.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "util-scrape",
+      "name": "Web Scrape",
+      "description": "Web scrape — URL to clean structured text. HTML parsed, scripts removed.",
+      "endpoint": "GET /v1/util/scrape?url={url}",
+      "price_usdc": "0.005",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "util-rss",
+      "name": "RSS Feed Parser",
+      "description": "RSS/Atom feed parser — feed URL to structured JSON with parsed entries and metadata.",
+      "endpoint": "GET /v1/util/rss?url={url}",
+      "price_usdc": "0.002",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "util-balance",
+      "name": "Wallet Balance",
+      "description": "Wallet balance on Base L2 — ETH and USDC balance for any address.",
+      "endpoint": "GET /v1/util/crypto/balance?address={address}",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"address": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "util-gas",
+      "name": "Base L2 Gas Prices",
+      "description": "Base L2 gas prices — current gas price, base fee, estimated costs for transfers/swaps/mints.",
+      "endpoint": "GET /v1/util/gas",
+      "price_usdc": "0.001",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "util-tx",
+      "name": "Transaction Receipt",
+      "description": "Transaction receipt lookup — confirmation status, gas used, block number, log count.",
+      "endpoint": "GET /v1/util/tx?hash={hash}",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"hash": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "batch",
+      "name": "Batch Request",
+      "description": "Batch up to 5 utility calls in one request. Saves gas costs vs individual x402 payments.",
+      "endpoint": "POST /v1/batch",
+      "price_usdc": "0.01",
+      "input": {"type": "object", "properties": {"requests": {"type": "array"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "extract-multi",
+      "name": "Multi-URL Extraction",
+      "description": "Batch extraction from up to 5 URLs in parallel. Structured output per URL.",
+      "endpoint": "POST /v1/extract/multi",
+      "price_usdc": "0.05",
+      "input": {"type": "object", "properties": {"urls": {"type": "array", "items": {"type": "string"}}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "check-headers",
+      "name": "HTTP Headers Check",
+      "description": "HTTP response headers with security headers analysis and score.",
+      "endpoint": "GET /v1/check/headers?url={url}",
+      "price_usdc": "0.003",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "convert-json2csv",
+      "name": "JSON to CSV",
+      "description": "JSON array of objects to CSV with auto-detected headers.",
+      "endpoint": "POST /v1/convert/json2csv",
+      "price_usdc": "0.003",
+      "input": {"type": "object", "properties": {"data": {"type": "array"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "convert-csv2json",
+      "name": "CSV to JSON",
+      "description": "CSV text to JSON array of objects. First row used as headers.",
+      "endpoint": "POST /v1/convert/csv2json",
+      "price_usdc": "0.003",
+      "input": {"type": "object", "properties": {"csv": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "tools-encode",
+      "name": "Encode/Decode Text",
+      "description": "Encode/decode text — Base64, URL encoding, hex.",
+      "endpoint": "POST /v1/tools/encode",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"text": {"type": "string"}, "encoding": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "tools-validate-json",
+      "name": "JSON Validator",
+      "description": "JSON syntax validation with pretty-print and structure info.",
+      "endpoint": "POST /v1/tools/validate/json",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"json": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "tools-validate-email",
+      "name": "Email Validator",
+      "description": "Email format validation with MX record check.",
+      "endpoint": "POST /v1/tools/validate/email",
+      "price_usdc": "0.002",
+      "input": {"type": "object", "properties": {"email": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "intelligence-pulse",
+      "name": "Regulatory Pulse",
+      "description": "Hourly regulatory pulse — aggregated SEC, CFTC, FinCEN, Fed, Treasury activity with risk signals.",
+      "endpoint": "GET /v1/intelligence/pulse",
+      "price_usdc": "0.50",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "intelligence-digest",
+      "name": "Daily Market Digest",
+      "description": "Daily market + regulatory digest — comprehensive summary for compliance teams and trading agents.",
+      "endpoint": "GET /v1/intelligence/digest",
+      "price_usdc": "1.00",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "x402-status",
+      "name": "x402 Service Health",
+      "description": "Real-time health and capability check of any x402 service — manifest, endpoints, pricing.",
+      "endpoint": "GET /v1/x402/status?url={url}",
+      "price_usdc": "0.005",
+      "input": {"type": "object", "properties": {"url": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "x402-route",
+      "name": "x402 Service Router",
+      "description": "Intelligent x402 service routing — find the best service for a capability request.",
+      "endpoint": "GET /v1/x402/route?capability={capability}",
+      "price_usdc": "0.001",
+      "input": {"type": "object", "properties": {"capability": {"type": "string"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "alerts-subscribe",
+      "name": "Alert Subscription",
+      "description": "Register for push alerts — webhook delivery of regulatory events matching your conditions. $0.10 per 100 alerts.",
+      "endpoint": "POST /v1/alerts/subscribe",
+      "price_usdc": "0.10",
+      "input": {"type": "object", "properties": {"webhook_url": {"type": "string"}, "conditions": {"type": "object"}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "alerts-feed",
+      "name": "Alert Feed",
+      "description": "Real-time regulatory alert feed — last 24 hours of detected events across all monitored sources.",
+      "endpoint": "GET /v1/alerts/feed",
+      "price_usdc": "0.05",
+      "input": {"type": "object"},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "portfolio-watchlist",
+      "name": "Portfolio Watchlist",
+      "description": "Portfolio regulatory watchlist — recent agency mentions and alert levels for up to 20 assets.",
+      "endpoint": "POST /v1/portfolio/watchlist",
+      "price_usdc": "2.00",
+      "input": {"type": "object", "properties": {"tokens": {"type": "array", "items": {"type": "string"}}}},
+      "output": {"type": "object"}
+    },
+    {
+      "id": "orchestrate",
+      "name": "Task Orchestration",
+      "description": "Multi-step task orchestration — execute up to 10 HYDRA endpoint calls in one request.",
+      "endpoint": "POST /v1/orchestrate",
+      "price_usdc": "0.05",
+      "input": {"type": "object", "properties": {"steps": {"type": "array"}}},
+      "output": {"type": "object"}
     }
   ],
-  "tags": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "regulatory", "prediction-markets", "oracle", "x402", "mcp", "defi", "fed-rates", "fomc", "economic-data", "fred", "bls", "treasury", "fdic", "bank-failures", "kalshi", "polymarket", "edgar", "federal-register", "congress"]
+  "tags": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "regulatory", "prediction-markets", "oracle", "x402", "mcp", "defi", "fed-rates", "fomc", "economic-data", "fred", "bls", "treasury", "fdic", "bank-failures", "kalshi", "polymarket", "edgar", "federal-register", "congress", "alerts", "portfolio", "orchestration", "batch", "rss", "chainlink", "uma", "resolution", "compliance", "risk-score", "alpha", "kelly-sizing", "kxfed"]
 }

@@ -1,6 +1,6 @@
 {
   "name": "HYDRA",
-  "description": "402-native regulatory intelligence API for autonomous agents. 55 paid endpoints from $0.001 USDC via x402 on Base L2. Real-time data from 13 authoritative sources: FRED (28 economic series), BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket Gamma, Polymarket CLOB. Market-calibrated Fed rate probabilities (60% KXFED / 40% model blend), FDIC bank failure monitoring, atomic economic snapshots, live regulatory pulse, alpha reports with edge analysis and Kelly sizing. Tier 1 government + Tier 3 CFTC-regulated data only.",
+  "description": "402-native regulatory intelligence API for autonomous agents. 55+ paid endpoints from $0.001 USDC via x402 on Base L2. Real-time data from 13 authoritative sources: FRED (28 economic series), BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket Gamma, Polymarket CLOB, Google DNS-over-HTTPS, CoinGecko. Market-calibrated Fed rate probabilities (60% KXFED / 40% model blend), FDIC bank failure monitoring, atomic economic snapshots, live regulatory pulse, alpha reports with edge analysis and Kelly sizing. Tier 1 government + Tier 3 CFTC-regulated data only.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "version": "3.0.0",
   "protocol": "a2a",
