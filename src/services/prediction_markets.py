@@ -121,11 +121,15 @@ KALSHI_REGULATORY_SERIES = [
     "KXSTABLECOIN",   # Stablecoin regulation broadly
     "KXCFTC",         # CFTC markets
     "KXCONGRESS",     # Congressional legislation
-]
-
-# Kalshi event categories to search
-KALSHI_REGULATORY_CATEGORIES = [
-    "economics", "financialregulation", "politics", "legal",
+    "KXINFL",         # Inflation / CPI
+    "KXCPI",          # CPI reports
+    "KXGDP",          # GDP data
+    "KXJOBS",         # Jobs / unemployment
+    "KXRECESSION",    # Recession markets
+    "KXDEBT",         # Debt ceiling
+    "KXTARIFF",       # Tariff / trade policy
+    "KXETF",          # ETF approval markets
+    "KXTREASURY",     # Treasury markets
 ]
 
 
@@ -1132,7 +1136,7 @@ class KalshiClient:
 
         # --- Strategy 2: Fetch Economics category — all are economic/macro ---
         # Pass category server-side to reduce payload size
-        for category in ("Economics", "Financials"):
+        for category in ("Economics", "Financials", "Financial", "Climate"):
             data = await self._get(
                 "/events",
                 params={"limit": 200, "status": "open", "category": category},

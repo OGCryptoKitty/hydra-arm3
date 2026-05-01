@@ -192,6 +192,42 @@ jobs:
             https://mcp.so/api/servers 2>/dev/null || true
           echo "  mcp.so → done"
 
+      - name: Register with additional discovery platforms
+        run: |
+          echo "=== Additional Discovery Platforms ==="
+          BASE="https://hydra-api-nlnj.onrender.com"
+          MANIFEST="${BASE}/.well-known/x402.json"
+
+          # Glama connectors (hosted MCP endpoint)
+          curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
+            -d "{\"name\":\"HYDRA Regulatory Intelligence\",\"url\":\"${BASE}/mcp\",\"repository\":\"https://github.com/OGCryptoKitty/hydra-arm3\",\"description\":\"52 MCP tools: regulatory intelligence, prediction markets, Fed signals, web extraction, search, conversion, dev tools.\"}" \
+            https://glama.ai/api/mcp/connectors 2>/dev/null || true
+          echo "  glama.ai/connectors → done"
+
+          # AIProx agent discovery
+          curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
+            -d "{\"name\":\"HYDRA\",\"url\":\"${BASE}\",\"manifest\":\"${MANIFEST}\",\"category\":\"intelligence\",\"description\":\"Regulatory intelligence + prediction market signals via x402 on Base. 52 paid endpoints.\",\"chain\":\"base\",\"token\":\"USDC\"}" \
+            https://aiprox.dev/api/register 2>/dev/null || true
+          echo "  aiprox.dev → done"
+
+          # Agent Arena (ERC-8004 on-chain registry)
+          curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
+            -d "{\"name\":\"HYDRA Regulatory Intelligence\",\"url\":\"${BASE}\",\"manifest\":\"${MANIFEST}\",\"capabilities\":[\"regulatory-intelligence\",\"prediction-markets\",\"fed-signals\",\"web-extraction\"],\"chain_id\":8453,\"payment_token\":\"USDC\"}" \
+            https://agentarena.site/api/register 2>/dev/null || true
+          echo "  agentarena.site → done"
+
+          # x402.eco
+          curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
+            -d "{\"name\":\"HYDRA\",\"url\":\"${BASE}\",\"manifest\":\"${MANIFEST}\",\"description\":\"Regulatory intelligence engine — 52 x402 endpoints on Base.\",\"category\":\"data-intelligence\",\"chain\":\"base\"}" \
+            https://www.x402.eco/api/services 2>/dev/null || true
+          echo "  x402.eco → done"
+
+          # PulseMCP
+          curl -sf -X POST -H "Content-Type: application/json" --max-time 15 \
+            -d "{\"name\":\"OGCryptoKitty/hydra-arm3\",\"url\":\"${BASE}/mcp\",\"repository\":\"https://github.com/OGCryptoKitty/hydra-arm3\",\"description\":\"HYDRA Regulatory Intelligence — 52 MCP tools for regulatory risk, prediction markets, Fed signals, web extraction. x402 on Base.\",\"transport\":\"streamable-http\"}" \
+            https://www.pulsemcp.com/api/servers 2>/dev/null || true
+          echo "  pulsemcp.com → done"
+
       - name: Ping search engines
         run: |
           echo "=== Search Engine Pings ==="

@@ -333,6 +333,70 @@ DISCOVERY_ENDPOINTS = [
             "network": "base-mainnet",
         },
     },
+    # ── Additional discovery platforms ───────────────────────────
+    {
+        "name": "glama_connectors",
+        "url": "https://glama.ai/api/mcp/connectors",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Regulatory Intelligence",
+            "url": f"{HYDRA_BASE_URL}/mcp",
+            "repository": "https://github.com/OGCryptoKitty/hydra-arm3",
+            "description": "52 MCP tools: regulatory intelligence, prediction markets, Fed signals, web extraction, search, conversion, dev tools, web checks, public data. x402 payments on Base.",
+        },
+    },
+    {
+        "name": "aiprox_registry",
+        "url": "https://aiprox.dev/api/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA",
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "category": "intelligence",
+            "description": "Regulatory intelligence + prediction market signals via x402 on Base. 52 paid endpoints from $0.001 USDC.",
+            "chain": "base",
+            "token": "USDC",
+        },
+    },
+    {
+        "name": "agent_arena_registry",
+        "url": "https://agentarena.site/api/register",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA Regulatory Intelligence",
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "capabilities": ["regulatory-intelligence", "prediction-markets", "fed-signals", "web-extraction", "search", "oracle-data"],
+            "chain_id": 8453,
+            "payment_token": "USDC",
+        },
+    },
+    {
+        "name": "x402_eco",
+        "url": "https://www.x402.eco/api/services",
+        "method": "POST",
+        "payload": {
+            "name": "HYDRA",
+            "url": HYDRA_BASE_URL,
+            "manifest": HYDRA_MANIFEST,
+            "description": "Regulatory intelligence engine — 52 x402 endpoints on Base. Alpha signals, risk scores, Fed rate probability, push alerts, web extraction, search.",
+            "category": "data-intelligence",
+            "chain": "base",
+        },
+    },
+    {
+        "name": "pulsemcp_submission",
+        "url": "https://www.pulsemcp.com/api/servers",
+        "method": "POST",
+        "payload": {
+            "name": "OGCryptoKitty/hydra-arm3",
+            "url": f"{HYDRA_BASE_URL}/mcp",
+            "repository": "https://github.com/OGCryptoKitty/hydra-arm3",
+            "description": "HYDRA Regulatory Intelligence — 52 MCP tools for regulatory risk scoring, prediction markets, Fed signals, web extraction, search, and more. Pay-per-call via x402 on Base L2.",
+            "transport": "streamable-http",
+        },
+    },
 ]
 
 SELF_VERIFICATION_ENDPOINTS = [
