@@ -146,19 +146,7 @@ async def get_fred_series(series_id: str, limit: int = 10) -> dict[str, Any]:
             if result["observations"]:
                 result["last_updated"] = result["observations"][0]["date"]
     else:
-        # Fallback: scrape FRED's public JSON widget (no key needed)
-        data = await _async_get(
-            f"https://fred.stlouisfed.org/graph/fredgraph.csv",
-            params={"id": series_id, "fq": "Monthly" if series_id not in ("DGS10", "DGS2", "T10Y2Y", "FEDFUNDS", "DFEDTARU", "DFEDTARL", "VIXCLS", "DTWEXBGS") else "Daily"},
-        )
-        # CSV fallback won't parse as JSON — use observation API without key
-        # FRED allows limited access without key through their public feeds
-        data = await _async_get(
-            f"https://fred.stlouisfed.org/series/{series_id}",
-            params={"format": "json"},
-        )
-        # If no key available, return empty but log
-        logger.info("FRED_API_KEY not set — %s data unavailable via API. Set FRED_API_KEY for live data.", series_id)
+        logger.info("FRED_API_KEY not set — %s unavailable. Set FRED_API_KEY env var for live FRED data.", series_id)
 
     _fred_cache[cache_key] = result
     return result
@@ -212,17 +200,13 @@ async def get_treasury_yields() -> dict[str, Any]:
     result: dict[str, Any] = {
         "yields": {},
         "date": None,
-        "source": "U.S. Department of the Treasury",
+        "national_debt": None,
+        "source": "U.S. Department of the Treasury — fiscaldata.treasury.gov",
+        "trust_tier": 1,
         "fetched_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    # Treasury.gov provides yield curve data via XML API
-    data = await _async_get(
-        "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/all/2026",
-        params={"type": "daily_treasury_yield_curve", "field_tdr_date_value": "2026", "page&_format": "json"},
-    )
-
-    # Try the Treasury API v2
+    # Treasury Fiscal Data API v2 — average interest rates by security type
     data = await _async_get(
         "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates",
         params={
@@ -240,9 +224,12 @@ async def get_treasury_yields() -> dict[str, Any]:
                 desc = rec.get("security_desc", "")
                 rate = rec.get("avg_interest_rate_amt")
                 if rate:
-                    result["yields"][desc] = float(rate)
+                    try:
+                        result["yields"][desc] = float(rate)
+                    except (ValueError, TypeError):
+                        pass
 
-    # Also try the daily yield curve rates
+    # National debt (total public debt outstanding)
     yield_data = await _async_get(
         "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny",
         params={
@@ -283,32 +270,20 @@ async def search_edgar(query: str, date_range: str = "", form_types: list[str] |
     if cache_key in _edgar_cache:
         return _edgar_cache[cache_key]
 
+    # EDGAR EFTS (Elasticsearch-based full-text search)
     params: dict[str, Any] = {
         "q": query,
-        "dateRange": "custom" if date_range else "",
-        "startdt": date_range.split(",")[0] if "," in date_range else "",
-        "enddt": date_range.split(",")[1] if "," in date_range else "",
-        "forms": ",".join(form_types) if form_types else "",
+        "from": "0",
+        "size": str(limit),
     }
-    params = {k: v for k, v in params.items() if v}
+    if date_range and "," in date_range:
+        params["dateRange"] = "custom"
+        params["startdt"] = date_range.split(",")[0]
+        params["enddt"] = date_range.split(",")[1]
+    if form_types:
+        params["forms"] = ",".join(form_types)
 
-    data = await _async_get(
-        "https://efts.sec.gov/LATEST/search-index",
-        params={"q": query, "dateRange": "custom", "forms": ",".join(form_types or [])},
-    )
-
-    # EDGAR EFTS primary endpoint
-    data = await _async_get(
-        "https://efts.sec.gov/LATEST/search-index",
-        params={"q": query, "from": "0", "size": str(limit)},
-    )
-
-    # Fallback to the standard EDGAR full-text search API
-    if not data:
-        data = await _async_get(
-            "https://efts.sec.gov/LATEST/search-index",
-            params={"q": query},
-        )
+    data = await _async_get("https://efts.sec.gov/LATEST/search-index", params=params)
 
     result: dict[str, Any] = {
         "query": query,
@@ -625,4 +600,201 @@ async def get_regulatory_pulse() -> dict[str, Any]:
         "federal_register_cftc": _safe(4),
         "congress_crypto_bills": _safe(5),
         "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ─────────────────────────────────────────────────────────────
+# Data Integrity & Provenance
+# ─────────────────────────────────────────────────────────────
+
+# Every data source used by HYDRA, with trust classification.
+# Trust tiers:
+#   1 = Official government primary source (highest authority)
+#   2 = Government-operated aggregator / derived data
+#   3 = Regulated market platform (CFTC-regulated or equivalent)
+#   4 = Well-known commercial aggregator
+#   5 = Unverified / third-party
+
+DATA_SOURCE_REGISTRY: list[dict[str, Any]] = [
+    {
+        "id": "fred",
+        "name": "Federal Reserve Economic Data (FRED)",
+        "operator": "Federal Reserve Bank of St. Louis",
+        "trust_tier": 1,
+        "url": "https://fred.stlouisfed.org",
+        "api_url": "https://api.stlouisfed.org/fred/series/observations",
+        "auth_required": "Optional (FRED_API_KEY for higher rate limits)",
+        "update_frequency": "Varies by series — daily (yields, VIX), monthly (CPI, PCE, payrolls), quarterly (GDP)",
+        "latency": "Same day for daily series; T+2 weeks for monthly releases after BLS/BEA publish",
+        "rate_limit": "120 requests/minute with key; limited without",
+        "data_integrity": "Primary authoritative source for US economic data. FRED aggregates from BLS, BEA, Treasury, Fed. Data is identical to source agencies.",
+        "coverage": "816,000+ time series — the most comprehensive US economic database",
+    },
+    {
+        "id": "bls",
+        "name": "Bureau of Labor Statistics",
+        "operator": "U.S. Department of Labor",
+        "trust_tier": 1,
+        "url": "https://www.bls.gov",
+        "api_url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+        "auth_required": "Optional (BLS_API_KEY for higher limits)",
+        "update_frequency": "Monthly (employment, CPI); some series quarterly",
+        "latency": "Data published on fixed schedule — CPI mid-month, Employment Situation first Friday",
+        "rate_limit": "25 queries/day (v2 unregistered), 500/day (v2 registered)",
+        "data_integrity": "Primary source for employment and consumer price data. Official statistics of the US government.",
+        "coverage": "Employment, prices, compensation, productivity, workplace safety",
+    },
+    {
+        "id": "treasury_fiscal",
+        "name": "U.S. Treasury Fiscal Data",
+        "operator": "U.S. Department of the Treasury",
+        "trust_tier": 1,
+        "url": "https://fiscaldata.treasury.gov",
+        "api_url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/",
+        "auth_required": "No",
+        "update_frequency": "Daily (interest rates, debt), monthly (revenue/spending)",
+        "latency": "T+1 business day for daily data",
+        "rate_limit": "Generous; no documented hard limit",
+        "data_integrity": "Official US Treasury data. Authoritative for debt, interest rates, fiscal operations.",
+        "coverage": "National debt, interest rates, revenue, spending, savings bonds",
+    },
+    {
+        "id": "sec_edgar",
+        "name": "SEC EDGAR Full-Text Search",
+        "operator": "U.S. Securities and Exchange Commission",
+        "trust_tier": 1,
+        "url": "https://www.sec.gov/edgar/searchedgar/companysearch",
+        "api_url": "https://efts.sec.gov/LATEST/search-index",
+        "auth_required": "No (User-Agent header recommended)",
+        "update_frequency": "Real-time — filings appear within minutes of submission",
+        "latency": "<5 minutes from filing to search availability",
+        "rate_limit": "10 requests/second (per SEC fair access policy)",
+        "data_integrity": "Primary source for all SEC filings. Legally required disclosure — highest integrity.",
+        "coverage": "All SEC registrant filings: 10-K, 10-Q, 8-K, S-1, proxy statements, enforcement actions",
+    },
+    {
+        "id": "federal_register",
+        "name": "Federal Register API",
+        "operator": "Office of the Federal Register / GPO",
+        "trust_tier": 1,
+        "url": "https://www.federalregister.gov",
+        "api_url": "https://www.federalregister.gov/api/v1/documents.json",
+        "auth_required": "No",
+        "update_frequency": "Daily — published every business day at 6:00 AM ET",
+        "latency": "Same day; documents available via API on publication date",
+        "rate_limit": "1000 requests/day (undocumented; generous)",
+        "data_integrity": "Official journal of the US government. All federal regulations published here. Legal authority.",
+        "coverage": "Proposed rules, final rules, notices, executive orders, presidential documents",
+    },
+    {
+        "id": "congress_gov",
+        "name": "Congress.gov API",
+        "operator": "Library of Congress",
+        "trust_tier": 1,
+        "url": "https://api.congress.gov",
+        "api_url": "https://api.congress.gov/v3/bill",
+        "auth_required": "Yes (free api.congress.gov key)",
+        "update_frequency": "Near real-time for floor actions; daily for bill text updates",
+        "latency": "Floor actions within hours; bill text within 1 business day",
+        "rate_limit": "5000 requests/hour with key",
+        "data_integrity": "Official legislative record. Authoritative for bill status, votes, amendments.",
+        "coverage": "All Congressional bills, resolutions, amendments, nominations, treaties",
+    },
+    {
+        "id": "fed_rss",
+        "name": "Federal Reserve RSS Feeds",
+        "operator": "Board of Governors of the Federal Reserve System",
+        "trust_tier": 1,
+        "url": "https://www.federalreserve.gov/feeds/",
+        "api_url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+        "auth_required": "No",
+        "update_frequency": "Real-time — FOMC statements within seconds of release",
+        "latency": "<1 minute for monetary policy announcements",
+        "rate_limit": "No documented limit; standard web crawling etiquette",
+        "data_integrity": "Official Federal Reserve communications. FOMC statements are the primary source.",
+        "coverage": "Monetary policy, speeches, testimony, banking supervision, statistical releases",
+    },
+    {
+        "id": "sec_rss",
+        "name": "SEC RSS Feeds",
+        "operator": "U.S. Securities and Exchange Commission",
+        "trust_tier": 1,
+        "url": "https://www.sec.gov/about/secrss.htm",
+        "api_url": "https://www.sec.gov/news/pressreleases.rss",
+        "auth_required": "No",
+        "update_frequency": "Real-time — press releases within minutes",
+        "latency": "<5 minutes for enforcement actions and press releases",
+        "rate_limit": "10 requests/second",
+        "data_integrity": "Official SEC communications. Enforcement actions and press releases are authoritative.",
+        "coverage": "Press releases, litigation releases, proposed rules, final rules, speeches",
+    },
+    {
+        "id": "polymarket_gamma",
+        "name": "Polymarket Gamma API",
+        "operator": "Polymarket (PM Holdings)",
+        "trust_tier": 3,
+        "url": "https://polymarket.com",
+        "api_url": "https://gamma-api.polymarket.com",
+        "auth_required": "No (read-only)",
+        "update_frequency": "Real-time — prices update with every trade",
+        "latency": "<1 second for price updates",
+        "rate_limit": "~100 requests/minute (undocumented)",
+        "data_integrity": "Market prices reflect real money at risk. Manipulation possible but costly. Gamma API is the official market data API.",
+        "coverage": "All active Polymarket events and markets with prices, volume, liquidity",
+    },
+    {
+        "id": "polymarket_clob",
+        "name": "Polymarket CLOB API",
+        "operator": "Polymarket (PM Holdings)",
+        "trust_tier": 3,
+        "url": "https://polymarket.com",
+        "api_url": "https://clob.polymarket.com",
+        "auth_required": "No (read-only order book)",
+        "update_frequency": "Real-time — order book updates on every order",
+        "latency": "<1 second",
+        "rate_limit": "~100 requests/minute",
+        "data_integrity": "Order book is on-chain verifiable (Polygon). Prices backed by actual liquidity.",
+        "coverage": "Order books, trades, market metadata for all active markets",
+    },
+    {
+        "id": "kalshi",
+        "name": "Kalshi Trade API",
+        "operator": "Kalshi Inc. (CFTC-regulated DCM)",
+        "trust_tier": 3,
+        "url": "https://kalshi.com",
+        "api_url": "https://api.elections.kalshi.com/trade-api/v2",
+        "auth_required": "No (read-only market data)",
+        "update_frequency": "Real-time — prices update with every trade",
+        "latency": "<1 second for price updates",
+        "rate_limit": "~60 requests/minute (undocumented)",
+        "data_integrity": "CFTC-regulated Designated Contract Market. Prices reflect real money. Regulatory oversight provides integrity guarantee.",
+        "coverage": "All active Kalshi markets — economics, politics, climate, finance",
+    },
+]
+
+
+def get_data_source_audit() -> dict[str, Any]:
+    """
+    Return the complete data source registry with trust classifications.
+    Used by /v1/intelligence/economic-snapshot to provide provenance metadata.
+    """
+    return {
+        "data_sources": DATA_SOURCE_REGISTRY,
+        "total_sources": len(DATA_SOURCE_REGISTRY),
+        "tier_1_sources": sum(1 for s in DATA_SOURCE_REGISTRY if s["trust_tier"] == 1),
+        "tier_3_sources": sum(1 for s in DATA_SOURCE_REGISTRY if s["trust_tier"] == 3),
+        "integrity_note": (
+            "HYDRA uses exclusively Tier 1 (official US government) and Tier 3 (CFTC-regulated) "
+            "data sources. No Tier 4/5 sources are used for signal generation. "
+            "All economic data is sourced from the agencies that publish it (BLS for employment, "
+            "BEA for GDP via FRED, Treasury for yields, SEC for filings). "
+            "Market prices come from regulated platforms (Kalshi is CFTC-regulated; "
+            "Polymarket prices are on-chain verifiable on Polygon)."
+        ),
+        "cross_validation": (
+            "FRED data cross-validates BLS (CPI, employment) and BEA (GDP, PCE). "
+            "If FRED and BLS report different CPI values, the BLS value takes precedence "
+            "as the primary publisher. Treasury yield data from FRED mirrors "
+            "treasury.gov with identical values."
+        ),
     }

@@ -436,13 +436,16 @@ async def economic_snapshot():
     """
     Atomic real-time economic data snapshot.
     Combines FRED + BLS + Treasury + Federal Register into one payload.
+    Includes data provenance and integrity audit.
     """
     try:
-        from src.services.realtime_data import get_economic_snapshot
+        from src.services.realtime_data import get_economic_snapshot, get_data_source_audit
         snapshot = await get_economic_snapshot()
+        audit = get_data_source_audit()
         return {
             "endpoint": "/v1/intelligence/economic-snapshot",
             **snapshot,
+            "data_provenance": audit,
         }
     except Exception as exc:
         logger.exception("Economic snapshot failed: %s", exc)
