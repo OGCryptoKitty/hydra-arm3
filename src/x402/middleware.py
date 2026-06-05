@@ -418,11 +418,40 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
 
     @staticmethod
     def _payment_required_response(path: str, pricing: dict) -> JSONResponse:
-        """Return a standards-compliant 402 Payment Required response."""
+        """Return a standards-compliant 402 Payment Required response.
+
+        Body follows the x402 protocol spec (coinbase/x402) with a top-level
+        ``accepts`` array so that x402scan, x402 Bazaar, and all x402-compatible
+        clients can parse payment requirements without custom headers.
+
+        Spec: https://x402.org/spec
+        """
         sample = _get_sample_response(path)
+
+        # ── Standard x402 accepts object (top-level, required by spec crawlers) ──
+        x402_accept = {
+            "scheme": "exact",
+            "network": f"eip155:{CHAIN_ID}",
+            "maxAmountRequired": str(pricing["amount_base_units"]),
+            "resource": f"https://hydra-api-nlnj.onrender.com{path}",
+            "description": pricing["description"],
+            "mimeType": "application/json",
+            "payTo": WALLET_ADDRESS,
+            "maxTimeoutSeconds": 900,
+            "asset": USDC_CONTRACT_ADDRESS,
+            "extra": {
+                "name": "USD Coin",
+                "version": "2",
+                "chainId": CHAIN_ID,
+            },
+        }
+
         body = {
-            "status": 402,
-            "message": "Payment Required",
+            # ── Standard x402 root fields (required by spec crawlers) ──────────
+            "x402Version": 2,
+            "error": "Payment Required",
+            "accepts": [x402_accept],
+            # ── HYDRA extended fields (backward compat + rich discovery) ───────
             "endpoint": path,
             "description": pricing["description"],
             "price": {
@@ -438,7 +467,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
                     "wallet": WALLET_ADDRESS,
                     "token_address": USDC_CONTRACT_ADDRESS,
                     "facilitator": "https://x402.org/facilitator",
-                    "protocol_version": 1,
+                    "protocol_version": 2,
                     "scheme": "exact",
                     "network": f"eip155:{CHAIN_ID}",
                     "proof_header": "X-PAYMENT",
@@ -456,7 +485,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
                     "token_address": USDC_CONTRACT_ADDRESS,
                     "chain": "base",
                     "chain_id": CHAIN_ID,
-                    "header": f"X-Payment-Proof: 0x_your_transaction_hash",
+                    "header": "X-Payment-Proof: 0x_your_transaction_hash",
                     "steps": [
                         f"Send {pricing['amount_usdc']} USDC to {WALLET_ADDRESS} on Base (chain ID {CHAIN_ID})",
                         "Copy the transaction hash from your wallet or block explorer",
