@@ -201,6 +201,11 @@ class SetWalletRequest(BaseModel):
     address: str
 
 
+class ExecuteRemittanceRequest(BaseModel):
+    """Optional body for POST /system/remittance/execute."""
+    address: Optional[str] = None  # destination specified at command time
+
+
 # ─────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────
@@ -384,22 +389,32 @@ async def remittance_status(
 )
 async def execute_remittance(
     request: Request,
+    body: ExecuteRemittanceRequest | None = None,
     _auth: None = Depends(require_system_auth),
 ) -> JSONResponse:
     """
-    Manually trigger a USDC remittance.
+    Manually trigger a USDC remittance — the only path that moves profit out
+    of the treasury under command-only mode (REMITTANCE_MODE=command).
 
-    Checks that a receiving wallet is configured, then calls
+    If `address` is supplied in the body, it is validated (EVM format, zero/
+    self check, OFAC screening) and set as the destination at command time;
+    otherwise the previously configured receiving wallet is used. Then calls
     RemittanceManager.execute_remittance(). Returns the RemittanceResult as JSON.
     """
     rm = _get_remittance_manager()
+
+    # Destination specified at command time → validate + set before sending.
+    if body and body.address:
+        set_result = rm.set_receiving_wallet(body.address)
+        if set_result.get("status") == "error":
+            raise HTTPException(status_code=400, detail=set_result.get("error"))
 
     if not rm.receiving_wallet:
         raise HTTPException(
             status_code=400,
             detail=(
-                "No receiving wallet configured. "
-                "POST /system/wallet with an address first."
+                "No receiving wallet configured. Pass {\"address\": \"0x...\"} "
+                "in the body or POST /system/wallet first."
             ),
         )
 
@@ -448,8 +463,14 @@ async def yield_status(
     _auth: None = Depends(require_system_auth),
 ) -> JSONResponse:
     """Return the treasury yield status snapshot (read-only)."""
+    from src.runtime.automaton import get_automaton
     ym = _get_yield_manager()
     status = await asyncio.to_thread(ym.get_yield_status)
+    try:
+        router = get_automaton()._yield_router
+        status["router"] = await asyncio.to_thread(router.status)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Could not attach router status: %s", exc)
     return JSONResponse(content=status)
 
 

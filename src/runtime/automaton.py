@@ -29,6 +29,7 @@ from .lifecycle import LifecycleManager, Phase
 from .autonomous_marketing import AutonomousMarketing
 from .revenue_optimizer import RevenueOptimizer
 from .treasury_yield import TreasuryYieldManager
+from .yield_router import YieldRouter
 from .alert_engine import get_alert_engine
 
 logger = logging.getLogger("hydra.automaton")
@@ -43,6 +44,13 @@ _STATE_DIR: Path = Path(
 STATE_FILE: Path = _STATE_DIR / "state.json"
 USDC_DECIMALS: int = 6
 HEARTBEAT_INTERVAL: int = 60  # seconds
+
+# Remittance mode governs whether the heartbeat ever sends profit to the
+# receiving wallet on its own:
+#   "command"  — accumulate & compound indefinitely; remit ONLY via the
+#                authenticated /system/remittance/execute endpoint (default).
+#   "auto"     — legacy behaviour: auto-remit (balance - reserve) above $5k.
+REMITTANCE_MODE: str = os.getenv("REMITTANCE_MODE", "command").lower()
 
 # Marketing and revenue loop intervals
 MARKETING_INTERVAL_SECONDS: int = 14400     # 4 hours — aggressive discovery
@@ -167,10 +175,14 @@ class HydraAutomaton:
             wallet_address=self.wallet_address,
             private_key=self._private_key,
         )
+        # Balanced DeFi router — routes idle USDC to the best write-enabled
+        # venue (Aave V3 live; more added via HYDRA_YIELD_VENUES once verified).
+        self._yield_router: YieldRouter = YieldRouter(self._treasury_yield)
         self._last_marketing_run: Optional[datetime] = None
         self._last_revenue_report: Optional[datetime] = None
         self._last_self_test: Optional[datetime] = None
         self._yield_disabled_logged: bool = False
+        self._surplus_hold_logged: bool = False
 
         # Load persisted state
         self._load_state()
@@ -334,8 +346,17 @@ class HydraAutomaton:
                 "Formation funding reached. Ready for entity formation sequence."
             )
 
-        if tier >= SurvivalTier.SURPLUS and self.receiving_wallet:
-            await self._remittance_check(balance)
+        if tier >= SurvivalTier.SURPLUS:
+            if REMITTANCE_MODE == "auto" and self.receiving_wallet:
+                await self._remittance_check(balance)
+            elif not self._surplus_hold_logged:
+                logger.info(
+                    "SURPLUS reached ($%s) — command-only remittance mode: "
+                    "funds will keep compounding and are NOT auto-sent. "
+                    "Remit on demand via POST /system/remittance/execute.",
+                    f"{balance:.2f}",
+                )
+                self._surplus_hold_logged = True
 
         # ---- Treasury yield: deposit excess USDC to Aave ----------------
         if tier >= SurvivalTier.VIABLE:
@@ -560,12 +581,12 @@ class HydraAutomaton:
             depositable = self._treasury_yield.get_depositable_amount(balance)
             if depositable > 0:
                 logger.info(
-                    "YIELD: $%s USDC available for Aave deposit (balance=$%s, reserve=$500)",
+                    "YIELD: $%s USDC available to deploy (balance=$%s, reserve=$500)",
                     f"{depositable:.2f}", f"{balance:.2f}",
                 )
-                tx_hash = await self._treasury_yield.deposit_to_aave(depositable)
+                tx_hash = await self._yield_router.deposit_excess(balance)
                 if tx_hash:
-                    logger.info("YIELD: Deposit successful — earning Aave yield on $%s USDC", f"{depositable:.2f}")
+                    logger.info("YIELD: Deposit successful — compounding on $%s USDC", f"{depositable:.2f}")
         except Exception as exc:
             logger.error("YIELD: Deposit check failed (non-fatal): %s", exc)
 

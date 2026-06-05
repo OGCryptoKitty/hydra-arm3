@@ -81,6 +81,8 @@ prices from there, and `/metrics`, `/pricing`, and the 404 handler enumerate it.
 | `WALLET_PRIVATE_KEY` | Enables Aave yield + auto-remittance (set in Render dashboard, `sync:false`) | unset → automaton runs read-only |
 | `BASE_RPC_URL` | Base L2 RPC | `https://mainnet.base.org` (3 fallbacks in settings) |
 | `HYDRA_STATE_DIR` | Persisted state (replay cache, alerts, tx log) | `/tmp/hydra-data` |
+| `REMITTANCE_MODE` | `command` = accumulate/compound, remit only via `/system/remittance/execute`; `auto` = legacy auto-remit at $5k | `command` |
+| `HYDRA_YIELD_VENUES` | JSON list of extra yield venues for the router (write-disabled until verified) | unset → Aave V3 only |
 | `FRED_API_KEY` | FRED economic series in `realtime_data.py` | unset → those series return empty |
 | `BLS_API_KEY` / `CONGRESS_API_KEY` | BLS + congress.gov data | optional, raise rate limits |
 | `ANTHROPIC_API_KEY` | Enables LLM-augmented responses (`/metrics` reports `llm_enabled`) | optional |
@@ -213,8 +215,18 @@ TransactionLog, LifecycleManager, RemittanceManager, then launches the
   on-chain writes otherwise (placeholder/zero/wrong key ⇒ monitor-only, no doomed
   broadcasts). An ETH gas pre-flight (`MIN_GAS_ETH`) blocks deposits when the wallet
   can't pay gas; USDC approval is a one-time max approval to save gas on compounding.
-- **Auto-remittance** — at **$5,000** surplus, remits (balance − **$500** reserve)
-  to the receiving wallet (`remittance.py`).
+- **Yield router** (`yield_router.py`) — heartbeat deposits route through a
+  balanced-DeFi router that picks the best **write-enabled** venue by live APR
+  (subject to per-venue caps). Aave V3 is the only verified, write-enabled venue
+  by default; additional blue-chip venues (Compound III, Morpho/Moonwell vaults)
+  are declared via `HYDRA_YIELD_VENUES` and stay **read-only candidates** (APR
+  reported for comparison, no funds sent) until their address is verified and a
+  supply/withdraw adapter is wired. **Never leverage, never undercollateralized.**
+- **Remittance — command-only by default** (`REMITTANCE_MODE=command`): the
+  treasury accumulates and compounds indefinitely and is **never auto-sent**.
+  Remit on demand via `POST /system/remittance/execute` (optionally pass
+  `{"address":"0x..."}` to set the destination at command time; OFAC-screened).
+  Set `REMITTANCE_MODE=auto` to restore legacy auto-remit (balance − $500) at $5k.
 - Without a treasury-controlling `WALLET_PRIVATE_KEY` the automaton runs **read-only**
   (monitor + live APR reporting only).
 
