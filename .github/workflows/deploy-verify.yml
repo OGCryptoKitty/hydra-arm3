@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+
       - name: Check if service is already live
         id: health_check
         continue-on-error: true
@@ -148,30 +150,39 @@ jobs:
           echo "Free endpoints should return 200. Paid endpoints should return 402."
           echo "402 = x402 payment required (correct behavior — payment gateway working)."
 
-      - name: Report deployment status
+      - name: Report deployment status (fails on stale deploy)
         if: always()
         run: |
           echo "============================================"
           echo " HYDRA DEPLOYMENT STATUS REPORT"
           echo "============================================"
+          BASE="https://hydra-api-nlnj.onrender.com"
+          # Reachability ≠ current code. Compare the LIVE version to the repo's
+          # APP_VERSION and confirm a discovery manifest serves. This catches the
+          # "frozen on an old build" failure that plain 200-checks miss.
+          EXPECTED=$(grep -E 'APP_VERSION' config/settings.py | head -1 | sed -E 's/.*"([0-9.]+)".*/\1/')
+          LIVE=$(curl -s --max-time 20 "$BASE/health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
+          X402=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$BASE/.well-known/x402.json" || echo "000")
+          echo "Repo APP_VERSION : ${EXPECTED:-unknown}"
+          echo "Live /health ver : ${LIVE:-unreachable}"
+          echo "x402 manifest    : $X402 (expect 200)"
           echo ""
-          if [ "${{ steps.health_check.outputs.status }}" = "live" ] || [ "${{ steps.wait_check.outputs.status }}" = "live" ]; then
-            echo "✅ HYDRA is DEPLOYED and LIVE"
-            echo "   URL: https://hydra-api-nlnj.onrender.com"
-            echo "   Docs: https://hydra-api-nlnj.onrender.com/docs"
-            echo "   x402: https://hydra-api-nlnj.onrender.com/.well-known/x402.json"
-            echo ""
-            echo "   All commits on master are deployed."
-            echo "   Keepalive ping active (60s interval)."
-            echo "   Payment middleware enforcing on all /v1/ endpoints."
-          else
-            echo "❌ HYDRA is NOT responding"
-            echo ""
-            echo "   To deploy, connect this repo to Render:"
-            echo "   https://render.com/deploy?repo=https://github.com/OGCryptoKitty/hydra-arm3"
-            echo ""
-            echo "   render.yaml blueprint will auto-configure everything."
-            echo "   After connecting, every push to master auto-deploys."
+          FAIL=0
+          if [ -z "$LIVE" ]; then echo "❌ Service unreachable."; FAIL=1; fi
+          if [ -n "$EXPECTED" ] && [ -n "$LIVE" ] && [ "$LIVE" != "$EXPECTED" ]; then
+            echo "❌ STALE DEPLOY: live=$LIVE but repo=$EXPECTED — Render is NOT serving current master."
+            echo "   Fix in Render dashboard: confirm service is connected to master with"
+            echo "   autoDeploy on, check the Deploys tab for build failures, then Manual Deploy"
+            echo "   (Clear build cache & deploy). render.yaml blueprint is ready."
+            FAIL=1
           fi
-          echo ""
+          if [ "$X402" != "200" ]; then
+            echo "❌ Discovery manifest /.well-known/x402.json → $X402 (should be 200)."
+            FAIL=1
+          fi
+          if [ "$FAIL" = "1" ]; then
+            echo "::error::HYDRA deployment is stale or broken — see details above."
+            exit 1
+          fi
+          echo "✅ HYDRA is LIVE and CURRENT (v$LIVE), discovery manifests serving."
           echo "============================================"
