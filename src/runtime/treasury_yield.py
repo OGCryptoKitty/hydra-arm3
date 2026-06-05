@@ -43,6 +43,39 @@ USDC_DECIMALS = 6
 OPERATING_RESERVE = Decimal("500")
 MIN_DEPOSIT = Decimal("50")
 
+# Minimum ETH the treasury must hold to pay gas before attempting any
+# on-chain write. Base L2 gas is cheap (an Aave supply costs well under
+# $0.01 in ETH), but signing with a zero-ETH wallet just burns a failed
+# broadcast, so we pre-flight check.
+MIN_GAS_ETH = Decimal("0.00005")
+
+# Aave V3 rates are expressed in ray (27 decimals). A 5% APR is 0.05 * 1e27.
+# Dividing the raw rate by 1e25 yields a human-readable percentage.
+RAY = Decimal(10**27)
+MAX_UINT256 = 2**256 - 1
+
+
+def _is_placeholder_key(private_key: str) -> bool:
+    """
+    Return True if ``private_key`` is missing, malformed, or the all-zero
+    placeholder the app falls back to when WALLET_PRIVATE_KEY is unset.
+
+    A placeholder key means the automaton is read-only: it must never attempt
+    to sign or broadcast a transaction.
+    """
+    if not private_key:
+        return True
+    clean = private_key.lower().removeprefix("0x").strip()
+    if len(clean) != 64:
+        return True
+    if set(clean) <= {"0"}:  # all zeros
+        return True
+    try:
+        int(clean, 16)
+    except ValueError:
+        return True
+    return False
+
 ERC20_ABI = [
     {
         "constant": True,
@@ -97,6 +130,36 @@ AAVE_POOL_ABI = [
         "stateMutability": "nonpayable",
         "type": "function",
     },
+    {
+        # Aave V3 DataTypes.ReserveData — used to read the live supply APR.
+        # currentLiquidityRate is the 3rd tuple field (index 2), in ray.
+        "inputs": [{"name": "asset", "type": "address"}],
+        "name": "getReserveData",
+        "outputs": [{
+            "name": "",
+            "type": "tuple",
+            "components": [
+                {"name": "configuration", "type": "tuple",
+                 "components": [{"name": "data", "type": "uint256"}]},
+                {"name": "liquidityIndex", "type": "uint128"},
+                {"name": "currentLiquidityRate", "type": "uint128"},
+                {"name": "variableBorrowIndex", "type": "uint128"},
+                {"name": "currentVariableBorrowRate", "type": "uint128"},
+                {"name": "currentStableBorrowRate", "type": "uint128"},
+                {"name": "lastUpdateTimestamp", "type": "uint40"},
+                {"name": "id", "type": "uint16"},
+                {"name": "aTokenAddress", "type": "address"},
+                {"name": "stableDebtTokenAddress", "type": "address"},
+                {"name": "variableDebtTokenAddress", "type": "address"},
+                {"name": "interestRateStrategyAddress", "type": "address"},
+                {"name": "accruedToTreasury", "type": "uint128"},
+                {"name": "unbacked", "type": "uint128"},
+                {"name": "isolationModeTotalDebt", "type": "uint128"},
+            ],
+        }],
+        "stateMutability": "view",
+        "type": "function",
+    },
 ]
 
 
@@ -131,9 +194,86 @@ class TreasuryYieldManager:
             abi=AAVE_POOL_ABI,
         )
 
-        self._enabled = True
+        # ── Determine whether on-chain writes are actually safe ──────────
+        # Yield deployment is only enabled when a real private key is present
+        # AND it derives to the treasury wallet. Otherwise we would either
+        # broadcast doomed transactions (placeholder key) or, worse, sign from
+        # the wrong account. Read-only mode still reports balances and APR.
+        self._enabled = False
+        self._disabled_reason: Optional[str] = "no private key configured (read-only mode)"
+        self.account = None
+
+        if not _is_placeholder_key(private_key):
+            try:
+                self.account = w3.eth.account.from_key(private_key)
+                derived = Web3.to_checksum_address(self.account.address)
+                if derived == self.wallet_address:
+                    self._enabled = True
+                    self._disabled_reason = None
+                    logger.info(
+                        "TreasuryYieldManager ENABLED — signing key controls "
+                        "treasury wallet %s. Aave deposits/withdrawals are live.",
+                        self.wallet_address,
+                    )
+                else:
+                    # Never log the key; log only the (public) derived address.
+                    self._disabled_reason = (
+                        "private key does not control the treasury wallet"
+                    )
+                    logger.error(
+                        "TreasuryYieldManager DISABLED — configured key derives to "
+                        "%s but treasury wallet is %s. Refusing all on-chain writes.",
+                        derived, self.wallet_address,
+                    )
+            except Exception as exc:  # noqa: BLE001
+                self._disabled_reason = f"invalid private key ({type(exc).__name__})"
+                logger.error("TreasuryYieldManager DISABLED — %s", self._disabled_reason)
+        else:
+            logger.info(
+                "TreasuryYieldManager read-only — no usable private key; "
+                "yield monitoring only, no deposits."
+            )
+
         self._total_deposited = Decimal("0")
         self._total_yield_earned = Decimal("0")
+
+    def is_enabled(self) -> bool:
+        """Return True only when on-chain deposits/withdrawals are safe to send."""
+        return self._enabled
+
+    def _has_gas(self) -> bool:
+        """Pre-flight: ensure the treasury holds enough ETH to pay for gas."""
+        try:
+            wei = self.w3.eth.get_balance(self.wallet_address)
+            eth = Decimal(wei) / Decimal(10**18)
+            if eth < MIN_GAS_ETH:
+                logger.warning(
+                    "Treasury ETH balance %.8f below gas floor %.8f — cannot "
+                    "send Aave transaction. Fund the wallet with a little ETH on Base.",
+                    eth, MIN_GAS_ETH,
+                )
+                return False
+            return True
+        except Exception as exc:  # noqa: BLE001
+            # Don't block on a transient RPC hiccup; let the broadcast decide.
+            logger.debug("Gas pre-flight check failed (non-fatal): %s", exc)
+            return True
+
+    def get_current_apr(self) -> Optional[Decimal]:
+        """
+        Return the live Aave V3 USDC supply rate as an annual percentage,
+        or None if it can't be read. Read-only — works even when disabled.
+        """
+        try:
+            data = self.aave_pool.functions.getReserveData(
+                Web3.to_checksum_address(USDC_ADDRESS)
+            ).call()
+            current_liquidity_rate = Decimal(data[2])  # ray
+            apr_pct = current_liquidity_rate / RAY * Decimal(100)
+            return apr_pct.quantize(Decimal("0.01"))
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Could not read Aave supply APR: %s", exc)
+            return None
 
     def get_aave_balance(self) -> Decimal:
         """Get current aUSDC balance (USDC deposited + yield earned)."""
@@ -160,8 +300,18 @@ class TreasuryYieldManager:
 
         Returns the transaction hash on success, None on failure.
         """
+        if not self._enabled:
+            logger.info(
+                "Aave deposit skipped — treasury yield disabled (%s).",
+                self._disabled_reason,
+            )
+            return None
+
         if amount < MIN_DEPOSIT:
             logger.info("Deposit amount $%s below minimum $%s — skipping", amount, MIN_DEPOSIT)
+            return None
+
+        if not self._has_gas():
             return None
 
         amount_raw = int(amount * Decimal(10**USDC_DECIMALS))
@@ -173,10 +323,12 @@ class TreasuryYieldManager:
             ).call()
 
             if current_allowance < amount_raw:
-                logger.info("Approving Aave pool to spend %s USDC...", amount)
+                # Approve max once so subsequent deposits skip the approval tx
+                # entirely (saves gas on every compounding cycle).
+                logger.info("Approving Aave pool for USDC (one-time max approval)...")
                 approve_tx = self.usdc.functions.approve(
                     Web3.to_checksum_address(AAVE_POOL_ADDRESS),
-                    amount_raw,
+                    MAX_UINT256,
                 ).build_transaction({
                     "from": self.wallet_address,
                     "nonce": self.w3.eth.get_transaction_count(self.wallet_address),
@@ -235,10 +387,20 @@ class TreasuryYieldManager:
         If amount is None, withdraws everything (max uint256).
         Returns the transaction hash on success, None on failure.
         """
+        if not self._enabled:
+            logger.info(
+                "Aave withdrawal skipped — treasury yield disabled (%s).",
+                self._disabled_reason,
+            )
+            return None
+
+        if not self._has_gas():
+            return None
+
         if amount is not None:
             amount_raw = int(amount * Decimal(10**USDC_DECIMALS))
         else:
-            amount_raw = 2**256 - 1  # type(uint256).max — withdraw all
+            amount_raw = MAX_UINT256  # type(uint256).max — withdraw all
 
         try:
             withdraw_tx = self.aave_pool.functions.withdraw(
@@ -278,12 +440,24 @@ class TreasuryYieldManager:
         yield_earned = max(Decimal("0"), aave_balance - self._total_deposited)
         self._total_yield_earned = yield_earned
 
+        apr = self.get_current_apr()
+        projected_annual = None
+        if apr is not None and aave_balance > 0:
+            projected_annual = str(
+                (aave_balance * apr / Decimal(100)).quantize(Decimal("0.000001"))
+            )
+
         return {
             "aave_balance_usdc": str(aave_balance),
             "total_deposited_usdc": str(self._total_deposited),
             "yield_earned_usdc": str(yield_earned),
+            "current_supply_apr_pct": str(apr) if apr is not None else None,
+            "projected_annual_yield_usdc": projected_annual,
             "enabled": self._enabled,
+            "mode": "live" if self._enabled else "read-only",
+            "disabled_reason": self._disabled_reason,
             "protocol": "Aave V3",
             "network": "Base L2",
+            "pool": AAVE_POOL_ADDRESS,
             "strategy": "USDC lending (no leverage, no IL risk)",
         }

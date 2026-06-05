@@ -419,6 +419,147 @@ async def execute_remittance(
 
 
 # ─────────────────────────────────────────────────────────────
+# Treasury Yield (Aave V3) — operator controls
+# ─────────────────────────────────────────────────────────────
+
+class YieldAmountRequest(BaseModel):
+    """Optional explicit amount (USDC) for a yield deposit/withdrawal."""
+    amount_usdc: Optional[str] = None  # None => auto (depositable / full withdraw)
+
+
+def _get_yield_manager() -> Any:
+    """Return the live TreasuryYieldManager owned by the running automaton."""
+    from src.runtime.automaton import get_automaton
+    return get_automaton()._treasury_yield
+
+
+@system_router.get(
+    "/yield/status",
+    summary="Treasury yield (Aave V3) status",
+    description=(
+        "Returns the live Aave V3 USDC position: deposited principal, accrued "
+        "yield, current supply APR, projected annual yield, and whether on-chain "
+        "deployment is enabled (a key controlling the treasury wallet is present). "
+        "**Localhost or Bearer token required.**"
+    ),
+)
+async def yield_status(
+    request: Request,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Return the treasury yield status snapshot (read-only)."""
+    ym = _get_yield_manager()
+    status = await asyncio.to_thread(ym.get_yield_status)
+    return JSONResponse(content=status)
+
+
+@system_router.post(
+    "/yield/deposit",
+    summary="Deposit idle USDC into Aave V3",
+    description=(
+        "Manually deposit excess treasury USDC (above the $500 operating reserve) "
+        "into Aave V3 to earn yield. Pass `amount_usdc` to deposit a specific "
+        "amount, or omit it to deposit all depositable funds. "
+        "Requires a private key that controls the treasury wallet. "
+        "**Localhost or Bearer token required.**"
+    ),
+)
+async def yield_deposit(
+    request: Request,
+    body: YieldAmountRequest | None = None,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Manually trigger an Aave deposit of excess treasury USDC."""
+    ym = _get_yield_manager()
+    if not ym.is_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Treasury yield deployment is disabled: "
+                f"{ym._disabled_reason}. Set WALLET_PRIVATE_KEY (controlling the "
+                "treasury wallet) to enable on-chain deposits."
+            ),
+        )
+
+    rm = _get_remittance_manager()
+    balance = await asyncio.to_thread(_get_usdc_balance, rm)
+
+    if body and body.amount_usdc:
+        try:
+            amount = Decimal(body.amount_usdc)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=400, detail=f"Invalid amount_usdc: {exc}") from exc
+    else:
+        amount = ym.get_depositable_amount(balance)
+
+    if amount <= 0:
+        return JSONResponse(content={
+            "status": "noop",
+            "reason": "No depositable USDC above the $500 operating reserve.",
+            "balance_usdc": f"{balance:.6f}",
+        })
+
+    tx_hash = await ym.deposit_to_aave(amount)
+    if not tx_hash:
+        raise HTTPException(
+            status_code=400,
+            detail="Aave deposit did not complete — check logs (gas / RPC / revert).",
+        )
+    return JSONResponse(content={
+        "status": "deposited",
+        "amount_usdc": f"{amount:.6f}",
+        "tx_hash": tx_hash,
+        "explorer": f"https://basescan.org/tx/{tx_hash}",
+    })
+
+
+@system_router.post(
+    "/yield/withdraw",
+    summary="Withdraw USDC from Aave V3",
+    description=(
+        "Withdraw USDC from the Aave V3 position back to the treasury wallet. "
+        "Pass `amount_usdc` to withdraw a specific amount, or omit it to withdraw "
+        "the entire position. **Localhost or Bearer token required.**"
+    ),
+)
+async def yield_withdraw(
+    request: Request,
+    body: YieldAmountRequest | None = None,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Manually withdraw USDC from Aave back to the treasury."""
+    ym = _get_yield_manager()
+    if not ym.is_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Treasury yield deployment is disabled: "
+                f"{ym._disabled_reason}. Withdrawals require the treasury key."
+            ),
+        )
+
+    amount: Optional[Decimal] = None
+    if body and body.amount_usdc:
+        try:
+            amount = Decimal(body.amount_usdc)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=400, detail=f"Invalid amount_usdc: {exc}") from exc
+
+    tx_hash = await ym.withdraw_from_aave(amount)
+    if not tx_hash:
+        raise HTTPException(
+            status_code=400,
+            detail="Aave withdrawal did not complete — check logs (gas / RPC / revert).",
+        )
+    return JSONResponse(content={
+        "status": "withdrawn",
+        "amount_usdc": str(amount) if amount is not None else "all",
+        "tx_hash": tx_hash,
+        "explorer": f"https://basescan.org/tx/{tx_hash}",
+    })
+
+
+# ─────────────────────────────────────────────────────────────
 # GET /system/transactions
 # ─────────────────────────────────────────────────────────────
 

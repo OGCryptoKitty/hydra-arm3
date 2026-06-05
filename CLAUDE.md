@@ -205,10 +205,35 @@ TransactionLog, LifecycleManager, RemittanceManager, then launches the
 
 - **60s heartbeat** (`automaton.py`) — reads USDC balance, computes survival tier
   (CRITICAL / MINIMAL / VIABLE / FUNDED / SURPLUS), advances lifecycle phase.
-- **Treasury yield** — deposits idle USDC into Aave V3 (requires `WALLET_PRIVATE_KEY`).
+- **Treasury yield** (`treasury_yield.py`) — once the balance is VIABLE ($500+),
+  deposits the excess above the $500 operating reserve into **Aave V3 USDC** to
+  compound yield; withdraws automatically before any remittance. **Live only when
+  `WALLET_PRIVATE_KEY` is set AND it derives to the treasury wallet** — the manager
+  verifies `Account.from_key(pk).address == WALLET_ADDRESS` at init and refuses all
+  on-chain writes otherwise (placeholder/zero/wrong key ⇒ monitor-only, no doomed
+  broadcasts). An ETH gas pre-flight (`MIN_GAS_ETH`) blocks deposits when the wallet
+  can't pay gas; USDC approval is a one-time max approval to save gas on compounding.
 - **Auto-remittance** — at **$5,000** surplus, remits (balance − **$500** reserve)
   to the receiving wallet (`remittance.py`).
-- Without `WALLET_PRIVATE_KEY` the automaton runs **read-only** (monitor only).
+- Without a treasury-controlling `WALLET_PRIVATE_KEY` the automaton runs **read-only**
+  (monitor + live APR reporting only).
+
+### Operating treasury yield (Aave V3)
+
+Yield status and live APR surface on the public `/status` (`capitalism_models` →
+`treasury_yield`) and the authenticated `/system/yield/status`. Operator controls
+(localhost or `Authorization: Bearer <sha256(pk+"hydra-system")>`):
+
+```bash
+curl localhost:8402/system/yield/status                       # APR, principal, accrued yield, mode
+curl -X POST localhost:8402/system/yield/deposit              # deposit all depositable excess
+curl -X POST localhost:8402/system/yield/deposit  -d '{"amount_usdc":"250"}' -H 'Content-Type: application/json'
+curl -X POST localhost:8402/system/yield/withdraw             # withdraw entire Aave position
+```
+
+To go live in production: set `WALLET_PRIVATE_KEY` (the key controlling
+`WALLET_ADDRESS`) in the Render dashboard (`sync:false`) and keep a little ETH on
+Base in the wallet for gas. The heartbeat then auto-deposits idle USDC every cycle.
 
 ## Deployment Workflow
 

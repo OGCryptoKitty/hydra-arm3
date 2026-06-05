@@ -170,6 +170,7 @@ class HydraAutomaton:
         self._last_marketing_run: Optional[datetime] = None
         self._last_revenue_report: Optional[datetime] = None
         self._last_self_test: Optional[datetime] = None
+        self._yield_disabled_logged: bool = False
 
         # Load persisted state
         self._load_state()
@@ -542,7 +543,19 @@ class HydraAutomaton:
 
         Only runs when treasury is VIABLE ($500+). Maintains operating
         reserve and only deposits amounts above the minimum threshold.
+
+        When yield deployment is disabled (no usable key / wrong key), this
+        logs once and then stays quiet to avoid per-heartbeat log spam.
         """
+        if not self._treasury_yield.is_enabled():
+            if not self._yield_disabled_logged:
+                logger.info(
+                    "YIELD: deployment disabled — running monitor-only. "
+                    "Set WALLET_PRIVATE_KEY (controlling the treasury wallet) to "
+                    "auto-compound idle USDC into Aave V3."
+                )
+                self._yield_disabled_logged = True
+            return
         try:
             depositable = self._treasury_yield.get_depositable_amount(balance)
             if depositable > 0:
