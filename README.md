@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://hydra-api-nlnj.onrender.com/health"><img src="https://img.shields.io/badge/status-live-brightgreen?style=flat-square" alt="Live"></a>
-  <a href="https://hydra-api-nlnj.onrender.com/.well-known/x402.json"><img src="https://img.shields.io/badge/x402-55%20endpoints-blue?style=flat-square" alt="x402 Endpoints"></a>
+  <a href="https://hydra-api-nlnj.onrender.com/.well-known/x402.json"><img src="https://img.shields.io/badge/x402-74%20endpoints-blue?style=flat-square" alt="x402 Endpoints"></a>
   <a href="https://hydra-api-nlnj.onrender.com/mcp"><img src="https://img.shields.io/badge/MCP-streamable%20HTTP-purple?style=flat-square" alt="MCP Server"></a>
   <a href="https://hydra-api-nlnj.onrender.com/docs"><img src="https://img.shields.io/badge/docs-OpenAPI-orange?style=flat-square" alt="API Docs"></a>
   <img src="https://img.shields.io/badge/chain-Base%20L2-0052FF?style=flat-square" alt="Base L2">
@@ -365,7 +365,7 @@ src/runtime/transaction_log.py       -- Append-only JSONL for tax/audit
 src/x402/middleware.py               -- HTTP 402 intercept, payment verification
 src/x402/cdp_facilitator.py          -- CDP x402 SDK middleware
 src/x402/mpp_integration.py          -- Machine Payments Protocol middleware
-config/settings.py                   -- Pricing dict (55 endpoints), wallet, chain config
+config/settings.py                   -- Pricing dict (74 endpoints), wallet, chain config
 static/.well-known/                  -- x402.json, mcp.json, agents.json, llms.txt, ai-plugin.json
 ```
 

@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "server": {
     "name": "HYDRA",
-    "description": "Autonomous regulatory intelligence API with 55+ paid endpoints delivering real-time data from 13 authoritative sources (SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Federal Reserve, Treasury, FDIC BankFind, Federal Register, BLS, FRED, Kalshi KXFED, Congress). Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, atomic real-time economic snapshots, live regulatory pulse with SEC EDGAR + Federal Register + Congress tracking, premium alpha reports with edge analysis and Kelly sizing. Pay-per-call via x402 on Base L2 from $0.001 USDC.",
+    "description": "Autonomous regulatory intelligence API with 74 paid endpoints delivering real-time data from 13 authoritative sources (SEC EDGAR, CFTC, FinCEN, OCC, CFPB, Federal Reserve, Treasury, FDIC BankFind, Federal Register, BLS, FRED, Kalshi KXFED, Congress). Kalshi KXFED market-calibrated Fed rate probabilities, FDIC bank failure monitoring, atomic real-time economic snapshots, live regulatory pulse with SEC EDGAR + Federal Register + Congress tracking, premium alpha reports with edge analysis and Kelly sizing. Pay-per-call via x402 on Base L2 from $0.001 USDC.",
     "url": "https://hydra-api-nlnj.onrender.com/mcp",
     "transport": "streamable-http"
   },
@@ -18,7 +18,7 @@
     "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     "wallet": "0x2F12A73e1e08F3BCE12212005cCaBE2ACEf87141",
     "price_range": "$0.001 - $50.00 USDC per tool call",
-    "paid_endpoint_count": 55
+    "paid_endpoint_count": 74
   },
   "tools": [
     {"name": "scrape_url", "description": "Convert a URL to clean structured text ($0.005)", "endpoint": "/v1/util/scrape"},

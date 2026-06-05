@@ -1,15 +1,15 @@
 {
   "mcpName": "io.github.ogcryptokitty/hydra",
   "version": "2.0.0",
-  "description": "402-native paid work engine for agents. Web extraction, search, format conversion, developer tools, web checks, public data, regulatory intelligence, prediction markets, oracle data. 40 x402-paid MCP tools from $0.001 USDC on Base L2.",
+  "description": "402-native paid work engine for AI agents. 74 x402-paid MCP tools from $0.001 USDC on Base L2: web extraction & search, HTML/JSON/CSV conversion, DNS/SSL/URL/header checks, developer tools, live market data (CoinGecko/DeFi Llama/Binance/DexScreener/mempool/Treasury), Wikipedia/arXiv/SEC EDGAR, regulatory intelligence (SEC/CFTC/FinCEN/OCC/CFPB/Fed/Treasury), prediction-market alpha (Polymarket/Kalshi), FOMC/Fed signals, oracle & market resolution, portfolio, and composite intelligence.",
   "repository": "https://github.com/OGCryptoKitty/hydra-arm3",
   "homepage": "https://hydra-api-nlnj.onrender.com",
   "server": {
     "transport": "streamable-http",
     "url": "https://hydra-api-nlnj.onrender.com/mcp"
   },
-  "tools": 40,
-  "categories": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "finance", "regulatory", "prediction-markets", "oracle", "defi"],
+  "tools": 74,
+  "categories": ["extraction", "search", "conversion", "developer-tools", "web-checks", "public-data", "finance", "market-data", "regulatory", "prediction-markets", "fomc", "oracle", "defi", "portfolio"],
   "payment": {
     "protocol": "x402",
     "network": "eip155:8453",

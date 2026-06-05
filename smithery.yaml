@@ -1,5 +1,5 @@
 name: hydra
-description: "402-native paid work engine for agents. 40 tools: web extraction, search, HTML-to-Markdown, DNS/SSL/URL checks, text diff, hash, encode/decode, JSON/CSV conversion, Wikipedia, arXiv, SEC EDGAR, regulatory intelligence, prediction markets, FOMC data, oracle feeds. Pay-per-call in USDC on Base L2 via x402."
+description: "402-native paid work engine for AI agents. 74 pay-per-call tools: web extraction & search, HTML/JSON/CSV conversion, DNS/SSL/URL/header checks, dev tools (hash, encode/decode, diff, JSON/email validate), live market data (CoinGecko, DeFi Llama, Binance, DexScreener, mempool.space, Treasury), Wikipedia/arXiv/SEC EDGAR, regulatory intelligence (SEC/CFTC/FinCEN/OCC/CFPB/Fed/Treasury), prediction-market alpha (Polymarket/Kalshi), FOMC/Fed signals, oracle & market resolution, portfolio scans, and composite intelligence products. Pay-per-call in USDC on Base L2 via x402, from $0.001."
 startCommand:
   type: http
   configSchema:
