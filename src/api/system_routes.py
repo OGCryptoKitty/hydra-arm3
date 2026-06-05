@@ -199,6 +199,7 @@ def require_bearer_token_only(request: Request) -> None:
 class SetWalletRequest(BaseModel):
     """Request body for POST /system/wallet."""
     address: str
+    force: bool = False  # owner override to change an already-locked destination
 
 
 class ExecuteRemittanceRequest(BaseModel):
@@ -263,7 +264,7 @@ async def set_wallet(
     OPERATING → REMITTING if applicable.
     """
     rm     = _get_remittance_manager()
-    result = rm.set_receiving_wallet(body.address)
+    result = rm.set_receiving_wallet(body.address, force=body.force)
 
     if result.get("status") == "error":
         raise HTTPException(status_code=400, detail=result.get("error"))

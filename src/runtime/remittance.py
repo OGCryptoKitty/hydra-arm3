@@ -523,9 +523,15 @@ class RemittanceManager:
 
     # ── Set Receiving Wallet ─────────────────────────────────
 
-    def set_receiving_wallet(self, address: str) -> dict[str, Any]:
+    def set_receiving_wallet(self, address: str, force: bool = False) -> dict[str, Any]:
         """
         Validate and persist the receiving wallet address.
+
+        OWNER-LOCK: once a receiving wallet is set, it is locked. HYDRA will
+        refuse to redirect earnings to any *different* address (re-setting the
+        same address is idempotent). Changing the locked destination requires
+        ``force=True`` (owner-authenticated only). This guarantees the automaton
+        can only ever remit to the owner — never to an attacker or by mistake.
 
         Validation:
           1. Valid EVM checksum address format
@@ -596,15 +602,45 @@ class RemittanceManager:
                 "ofac_cleared": False,
             }
 
+        # OWNER-LOCK: once a destination is set, refuse to redirect to a
+        # different address unless explicitly forced by the owner.
+        if REMITTANCE_CONFIG.exists():
+            try:
+                _existing = json.loads(REMITTANCE_CONFIG.read_text())
+            except Exception:
+                _existing = {}
+            _locked_addr = _existing.get("receiving_wallet")
+            _is_locked = _existing.get("locked", True)
+            if (
+                _locked_addr
+                and _is_locked
+                and Web3.to_checksum_address(_locked_addr) != checksum_addr
+                and not force
+            ):
+                masked = _locked_addr[:8] + "..." + _locked_addr[-6:]
+                return {
+                    "status": "error",
+                    "error": (
+                        f"Remittance destination is locked to {masked}. HYDRA "
+                        "refuses to redirect earnings to a different wallet. "
+                        "Re-send with force=true (owner) to change it."
+                    ),
+                    "address": checksum_addr,
+                    "ofac_cleared": True,
+                    "locked_to": masked,
+                }
+
         # Persist to remittance-config.json
         try:
             BOOTSTRAP_DIR.mkdir(parents=True, exist_ok=True)
             config = {
                 "receiving_wallet":  checksum_addr,
+                "locked":            True,
                 "set_at":            now_iso,
                 "ofac_cleared_at":   now_iso,
                 "note": (
                     "Receiving wallet address for member distributions. "
+                    "Owner-locked — HYDRA can only remit here. "
                     "Stored locally only — never transmitted externally."
                 ),
             }
