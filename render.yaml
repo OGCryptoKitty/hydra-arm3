@@ -31,3 +31,7 @@ services:
         sync: false  # Must be set manually in Render dashboard
       - key: PYTHON_VERSION
         value: "3.11.6"
+      - key: FRED_API_KEY
+        sync: false  # Set in Render dashboard — enables 28 FRED economic data series
+      - key: HYDRA_RELAYER_URL
+        sync: false  # Optional: gasless EIP-3009 relay URL

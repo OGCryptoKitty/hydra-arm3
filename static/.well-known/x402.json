@@ -1,6 +1,6 @@
 {
   "name": "HYDRA",
-  "description": "Autonomous regulatory + market intelligence API with 66+ paid endpoints. Live crypto prices (CoinGecko), DeFi TVL/yields (DeFi Llama), stablecoin peg tracking, multi-chain gas, Fear & Greed Index, ECB forex. Real-time data from 18+ sources (FRED, BLS, Treasury, SEC EDGAR, Federal Register, FDIC, Kalshi KXFED, Polymarket, CoinGecko, DeFi Llama, ECB). Prediction market signals with market-calibrated Fed rate probabilities. Alpha reports with edge analysis and Kelly sizing. From $0.001 USDC on Base L2.",
+  "description": "Autonomous regulatory + market intelligence API with 74+ paid endpoints. Live crypto prices (CoinGecko), DeFi TVL/yields (DeFi Llama), stablecoin peg tracking, multi-chain gas, Fear & Greed Index, ECB forex. Real-time data from 22+ authoritative sources (FRED, BLS, Treasury, SEC EDGAR, Federal Register, FDIC, Kalshi KXFED, Polymarket, CoinGecko, DeFi Llama, ECB). Prediction market signals with market-calibrated Fed rate probabilities. Alpha reports with edge analysis and Kelly sizing. From $0.001 USDC on Base L2.",
   "url": "https://hydra-api-nlnj.onrender.com",
   "x402Version": 1,
   "payment": {
@@ -13,84 +13,474 @@
     "facilitator": "https://x402.org/facilitator"
   },
   "endpoints": [
-    {"path": "/v1/markets", "method": "GET", "price": "free", "description": "Active regulatory prediction markets across Polymarket and Kalshi"},
-    {"path": "/v1/markets/feed", "method": "GET", "price": "0.10", "description": "Micro regulatory event feed matched to prediction markets"},
-    {"path": "/v1/markets/events", "method": "POST", "price": "0.50", "description": "Classified regulatory events from SEC, CFTC, Fed, FinCEN"},
-    {"path": "/v1/markets/signal/{market_id}", "method": "POST", "price": "2.00", "description": "Scored regulatory signal for one prediction market"},
-    {"path": "/v1/markets/signals", "method": "POST", "price": "5.00", "description": "Bulk scored signals for all regulatory prediction markets"},
-    {"path": "/v1/markets/alpha", "method": "POST", "price": "10.00", "description": "Premium alpha report with edge analysis, Kelly sizing, trade verdict"},
-    {"path": "/v1/fed/signal", "method": "POST", "price": "5.00", "description": "Pre-FOMC signal with rate probabilities and Fed speech analysis"},
-    {"path": "/v1/fed/decision", "method": "POST", "price": "25.00", "description": "Real-time FOMC decision classification within 30 seconds of release"},
-    {"path": "/v1/fed/resolution", "method": "POST", "price": "50.00", "description": "FOMC resolution verdict for UMA/Kalshi/Polymarket oracle submission"},
-    {"path": "/v1/oracle/uma", "method": "POST", "price": "5.00", "description": "UMA Optimistic Oracle assertion data with evidence chain"},
-    {"path": "/v1/oracle/chainlink", "method": "POST", "price": "5.00", "description": "Chainlink External Adapter response format"},
-    {"path": "/v1/markets/resolution", "method": "POST", "price": "25.00", "description": "Professional resolution verdict for prediction market settlement"},
-    {"path": "/v1/regulatory/scan", "method": "POST", "price": "2.00", "description": "Full regulatory risk scan against all applicable frameworks"},
-    {"path": "/v1/regulatory/changes", "method": "POST", "price": "1.00", "description": "Recent regulatory changes classified by agency and impact"},
-    {"path": "/v1/regulatory/jurisdiction", "method": "POST", "price": "3.00", "description": "Jurisdiction comparison with compliance cost modeling"},
-    {"path": "/v1/regulatory/query", "method": "POST", "price": "1.00", "description": "Regulatory Q&A with statutory citations"},
-    {"path": "/v1/util/scrape", "method": "POST", "price": "0.005", "description": "Web scrape — URL to clean structured text"},
-    {"path": "/v1/util/crypto/price", "method": "GET", "price": "0.001", "description": "Token price lookup with 24h change and market cap"},
-    {"path": "/v1/util/rss", "method": "POST", "price": "0.002", "description": "RSS/Atom feed to structured JSON"},
-    {"path": "/v1/util/crypto/balance", "method": "GET", "price": "0.001", "description": "Wallet ETH and USDC balance on Base L2"},
-    {"path": "/v1/util/gas", "method": "GET", "price": "0.001", "description": "Base L2 gas prices with estimated costs for transfers, swaps, mints"},
-    {"path": "/v1/util/tx", "method": "GET", "price": "0.001", "description": "Transaction receipt lookup — status, gas used, block number"},
-    {"path": "/v1/batch", "method": "POST", "price": "0.01", "description": "Batch up to 5 utility calls in one request — saves gas vs individual payments"},
-    {"path": "/v1/extract/url", "method": "POST", "price": "0.01", "description": "Structured web extraction — title, headings, clean text, links, OpenGraph metadata"},
-    {"path": "/v1/extract/multi", "method": "POST", "price": "0.05", "description": "Batch extraction from up to 5 URLs in parallel"},
-    {"path": "/v1/extract/search", "method": "GET", "price": "0.02", "description": "Web search with structured result extraction — titles, snippets, URLs"},
-    {"path": "/v1/check/url", "method": "GET", "price": "0.005", "description": "URL health check — status code, response time, redirect chain, content type"},
-    {"path": "/v1/check/dns", "method": "GET", "price": "0.005", "description": "DNS record lookup — A, AAAA, MX, TXT, NS, CNAME via DNS-over-HTTPS"},
-    {"path": "/v1/check/ssl", "method": "GET", "price": "0.005", "description": "SSL certificate inspection — issuer, expiry, SANs, days remaining"},
-    {"path": "/v1/check/headers", "method": "GET", "price": "0.003", "description": "HTTP response headers with security headers analysis and score"},
-    {"path": "/v1/convert/html2md", "method": "POST", "price": "0.005", "description": "HTML to Markdown — preserves headings, lists, links, code blocks, tables"},
-    {"path": "/v1/convert/json2csv", "method": "POST", "price": "0.003", "description": "JSON array to CSV with auto-detected headers"},
-    {"path": "/v1/convert/csv2json", "method": "POST", "price": "0.003", "description": "CSV text to JSON array of objects"},
-    {"path": "/v1/tools/hash", "method": "POST", "price": "0.001", "description": "Hash text with SHA-256, SHA-512, MD5, SHA-1, or SHA3-256"},
-    {"path": "/v1/tools/encode", "method": "POST", "price": "0.001", "description": "Encode/decode text — Base64, URL encoding, hex"},
-    {"path": "/v1/tools/diff", "method": "POST", "price": "0.003", "description": "Unified diff between two texts with change stats and similarity ratio"},
-    {"path": "/v1/tools/validate/json", "method": "POST", "price": "0.001", "description": "JSON syntax validation with pretty-print and structure info"},
-    {"path": "/v1/tools/validate/email", "method": "POST", "price": "0.002", "description": "Email format validation with MX record check"},
-    {"path": "/v1/data/wikipedia", "method": "GET", "price": "0.01", "description": "Wikipedia article summary — extract, thumbnail, description, page URL"},
-    {"path": "/v1/data/arxiv", "method": "GET", "price": "0.02", "description": "arXiv academic paper search — titles, authors, abstracts, PDF links"},
-    {"path": "/v1/data/edgar", "method": "GET", "price": "0.02", "description": "SEC EDGAR filing search — 10-K, 10-Q, 8-K by company, ticker, or keyword"},
-    {"path": "/v1/x402/directory", "method": "GET", "price": "free", "description": "Canonical x402 ecosystem directory — all known x402 services indexed hourly"},
-    {"path": "/v1/x402/stats", "method": "GET", "price": "free", "description": "x402 ecosystem aggregate statistics — services by chain, category, growth"},
-    {"path": "/v1/x402/status", "method": "GET", "price": "0.005", "description": "Real-time health and capability check of any x402 service"},
-    {"path": "/v1/x402/route", "method": "POST", "price": "0.001", "description": "Intelligent x402 service routing — find the best service for your need"},
-    {"path": "/v1/intelligence/pulse", "method": "GET", "price": "0.50", "description": "Hourly regulatory pulse — aggregated agency activity with composite risk signal"},
-    {"path": "/v1/intelligence/alpha", "method": "GET", "price": "5.00", "description": "Composite alpha signal — regulatory + Fed + prediction markets + momentum"},
-    {"path": "/v1/intelligence/risk-score", "method": "GET", "price": "2.00", "description": "Real-time 0-100 regulatory risk score for any token or protocol"},
-    {"path": "/v1/intelligence/digest", "method": "GET", "price": "1.00", "description": "Daily regulatory + market digest for compliance teams and trading agents"},
-    {"path": "/v1/intelligence/economic-snapshot", "method": "GET", "price": "0.50", "description": "Atomic real-time economic snapshot — FRED, BLS, Treasury, FDIC, Federal Register"},
-    {"path": "/v1/intelligence/regulatory-pulse-live", "method": "GET", "price": "0.50", "description": "Live regulatory pulse — SEC EDGAR, Federal Register, Congress bill tracker"},
-    {"path": "/v1/intelligence/bank-failures", "method": "GET", "price": "0.25", "description": "FDIC bank failure monitor — recent closures, resolution details, losses"},
-    {"path": "/v1/alerts/subscribe", "method": "POST", "price": "0.10", "description": "Push alert subscription — webhook delivery of regulatory events. $0.10/100 alerts"},
-    {"path": "/v1/alerts/feed", "method": "GET", "price": "0.05", "description": "Real-time regulatory alert feed — last 24 hours of detected events"},
-    {"path": "/v1/alerts/status", "method": "GET", "price": "free", "description": "Check alert subscription status and remaining alerts"},
-    {"path": "/v1/portfolio/scan", "method": "POST", "price": "10.00", "description": "Portfolio-level regulatory scan — up to 20 assets with aggregate risk"},
-    {"path": "/v1/portfolio/watchlist", "method": "POST", "price": "2.00", "description": "Portfolio watchlist — agency mentions and alert levels for up to 20 assets"},
-    {"path": "/v1/portfolio/market-brief", "method": "GET", "price": "3.00", "description": "Executive market brief — regulatory + Fed + prediction markets in one view"},
-    {"path": "/v1/orchestrate", "method": "POST", "price": "0.05", "description": "Multi-step orchestration — execute up to 10 HYDRA calls in one request"},
-    {"path": "/v1/market/prices", "method": "GET", "price": "0.001", "description": "Live crypto prices, market caps, 24h change via CoinGecko — up to 20 coins"},
-    {"path": "/v1/market/global", "method": "GET", "price": "0.001", "description": "Global crypto market — total market cap, BTC/ETH dominance, 24h volume"},
-    {"path": "/v1/market/trending", "method": "GET", "price": "0.001", "description": "Top trending cryptocurrencies — most searched in last 24h"},
-    {"path": "/v1/market/fear-greed", "method": "GET", "price": "0.001", "description": "Crypto Fear & Greed Index — 0-100 score with 7-day history"},
-    {"path": "/v1/market/gas", "method": "GET", "price": "0.001", "description": "Live gas prices across Ethereum, Base, Arbitrum, Optimism, Polygon"},
-    {"path": "/v1/market/stablecoins", "method": "GET", "price": "0.002", "description": "Top 20 stablecoins with circulating supply and real-time peg deviation"},
-    {"path": "/v1/market/defi/tvl", "method": "GET", "price": "0.002", "description": "Top 25 DeFi protocols by TVL with 1d/7d change via DeFi Llama"},
-    {"path": "/v1/market/defi/yields", "method": "GET", "price": "0.005", "description": "Top DeFi yield opportunities — APY, TVL, IL risk across all chains"},
-    {"path": "/v1/market/defi/chains", "method": "GET", "price": "0.001", "description": "Top 30 blockchains ranked by total DeFi TVL"},
-    {"path": "/v1/market/forex", "method": "GET", "price": "0.001", "description": "Major forex rates from the European Central Bank — ~30 pairs"},
-    {"path": "/v1/market/snapshot", "method": "GET", "price": "0.05", "description": "Complete market snapshot — crypto, global, fear/greed, gas, stablecoins"},
-    {"path": "/v1/market/binance/prices", "method": "GET", "price": "0.002", "description": "Real-time Binance prices with 24h volume, high/low, trades, bid/ask"},
-    {"path": "/v1/market/binance/orderbook", "method": "GET", "price": "0.005", "description": "Binance order book — bids, asks, spread for any trading pair"},
-    {"path": "/v1/market/binance/klines", "method": "GET", "price": "0.005", "description": "Binance OHLCV candlestick data for charting and technical analysis"},
-    {"path": "/v1/market/dex/token", "method": "GET", "price": "0.01", "description": "All DEX pairs for a token across all chains via DexScreener"},
-    {"path": "/v1/market/dex/search", "method": "GET", "price": "0.005", "description": "Search DEX pairs by name, symbol, or address across all chains"},
-    {"path": "/v1/market/bitcoin/fees", "method": "GET", "price": "0.002", "description": "Bitcoin fees, mempool stats, hashrate, difficulty — real-time"},
-    {"path": "/v1/market/bitcoin/lightning", "method": "GET", "price": "0.002", "description": "Bitcoin Lightning Network — nodes, channels, capacity, fee rates"},
-    {"path": "/v1/market/treasury/auctions", "method": "GET", "price": "0.005", "description": "U.S. Treasury auction results — yield, bid-to-cover ratio (Tier 1 gov)"}
+    {
+      "path": "/v1/markets",
+      "method": "GET",
+      "price": "free",
+      "description": "Active regulatory prediction markets across Polymarket and Kalshi"
+    },
+    {
+      "path": "/v1/markets/feed",
+      "method": "GET",
+      "price": "0.10",
+      "description": "Micro regulatory event feed matched to prediction markets"
+    },
+    {
+      "path": "/v1/markets/events",
+      "method": "POST",
+      "price": "0.50",
+      "description": "Classified regulatory events from SEC, CFTC, Fed, FinCEN"
+    },
+    {
+      "path": "/v1/markets/signal/{market_id}",
+      "method": "POST",
+      "price": "2.00",
+      "description": "Scored regulatory signal for one prediction market"
+    },
+    {
+      "path": "/v1/markets/signals",
+      "method": "POST",
+      "price": "5.00",
+      "description": "Bulk scored signals for all regulatory prediction markets"
+    },
+    {
+      "path": "/v1/markets/alpha",
+      "method": "POST",
+      "price": "10.00",
+      "description": "Premium alpha report with edge analysis, Kelly sizing, trade verdict"
+    },
+    {
+      "path": "/v1/fed/signal",
+      "method": "POST",
+      "price": "5.00",
+      "description": "Pre-FOMC signal with rate probabilities and Fed speech analysis"
+    },
+    {
+      "path": "/v1/fed/decision",
+      "method": "POST",
+      "price": "25.00",
+      "description": "Real-time FOMC decision classification within 30 seconds of release"
+    },
+    {
+      "path": "/v1/fed/resolution",
+      "method": "POST",
+      "price": "50.00",
+      "description": "FOMC resolution verdict for UMA/Kalshi/Polymarket oracle submission"
+    },
+    {
+      "path": "/v1/oracle/uma",
+      "method": "POST",
+      "price": "5.00",
+      "description": "UMA Optimistic Oracle assertion data with evidence chain"
+    },
+    {
+      "path": "/v1/oracle/chainlink",
+      "method": "POST",
+      "price": "5.00",
+      "description": "Chainlink External Adapter response format"
+    },
+    {
+      "path": "/v1/markets/resolution",
+      "method": "POST",
+      "price": "25.00",
+      "description": "Professional resolution verdict for prediction market settlement"
+    },
+    {
+      "path": "/v1/regulatory/scan",
+      "method": "POST",
+      "price": "2.00",
+      "description": "Full regulatory risk scan against all applicable frameworks"
+    },
+    {
+      "path": "/v1/regulatory/changes",
+      "method": "POST",
+      "price": "1.00",
+      "description": "Recent regulatory changes classified by agency and impact"
+    },
+    {
+      "path": "/v1/regulatory/jurisdiction",
+      "method": "POST",
+      "price": "3.00",
+      "description": "Jurisdiction comparison with compliance cost modeling"
+    },
+    {
+      "path": "/v1/regulatory/query",
+      "method": "POST",
+      "price": "1.00",
+      "description": "Regulatory Q&A with statutory citations"
+    },
+    {
+      "path": "/v1/util/scrape",
+      "method": "POST",
+      "price": "0.005",
+      "description": "Web scrape \u2014 URL to clean structured text"
+    },
+    {
+      "path": "/v1/util/crypto/price",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Token price lookup with 24h change and market cap"
+    },
+    {
+      "path": "/v1/util/rss",
+      "method": "POST",
+      "price": "0.002",
+      "description": "RSS/Atom feed to structured JSON"
+    },
+    {
+      "path": "/v1/util/crypto/balance",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Wallet ETH and USDC balance on Base L2"
+    },
+    {
+      "path": "/v1/util/gas",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Base L2 gas prices with estimated costs for transfers, swaps, mints"
+    },
+    {
+      "path": "/v1/util/tx",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Transaction receipt lookup \u2014 status, gas used, block number"
+    },
+    {
+      "path": "/v1/batch",
+      "method": "POST",
+      "price": "0.01",
+      "description": "Batch up to 5 utility calls in one request \u2014 saves gas vs individual payments"
+    },
+    {
+      "path": "/v1/extract/url",
+      "method": "POST",
+      "price": "0.01",
+      "description": "Structured web extraction \u2014 title, headings, clean text, links, OpenGraph metadata"
+    },
+    {
+      "path": "/v1/extract/multi",
+      "method": "POST",
+      "price": "0.05",
+      "description": "Batch extraction from up to 5 URLs in parallel"
+    },
+    {
+      "path": "/v1/extract/search",
+      "method": "GET",
+      "price": "0.02",
+      "description": "Web search with structured result extraction \u2014 titles, snippets, URLs"
+    },
+    {
+      "path": "/v1/check/url",
+      "method": "GET",
+      "price": "0.005",
+      "description": "URL health check \u2014 status code, response time, redirect chain, content type"
+    },
+    {
+      "path": "/v1/check/dns",
+      "method": "GET",
+      "price": "0.005",
+      "description": "DNS record lookup \u2014 A, AAAA, MX, TXT, NS, CNAME via DNS-over-HTTPS"
+    },
+    {
+      "path": "/v1/check/ssl",
+      "method": "GET",
+      "price": "0.005",
+      "description": "SSL certificate inspection \u2014 issuer, expiry, SANs, days remaining"
+    },
+    {
+      "path": "/v1/check/headers",
+      "method": "GET",
+      "price": "0.003",
+      "description": "HTTP response headers with security headers analysis and score"
+    },
+    {
+      "path": "/v1/convert/html2md",
+      "method": "POST",
+      "price": "0.005",
+      "description": "HTML to Markdown \u2014 preserves headings, lists, links, code blocks, tables"
+    },
+    {
+      "path": "/v1/convert/json2csv",
+      "method": "POST",
+      "price": "0.003",
+      "description": "JSON array to CSV with auto-detected headers"
+    },
+    {
+      "path": "/v1/convert/csv2json",
+      "method": "POST",
+      "price": "0.003",
+      "description": "CSV text to JSON array of objects"
+    },
+    {
+      "path": "/v1/tools/hash",
+      "method": "POST",
+      "price": "0.001",
+      "description": "Hash text with SHA-256, SHA-512, MD5, SHA-1, or SHA3-256"
+    },
+    {
+      "path": "/v1/tools/encode",
+      "method": "POST",
+      "price": "0.001",
+      "description": "Encode/decode text \u2014 Base64, URL encoding, hex"
+    },
+    {
+      "path": "/v1/tools/diff",
+      "method": "POST",
+      "price": "0.003",
+      "description": "Unified diff between two texts with change stats and similarity ratio"
+    },
+    {
+      "path": "/v1/tools/validate/json",
+      "method": "POST",
+      "price": "0.001",
+      "description": "JSON syntax validation with pretty-print and structure info"
+    },
+    {
+      "path": "/v1/tools/validate/email",
+      "method": "POST",
+      "price": "0.002",
+      "description": "Email format validation with MX record check"
+    },
+    {
+      "path": "/v1/data/wikipedia",
+      "method": "GET",
+      "price": "0.01",
+      "description": "Wikipedia article summary \u2014 extract, thumbnail, description, page URL"
+    },
+    {
+      "path": "/v1/data/arxiv",
+      "method": "GET",
+      "price": "0.02",
+      "description": "arXiv academic paper search \u2014 titles, authors, abstracts, PDF links"
+    },
+    {
+      "path": "/v1/data/edgar",
+      "method": "GET",
+      "price": "0.02",
+      "description": "SEC EDGAR filing search \u2014 10-K, 10-Q, 8-K by company, ticker, or keyword"
+    },
+    {
+      "path": "/v1/x402/directory",
+      "method": "GET",
+      "price": "free",
+      "description": "Canonical x402 ecosystem directory \u2014 all known x402 services indexed hourly"
+    },
+    {
+      "path": "/v1/x402/stats",
+      "method": "GET",
+      "price": "free",
+      "description": "x402 ecosystem aggregate statistics \u2014 services by chain, category, growth"
+    },
+    {
+      "path": "/v1/x402/status",
+      "method": "GET",
+      "price": "0.005",
+      "description": "Real-time health and capability check of any x402 service"
+    },
+    {
+      "path": "/v1/x402/route",
+      "method": "POST",
+      "price": "0.001",
+      "description": "Intelligent x402 service routing \u2014 find the best service for your need"
+    },
+    {
+      "path": "/v1/intelligence/pulse",
+      "method": "GET",
+      "price": "0.50",
+      "description": "Hourly regulatory pulse \u2014 aggregated agency activity with composite risk signal"
+    },
+    {
+      "path": "/v1/intelligence/alpha",
+      "method": "GET",
+      "price": "5.00",
+      "description": "Composite alpha signal \u2014 regulatory + Fed + prediction markets + momentum"
+    },
+    {
+      "path": "/v1/intelligence/risk-score",
+      "method": "GET",
+      "price": "2.00",
+      "description": "Real-time 0-100 regulatory risk score for any token or protocol"
+    },
+    {
+      "path": "/v1/intelligence/digest",
+      "method": "GET",
+      "price": "1.00",
+      "description": "Daily regulatory + market digest for compliance teams and trading agents"
+    },
+    {
+      "path": "/v1/intelligence/economic-snapshot",
+      "method": "GET",
+      "price": "0.50",
+      "description": "Atomic real-time economic snapshot \u2014 FRED, BLS, Treasury, FDIC, Federal Register"
+    },
+    {
+      "path": "/v1/intelligence/regulatory-pulse-live",
+      "method": "GET",
+      "price": "0.50",
+      "description": "Live regulatory pulse \u2014 SEC EDGAR, Federal Register, Congress bill tracker"
+    },
+    {
+      "path": "/v1/intelligence/bank-failures",
+      "method": "GET",
+      "price": "0.25",
+      "description": "FDIC bank failure monitor \u2014 recent closures, resolution details, losses"
+    },
+    {
+      "path": "/v1/alerts/subscribe",
+      "method": "POST",
+      "price": "0.10",
+      "description": "Push alert subscription \u2014 webhook delivery of regulatory events. $0.10/100 alerts"
+    },
+    {
+      "path": "/v1/alerts/feed",
+      "method": "GET",
+      "price": "0.05",
+      "description": "Real-time regulatory alert feed \u2014 last 24 hours of detected events"
+    },
+    {
+      "path": "/v1/alerts/status",
+      "method": "GET",
+      "price": "free",
+      "description": "Check alert subscription status and remaining alerts"
+    },
+    {
+      "path": "/v1/portfolio/scan",
+      "method": "POST",
+      "price": "10.00",
+      "description": "Portfolio-level regulatory scan \u2014 up to 20 assets with aggregate risk"
+    },
+    {
+      "path": "/v1/portfolio/watchlist",
+      "method": "POST",
+      "price": "2.00",
+      "description": "Portfolio watchlist \u2014 agency mentions and alert levels for up to 20 assets"
+    },
+    {
+      "path": "/v1/portfolio/market-brief",
+      "method": "GET",
+      "price": "3.00",
+      "description": "Executive market brief \u2014 regulatory + Fed + prediction markets in one view"
+    },
+    {
+      "path": "/v1/orchestrate",
+      "method": "POST",
+      "price": "0.05",
+      "description": "Multi-step orchestration \u2014 execute up to 10 HYDRA calls in one request"
+    },
+    {
+      "path": "/v1/market/prices",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Live crypto prices, market caps, 24h change via CoinGecko \u2014 up to 20 coins"
+    },
+    {
+      "path": "/v1/market/global",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Global crypto market \u2014 total market cap, BTC/ETH dominance, 24h volume"
+    },
+    {
+      "path": "/v1/market/trending",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Top trending cryptocurrencies \u2014 most searched in last 24h"
+    },
+    {
+      "path": "/v1/market/fear-greed",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Crypto Fear & Greed Index \u2014 0-100 score with 7-day history"
+    },
+    {
+      "path": "/v1/market/gas",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Live gas prices across Ethereum, Base, Arbitrum, Optimism, Polygon"
+    },
+    {
+      "path": "/v1/market/stablecoins",
+      "method": "GET",
+      "price": "0.002",
+      "description": "Top 20 stablecoins with circulating supply and real-time peg deviation"
+    },
+    {
+      "path": "/v1/market/defi/tvl",
+      "method": "GET",
+      "price": "0.002",
+      "description": "Top 25 DeFi protocols by TVL with 1d/7d change via DeFi Llama"
+    },
+    {
+      "path": "/v1/market/defi/yields",
+      "method": "GET",
+      "price": "0.005",
+      "description": "Top DeFi yield opportunities \u2014 APY, TVL, IL risk across all chains"
+    },
+    {
+      "path": "/v1/market/defi/chains",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Top 30 blockchains ranked by total DeFi TVL"
+    },
+    {
+      "path": "/v1/market/forex",
+      "method": "GET",
+      "price": "0.001",
+      "description": "Major forex rates from the European Central Bank \u2014 ~30 pairs"
+    },
+    {
+      "path": "/v1/market/snapshot",
+      "method": "GET",
+      "price": "0.05",
+      "description": "Complete market snapshot \u2014 crypto, global, fear/greed, gas, stablecoins"
+    },
+    {
+      "path": "/v1/market/binance/prices",
+      "method": "GET",
+      "price": "0.002",
+      "description": "Real-time Binance prices with 24h volume, high/low, trades, bid/ask"
+    },
+    {
+      "path": "/v1/market/binance/orderbook",
+      "method": "GET",
+      "price": "0.005",
+      "description": "Binance order book \u2014 bids, asks, spread for any trading pair"
+    },
+    {
+      "path": "/v1/market/binance/klines",
+      "method": "GET",
+      "price": "0.005",
+      "description": "Binance OHLCV candlestick data for charting and technical analysis"
+    },
+    {
+      "path": "/v1/market/dex/token",
+      "method": "GET",
+      "price": "0.01",
+      "description": "All DEX pairs for a token across all chains via DexScreener"
+    },
+    {
+      "path": "/v1/market/dex/search",
+      "method": "GET",
+      "price": "0.005",
+      "description": "Search DEX pairs by name, symbol, or address across all chains"
+    },
+    {
+      "path": "/v1/market/bitcoin/fees",
+      "method": "GET",
+      "price": "0.002",
+      "description": "Bitcoin fees, mempool stats, hashrate, difficulty \u2014 real-time"
+    },
+    {
+      "path": "/v1/market/bitcoin/lightning",
+      "method": "GET",
+      "price": "0.002",
+      "description": "Bitcoin Lightning Network \u2014 nodes, channels, capacity, fee rates"
+    },
+    {
+      "path": "/v1/market/treasury/auctions",
+      "method": "GET",
+      "price": "0.005",
+      "description": "U.S. Treasury auction results \u2014 yield, bid-to-cover ratio (Tier 1 gov)"
+    }
   ],
   "docs": "https://hydra-api-nlnj.onrender.com/docs",
   "pricing": "https://hydra-api-nlnj.onrender.com/pricing",
@@ -103,5 +493,56 @@
     "llms_txt": "https://hydra-api-nlnj.onrender.com/.well-known/llms.txt",
     "sitemap": "https://hydra-api-nlnj.onrender.com/sitemap.xml"
   },
-  "tags": ["x402-hub", "ecosystem-directory", "composite-intelligence", "alpha-signal", "risk-score", "push-alerts", "extraction", "search", "web-scraping", "conversion", "developer-tools", "dns", "ssl", "wikipedia", "arxiv", "edgar", "agent-tools", "x402", "regulatory", "prediction-markets", "oracle", "fed", "fomc", "kxfed", "fred", "bls", "treasury", "fdic", "real-time-data", "defi", "crypto-prices", "coingecko", "defi-llama", "tvl", "yields", "stablecoins", "gas-prices", "fear-greed", "forex", "ecb", "market-data", "binance", "orderbook", "klines", "dexscreener", "dex", "bitcoin", "mempool", "lightning", "treasury-auctions"]
+  "tags": [
+    "x402-hub",
+    "ecosystem-directory",
+    "composite-intelligence",
+    "alpha-signal",
+    "risk-score",
+    "push-alerts",
+    "extraction",
+    "search",
+    "web-scraping",
+    "conversion",
+    "developer-tools",
+    "dns",
+    "ssl",
+    "wikipedia",
+    "arxiv",
+    "edgar",
+    "agent-tools",
+    "x402",
+    "regulatory",
+    "prediction-markets",
+    "oracle",
+    "fed",
+    "fomc",
+    "kxfed",
+    "fred",
+    "bls",
+    "treasury",
+    "fdic",
+    "real-time-data",
+    "defi",
+    "crypto-prices",
+    "coingecko",
+    "defi-llama",
+    "tvl",
+    "yields",
+    "stablecoins",
+    "gas-prices",
+    "fear-greed",
+    "forex",
+    "ecb",
+    "market-data",
+    "binance",
+    "orderbook",
+    "klines",
+    "dexscreener",
+    "dex",
+    "bitcoin",
+    "mempool",
+    "lightning",
+    "treasury-auctions"
+  ]
 }
