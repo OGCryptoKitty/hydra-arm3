@@ -8,6 +8,9 @@ on:
       - 'config/settings.py'
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   register:
     runs-on: ubuntu-latest

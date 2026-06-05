@@ -10,179 +10,197 @@ on:
 jobs:
   deploy-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check if service is already live
+      - name: Check current live version
         id: health_check
         continue-on-error: true
         run: |
           echo "Checking https://hydra-api-nlnj.onrender.com/health ..."
           HTTP_CODE=$(curl -s -o /tmp/health_response.json -w "%{http_code}" \
-            --max-time 15 \
+            --max-time 20 \
             https://hydra-api-nlnj.onrender.com/health 2>/dev/null || echo "000")
           echo "HTTP status: $HTTP_CODE"
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "status=live" >> $GITHUB_OUTPUT
-            echo "✅ Service is LIVE"
-            cat /tmp/health_response.json | python3 -m json.tool 2>/dev/null || cat /tmp/health_response.json
+          EXPECTED=$(grep -E 'APP_VERSION' config/settings.py | head -1 | sed -E 's/.*"([0-9.]+)".*/\1/')
+          LIVE=$(python3 -c "import sys,json;print(json.load(open('/tmp/health_response.json')).get('version',''))" 2>/dev/null || echo "")
+          echo "expected=$EXPECTED" >> $GITHUB_OUTPUT
+          echo "live=$LIVE" >> $GITHUB_OUTPUT
+          if [ "$HTTP_CODE" = "200" ] && [ "$LIVE" = "$EXPECTED" ]; then
+            echo "status=current" >> $GITHUB_OUTPUT
+            echo "✅ Service is LIVE and CURRENT (v$LIVE)"
+          elif [ "$HTTP_CODE" = "200" ]; then
+            echo "status=stale" >> $GITHUB_OUTPUT
+            echo "⚠️ Service is live but STALE (live=$LIVE, expected=$EXPECTED)"
           else
             echo "status=down" >> $GITHUB_OUTPUT
-            echo "⚠️ Service returned HTTP $HTTP_CODE — may be sleeping or not deployed"
+            echo "⚠️ Service returned HTTP $HTTP_CODE"
           fi
 
-      - name: Trigger Render deploy hook (if secret exists)
-        if: steps.health_check.outputs.status != 'live'
+      - name: Trigger Render deploy via deploy hook
+        if: steps.health_check.outputs.status != 'current'
         continue-on-error: true
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           if [ -n "$RENDER_DEPLOY_HOOK" ]; then
-            echo "🚀 Triggering Render deploy hook..."
-            curl -s -X POST "$RENDER_DEPLOY_HOOK" --max-time 30
-            echo ""
-            echo "Deploy hook triggered. Waiting for service to start..."
+            echo "🚀 Triggering Render deploy hook (clear cache)..."
+            RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
+              "${RENDER_DEPLOY_HOOK}?clearCache=clear" \
+              --max-time 30)
+            HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+            echo "Deploy hook response: $HTTP_STATUS"
+            echo "Waiting for Render to pick up the deploy..."
           else
-            echo "ℹ️ No RENDER_DEPLOY_HOOK secret configured."
+            echo "ℹ️ RENDER_DEPLOY_HOOK secret not set."
             echo ""
-            echo "To enable auto-deploy, either:"
-            echo "  1. Connect this repo to Render at https://render.com (uses render.yaml blueprint)"
-            echo "  2. Or add a RENDER_DEPLOY_HOOK secret with your Render deploy hook URL"
+            echo "To enable fully-automated deploys:"
+            echo "  Render dashboard → hydra-api → Settings → Deploy Hook URL"
+            echo "  → GitHub repo → Settings → Secrets → RENDER_DEPLOY_HOOK"
             echo ""
-            echo "The render.yaml blueprint is ready — Render will auto-configure everything."
+            echo "Alternatively, in Render dashboard:"
+            echo "  hydra-api → Deploys → Manual Deploy → Clear build cache & deploy"
           fi
 
-      - name: Wait for service to come up
-        if: steps.health_check.outputs.status != 'live'
+      - name: Trigger Render deploy via API key
+        if: steps.health_check.outputs.status != 'current'
+        continue-on-error: true
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          if [ -n "$RENDER_API_KEY" ]; then
+            echo "🔑 Triggering Render deploy via API key..."
+            # Find the service ID
+            SVC_ID=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+              "https://api.render.com/v1/services?name=hydra-api&type=web_service&limit=5" \
+              | python3 -c "import sys,json;svcs=json.load(sys.stdin);print(svcs[0]['service']['id'] if svcs else '')" 2>/dev/null || echo "")
+            if [ -n "$SVC_ID" ]; then
+              echo "Service ID: $SVC_ID"
+              DEPLOY_RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+                -X POST \
+                -H "Authorization: Bearer $RENDER_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{"clearCache":"clear"}' \
+                "https://api.render.com/v1/services/$SVC_ID/deploys")
+              HTTP_STATUS=$(echo "$DEPLOY_RESP" | grep "HTTP_STATUS:" | cut -d: -f2)
+              echo "Render API deploy triggered: HTTP $HTTP_STATUS"
+            else
+              echo "Could not find service ID for hydra-api"
+            fi
+          fi
+
+      - name: Wait for deploy to complete (up to 8 min)
+        if: steps.health_check.outputs.status != 'current'
         id: wait_check
         run: |
-          echo "Waiting for service to respond (checking every 30s for up to 5 min)..."
-          for i in 1 2 3 4 5 6 7 8 9 10; do
+          EXPECTED="${{ steps.health_check.outputs.expected }}"
+          echo "Waiting for v$EXPECTED to go live (checking every 30s for up to 8 min)..."
+          for i in $(seq 1 16); do
             sleep 30
             HTTP_CODE=$(curl -s -o /tmp/health_retry.json -w "%{http_code}" \
-              --max-time 15 \
+              --max-time 20 \
               https://hydra-api-nlnj.onrender.com/health 2>/dev/null || echo "000")
-            echo "Attempt $i: HTTP $HTTP_CODE"
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "status=live" >> $GITHUB_OUTPUT
-              echo "✅ Service is now LIVE!"
-              cat /tmp/health_retry.json | python3 -m json.tool 2>/dev/null || true
+            LIVE=$(python3 -c "import sys,json;print(json.load(open('/tmp/health_retry.json')).get('version',''))" 2>/dev/null || echo "")
+            echo "Attempt $i: HTTP $HTTP_CODE | version=$LIVE"
+            if [ "$HTTP_CODE" = "200" ] && [ "$LIVE" = "$EXPECTED" ]; then
+              echo "status=current" >> $GITHUB_OUTPUT
+              echo "✅ v$LIVE is now LIVE!"
+              python3 -m json.tool /tmp/health_retry.json 2>/dev/null || true
               exit 0
             fi
           done
-          echo "status=down" >> $GITHUB_OUTPUT
-          echo "❌ Service did not come up within 5 minutes"
+          echo "status=stale" >> $GITHUB_OUTPUT
+          echo "❌ Deploy did not complete within 8 minutes — check Render dashboard"
 
-      - name: Verify all endpoints respond
-        if: steps.health_check.outputs.status == 'live' || steps.wait_check.outputs.status == 'live'
+      - name: Verify discovery manifests and endpoints
+        if: steps.health_check.outputs.status == 'current' || steps.wait_check.outputs.status == 'current'
         run: |
           BASE="https://hydra-api-nlnj.onrender.com"
           echo "=== Endpoint Verification ==="
-          
-          echo -n "GET  /health ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/health" --max-time 10
-          echo ""
-          
-          echo -n "GET  /pricing ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/pricing" --max-time 10
-          echo ""
-          
-          echo -n "GET  /docs ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/docs" --max-time 10
-          echo ""
-          
-          echo -n "GET  /openapi.json ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/openapi.json" --max-time 10
-          echo ""
-          
-          echo -n "GET  /.well-known/x402.json ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/x402.json" --max-time 10
-          echo ""
-          
-          echo -n "GET  /.well-known/ai-plugin.json ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/ai-plugin.json" --max-time 10
-          echo ""
+          FAIL=0
 
-          echo -n "GET  /.well-known/mcp.json ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/mcp.json" --max-time 10
-          echo ""
+          check() {
+            local METHOD=$1 URL=$2 EXPECT=$3 LABEL=$4
+            BODY='-d {}'
+            [ "$METHOD" = "GET" ] && BODY=""
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" -X "$METHOD" \
+              -H "Content-Type: application/json" $BODY \
+              "$BASE$URL" --max-time 15)
+            if [ "$CODE" = "$EXPECT" ]; then
+              echo "✅ $METHOD $URL → $CODE"
+            else
+              echo "❌ $METHOD $URL → $CODE (expected $EXPECT)"
+              FAIL=1
+            fi
+          }
 
-          echo -n "GET  /.well-known/agent.json ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/agent.json" --max-time 10
-          echo ""
+          # Free endpoints → 200
+          check GET /health 200 "health"
+          check GET /pricing 200 "pricing"
+          check GET /docs 200 "docs"
+          check GET /openapi.json 200 "openapi"
+          check GET /.well-known/x402.json 200 "x402 manifest"
+          check GET /.well-known/mcp.json 200 "mcp manifest"
+          check GET /.well-known/agent.json 200 "agent card"
+          check GET /.well-known/agent-card.json 200 "agent card (legacy)"
+          check GET /.well-known/llms.txt 200 "llms.txt"
+          check GET /.well-known/ai-plugin.json 200 "ai-plugin.json"
+          check GET /mcp 200 "MCP server"
+          check GET /v1/markets 200 "markets (free)"
 
-          echo -n "GET  /.well-known/agent-card.json ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/agent-card.json" --max-time 10
-          echo ""
+          # Paid endpoints → 402 (payment required)
+          check POST /v1/regulatory/scan 402 "regulatory/scan"
+          check POST /v1/fed/signal 402 "fed/signal"
+          check POST /v1/markets/signal/test 402 "markets/signal"
+          check GET /v1/market/prices 402 "market/prices"
+          check POST /v1/extract/url 402 "extract/url"
 
-          echo -n "GET  /.well-known/llms.txt ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/.well-known/llms.txt" --max-time 10
+          if [ "$FAIL" = "1" ]; then
+            echo "::error::Some endpoint checks failed — see above"
+            exit 1
+          fi
           echo ""
+          echo "✅ All endpoint checks passed"
 
-          echo -n "GET  /mcp (MCP server) ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/mcp" --max-time 10
-          echo ""
-
-          echo -n "GET  /v1/markets (free discovery) ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/v1/markets" --max-time 10
-          echo ""
-          
-          echo -n "GET  /v1/markets/discovery (free) ... "
-          curl -s -o /dev/null -w "%{http_code}" "$BASE/v1/markets/discovery" --max-time 10
-          echo ""
-          
-          echo -n "POST /v1/regulatory/scan (expect 402) ... "
-          curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/v1/regulatory/scan" \
-            -H "Content-Type: application/json" \
-            -d '{"business_description":"test crypto exchange in Wyoming","jurisdiction":"US"}' \
-            --max-time 10
-          echo ""
-          
-          echo -n "POST /v1/fed/signal (expect 402) ... "
-          curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/v1/fed/signal" \
-            -H "Content-Type: application/json" \
-            -d '{}' \
-            --max-time 10
-          echo ""
-          
-          echo ""
-          echo "Free endpoints should return 200. Paid endpoints should return 402."
-          echo "402 = x402 payment required (correct behavior — payment gateway working)."
-
-      - name: Report deployment status (fails on stale deploy)
+      - name: Report deployment status
         if: always()
         run: |
           echo "============================================"
           echo " HYDRA DEPLOYMENT STATUS REPORT"
           echo "============================================"
           BASE="https://hydra-api-nlnj.onrender.com"
-          # Reachability ≠ current code. Compare the LIVE version to the repo's
-          # APP_VERSION and confirm a discovery manifest serves. This catches the
-          # "frozen on an old build" failure that plain 200-checks miss.
           EXPECTED=$(grep -E 'APP_VERSION' config/settings.py | head -1 | sed -E 's/.*"([0-9.]+)".*/\1/')
-          LIVE=$(curl -s --max-time 20 "$BASE/health" | python3 -c "import sys,json;print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
+          LIVE=$(curl -s --max-time 20 "$BASE/health" \
+            | python3 -c "import sys,json;print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
           X402=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$BASE/.well-known/x402.json" || echo "000")
+          AUTOMATON=$(curl -s --max-time 20 "$BASE/health" \
+            | python3 -c "import sys,json;h=json.load(sys.stdin);a=h.get('automaton');print('RUNNING phase='+a.get('phase','?') if a else 'null')" 2>/dev/null || echo "unknown")
           echo "Repo APP_VERSION : ${EXPECTED:-unknown}"
           echo "Live /health ver : ${LIVE:-unreachable}"
           echo "x402 manifest    : $X402 (expect 200)"
+          echo "Automaton status : $AUTOMATON"
           echo ""
           FAIL=0
           if [ -z "$LIVE" ]; then echo "❌ Service unreachable."; FAIL=1; fi
           if [ -n "$EXPECTED" ] && [ -n "$LIVE" ] && [ "$LIVE" != "$EXPECTED" ]; then
             echo "❌ STALE DEPLOY: live=$LIVE but repo=$EXPECTED — Render is NOT serving current master."
-            echo "   Fix in Render dashboard: confirm service is connected to master with"
-            echo "   autoDeploy on, check the Deploys tab for build failures, then Manual Deploy"
-            echo "   (Clear build cache & deploy). render.yaml blueprint is ready."
+            echo "   Fix: Set RENDER_DEPLOY_HOOK or RENDER_API_KEY secret, or manually deploy in Render dashboard."
             FAIL=1
+          elif [ -n "$LIVE" ] && [ "$LIVE" = "$EXPECTED" ]; then
+            echo "✅ LIVE version matches repo version (v$LIVE)"
           fi
           if [ "$X402" != "200" ]; then
             echo "❌ Discovery manifest /.well-known/x402.json → $X402 (should be 200)."
             FAIL=1
+          else
+            echo "✅ x402 discovery manifest serving"
           fi
           if [ "$FAIL" = "1" ]; then
             echo "::error::HYDRA deployment is stale or broken — see details above."
             exit 1
           fi
-          echo "✅ HYDRA is LIVE and CURRENT (v$LIVE), discovery manifests serving."
+          echo "✅ HYDRA is LIVE and CURRENT (v$LIVE), all systems operational."
           echo "============================================"

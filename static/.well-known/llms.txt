@@ -1,6 +1,6 @@
 # HYDRA
 
-> Autonomous regulatory + market intelligence API with 66+ paid endpoints. Live crypto prices, DeFi yields, stablecoin pegs, multi-chain gas, Fear & Greed, forex. Real-time data from 18+ sources. Market-calibrated Fed rate probabilities. Alpha signals with edge analysis. From $0.001 USDC on Base L2.
+> Autonomous regulatory + market intelligence API with 74+ paid endpoints. Live crypto prices, DeFi yields, stablecoin pegs, multi-chain gas, Fear & Greed, forex. Real-time data from 22+ authoritative sources. Market-calibrated Fed rate probabilities. Alpha signals with edge analysis. From $0.001 USDC on Base L2.
 
 HYDRA is the infrastructure layer of the x402 economy. It provides live market data (CoinGecko crypto prices, DeFi Llama TVL/yields/stablecoins, Fear & Greed Index, multi-chain gas from public RPCs, ECB forex rates), real-time economic data from 18+ authoritative sources (FRED, BLS, Treasury, SEC EDGAR, Federal Register, FDIC BankFind, Congress.gov, Fed RSS, Kalshi KXFED, Polymarket, CoinGecko, DeFi Llama, Alternative.me, ECB), composite intelligence products (alpha signals with Kelly sizing, market-calibrated risk scores, regulatory pulse), prediction market signals with Kalshi KXFED-calibrated Fed rate probabilities (60% market / 40% model blend), FOMC decision classification within 30 seconds, push alerts, web extraction, format conversion, developer tools, and oracle data for UMA/Chainlink.
 
