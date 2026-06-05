@@ -83,6 +83,9 @@ prices from there, and `/metrics`, `/pricing`, and the 404 handler enumerate it.
 | `HYDRA_STATE_DIR` | Persisted state (replay cache, alerts, tx log) | `/tmp/hydra-data` |
 | `REMITTANCE_MODE` | `command` = accumulate/compound, remit only via `/system/remittance/execute`; `auto` = legacy auto-remit at $5k | `command` |
 | `HYDRA_YIELD_VENUES` | JSON list of extra yield venues for the router (write-disabled until verified) | unset → Aave V3 only |
+| `HYDRA_RELAYER_URL` / `HYDRA_RELAYER_API_KEY` | Relayer that submits gasless EIP-3009 USDC transfers (pays gas so HYDRA needs no ETH to remit) | unset → signs but returns payload for external relay |
+| `HYDRA_GASLESS_SWAP_URL` / `HYDRA_GASLESS_SWAP_API_KEY` | Gasless USDC→ETH swap provider so HYDRA self-funds its own gas for yield deposits | unset → gas self-funding disabled |
+| `HYDRA_USDC_DOMAIN_NAME` / `HYDRA_USDC_DOMAIN_VERSION` | EIP-712 domain overrides for USDC (must match on-chain contract) | `USD Coin` / `2` |
 | `FRED_API_KEY` | FRED economic series in `realtime_data.py` | unset → those series return empty |
 | `BLS_API_KEY` / `CONGRESS_API_KEY` | BLS + congress.gov data | optional, raise rate limits |
 | `ANTHROPIC_API_KEY` | Enables LLM-augmented responses (`/metrics` reports `llm_enabled`) | optional |
@@ -229,6 +232,25 @@ TransactionLog, LifecycleManager, RemittanceManager, then launches the
   Set `REMITTANCE_MODE=auto` to restore legacy auto-remit (balance − $500) at $5k.
 - Without a treasury-controlling `WALLET_PRIVATE_KEY` the automaton runs **read-only**
   (monitor + live APR reporting only).
+
+### Gasless self-funding (no owner-fronted ETH) — `src/runtime/gasless.py`
+
+So the owner never has to front ETH:
+- **Gasless remittance (EIP-3009)** — HYDRA signs a USDC `transferWithAuthorization`
+  off-chain (zero gas, no ETH) and a relayer submits it. The signing is verified
+  in-repo (signature recovers to the treasury key). Trigger via
+  `POST /system/gasless/remit` (optional `address` + `amount_usdc`). Without
+  `HYDRA_RELAYER_URL` it returns the signed payload for external relay rather than
+  no-op'ing. Preserves the existing EOA wallet address.
+- **Gas self-funding (`GasStation`)** — before a gas-needing Aave deposit, if ETH is
+  below the floor and `HYDRA_GASLESS_SWAP_URL` is set, HYDRA gaslessly swaps a few
+  cents of USDC→ETH to pay its own gas. Disabled until a provider is configured.
+
+**Reality check:** the *first* USDC must still arrive from a paying customer — value
+can't come from nothing. Receiving USDC costs no gas; gasless rails only solve the
+*sending/gas* side. "Gasless" means a relayer/paymaster pays the gas, not that it's
+free to the universe — and the relayer/swap integrations must be validated against
+the chosen provider before production reliance (they cannot be tested offline).
 
 ### Operating treasury yield (Aave V3)
 

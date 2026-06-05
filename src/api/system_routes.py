@@ -581,6 +581,80 @@ async def yield_withdraw(
 
 
 # ─────────────────────────────────────────────────────────────
+# POST /system/gasless/remit — remit USDC with zero ETH (EIP-3009)
+# ─────────────────────────────────────────────────────────────
+
+@system_router.post(
+    "/gasless/remit",
+    summary="Gasless USDC remittance (EIP-3009)",
+    description=(
+        "Sign an EIP-3009 transferWithAuthorization to send USDC to your wallet "
+        "WITHOUT HYDRA holding any ETH — a relayer submits it and pays gas. "
+        "Pass `address` to set the destination (OFAC-screened) and `amount_usdc` "
+        "for the amount (defaults to full remittable above the $500 reserve). "
+        "If no relayer (HYDRA_RELAYER_URL) is configured, returns the signed "
+        "payload for external relay. **Localhost or Bearer token required.**"
+    ),
+)
+async def gasless_remit(
+    request: Request,
+    body: YieldAmountRequest | None = None,
+    _auth: None = Depends(require_system_auth),
+) -> JSONResponse:
+    """Sign (zero-gas) and relay an EIP-3009 USDC transfer to the owner wallet."""
+    from src.runtime.automaton import get_automaton
+
+    remitter = get_automaton()._gasless
+    if not remitter.is_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Gasless remitter disabled: "
+                f"{remitter._disabled_reason}. Set WALLET_PRIVATE_KEY (controlling "
+                "the treasury wallet) to enable."
+            ),
+        )
+
+    rm = _get_remittance_manager()
+
+    # Destination (OFAC-screened via set_receiving_wallet) — at command time.
+    if body and getattr(body, "address", None):
+        set_result = rm.set_receiving_wallet(body.address)  # type: ignore[attr-defined]
+        if set_result.get("status") == "error":
+            raise HTTPException(status_code=400, detail=set_result.get("error"))
+    if not rm.receiving_wallet:
+        raise HTTPException(
+            status_code=400,
+            detail="No destination. Pass {\"address\":\"0x...\"} or POST /system/wallet first.",
+        )
+
+    # Amount: explicit, or full remittable above the operating reserve.
+    if body and body.amount_usdc:
+        try:
+            amount = Decimal(body.amount_usdc)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=400, detail=f"Invalid amount_usdc: {exc}") from exc
+    else:
+        balance = await asyncio.to_thread(_get_usdc_balance, rm)
+        amount = rm.calculate_remittable_amount(balance)
+
+    if amount <= 0:
+        return JSONResponse(content={
+            "status": "noop",
+            "reason": "Nothing remittable above the $500 operating reserve.",
+        })
+
+    payload = remitter.sign_remittance(rm.receiving_wallet, amount)
+    relay_result = await remitter.relay(payload)
+    return JSONResponse(content={
+        "status": "relayed" if relay_result.get("relayed") else "signed_unrelayed",
+        "amount_usdc": str(amount),
+        "destination": _mask_address(rm.receiving_wallet),
+        "relay": relay_result,
+    })
+
+
+# ─────────────────────────────────────────────────────────────
 # GET /system/transactions
 # ─────────────────────────────────────────────────────────────
 

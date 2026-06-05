@@ -30,6 +30,7 @@ from .autonomous_marketing import AutonomousMarketing
 from .revenue_optimizer import RevenueOptimizer
 from .treasury_yield import TreasuryYieldManager
 from .yield_router import YieldRouter
+from .gasless import GaslessRemitter, GasStation
 from .alert_engine import get_alert_engine
 
 logger = logging.getLogger("hydra.automaton")
@@ -178,6 +179,10 @@ class HydraAutomaton:
         # Balanced DeFi router — routes idle USDC to the best write-enabled
         # venue (Aave V3 live; more added via HYDRA_YIELD_VENUES once verified).
         self._yield_router: YieldRouter = YieldRouter(self._treasury_yield)
+        # Gasless self-funding: remit USDC via EIP-3009 (no ETH) + top up gas by
+        # swapping a little USDC->ETH. Inert until a relayer/swap provider is set.
+        self._gasless: GaslessRemitter = GaslessRemitter(self.wallet_address, self._private_key)
+        self._gas_station: GasStation = GasStation(self.w3, self.wallet_address)
         self._last_marketing_run: Optional[datetime] = None
         self._last_revenue_report: Optional[datetime] = None
         self._last_self_test: Optional[datetime] = None
@@ -584,6 +589,13 @@ class HydraAutomaton:
                     "YIELD: $%s USDC available to deploy (balance=$%s, reserve=$500)",
                     f"{depositable:.2f}", f"{balance:.2f}",
                 )
+                # Self-fund gas (USDC->ETH) before a deposit that needs gas.
+                # No-op unless a gasless swap provider is configured.
+                if os.getenv("HYDRA_GASLESS_SWAP_URL"):
+                    try:
+                        await self._gas_station.ensure_gas()
+                    except Exception as exc:  # noqa: BLE001
+                        logger.debug("Gas self-funding skipped: %s", exc)
                 tx_hash = await self._yield_router.deposit_excess(balance)
                 if tx_hash:
                     logger.info("YIELD: Deposit successful — compounding on $%s USDC", f"{depositable:.2f}")
