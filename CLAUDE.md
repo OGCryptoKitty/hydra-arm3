@@ -132,6 +132,8 @@ src/services/realtime_data.py        — FRED, BLS, Treasury yield curve, SEC ED
 
 ── Runtime (autonomous loops) ──
 src/runtime/automaton.py             — 60s heartbeat, survival tiers, yield/remittance checks
+src/runtime/distribution.py          — ROI-prioritized distribution agent swarm (orchestrates
+                                       discovery/registries/directories/content; the revenue lever)
 src/runtime/alert_engine.py          — Monitors feeds, pushes webhook alerts to subscribers
 src/runtime/autonomous_marketing.py  — GitHub PRs, Dev.to, discussions, SEO docs
 src/runtime/agent_discovery.py       — Registration with x402scan, Glama, Smithery, Bazaar, etc.
@@ -289,10 +291,15 @@ GitHub Actions (`.github/workflows/`) automate the rest:
 
 Prioritize by expected revenue impact:
 
-### Tier 1: Distribution (agents must find HYDRA to pay)
-- Register with new MCP / x402 directories as they emerge.
-- Keep all discovery manifests current and serving (`/.well-known/*`, `/mcp`).
-- Submit to API directories (public-apis, APIs.guru, RapidAPI).
+### Tier 1: Distribution (agents must find HYDRA to pay) — the binding constraint
+Coordinated by the **distribution agent swarm** (`src/runtime/distribution.py`):
+a `DistributionOrchestrator` runs role-based agents in expected-ROI order every
+marketing cycle — `x402_ecosystem` (P1, payment-native agents) → `self_verification`
+(P2, protect the funnel) → `discoverability` (P3, search/LLM manifests) →
+`api_directories`/`openapi_directories` (P4) → `developer_content` (P5). High-ROI
+reach over volume; each agent degrades gracefully and reports credential gaps
+(e.g. `GITHUB_PAT`, `DEVTO_API_KEY`). Status surfaces on `/status` (automaton →
+`distribution`). Add new high-ROI channels as agents here, not as scattered calls.
 
 ### Tier 2: Conversion (agents must complete payment flow)
 - Keep 402 responses' `X-Payment-*` headers clear and machine-parseable.

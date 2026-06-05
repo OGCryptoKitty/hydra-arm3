@@ -171,6 +171,14 @@ class HydraAutomaton:
         # Marketing + revenue modules
         self._marketing: AutonomousMarketing = AutonomousMarketing()
         self._revenue_optimizer: RevenueOptimizer = RevenueOptimizer()
+        # ROI-prioritized distribution agent swarm (coordinates discovery,
+        # registries, directories, content — the real lever on revenue).
+        try:
+            from .distribution import DistributionOrchestrator
+            self._distribution: Optional[Any] = DistributionOrchestrator(self._marketing)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("DistributionOrchestrator init failed (non-fatal): %s", exc)
+            self._distribution = None
         self._treasury_yield: TreasuryYieldManager = TreasuryYieldManager(
             w3=self.w3,
             wallet_address=self.wallet_address,
@@ -417,25 +425,34 @@ class HydraAutomaton:
     async def _run_marketing_async(self) -> None:
         """Run the autonomous marketing loop and discovery registration."""
         now = datetime.now(timezone.utc)
-        logger.info("[AUTOMATON] Running autonomous marketing loop at %s", now.isoformat())
+        logger.info("[AUTOMATON] Running distribution cycle at %s", now.isoformat())
+        # Distribution orchestrator coordinates all channels in ROI-priority
+        # order (registries → discoverability → directories → content), so we
+        # don't scatter duplicate calls. Falls back to the legacy path if init
+        # failed for any reason.
+        self._last_marketing_run = now
+        if self._distribution is not None:
+            try:
+                report = await self._distribution.run_cycle()
+                logger.info(
+                    "[AUTOMATON] Distribution cycle: %s/%s agents executed.",
+                    report.get("agents_executed"), report.get("agents_total"),
+                )
+                return
+            except Exception as exc:  # noqa: BLE001
+                logger.error("[AUTOMATON] Distribution cycle failed, falling back: %s", exc)
+
         try:
             results = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: self._marketing.run_autonomous_marketing_loop()
             )
-            self._last_marketing_run = now
             logger.info("[AUTOMATON] Marketing loop completed. Results: %s", results)
+            from .agent_discovery import register_with_discovery_services, ping_search_engines
+            await register_with_discovery_services()
+            await ping_search_engines()
         except Exception as exc:  # noqa: BLE001
             logger.error("[AUTOMATON] Marketing loop failed: %s", exc, exc_info=True)
-
-        try:
-            from .agent_discovery import register_with_discovery_services, ping_search_engines
-            discovery_results = await register_with_discovery_services()
-            logger.info("[AUTOMATON] Discovery registration: %s", discovery_results)
-            ping_results = await ping_search_engines()
-            logger.info("[AUTOMATON] Search engine pings: %s", ping_results)
-        except Exception as exc:  # noqa: BLE001
-            logger.debug("[AUTOMATON] Discovery registration skipped: %s", exc)
 
     async def _run_revenue_report_async(self) -> None:
         """Generate the weekly revenue report in a background task."""
@@ -718,6 +735,12 @@ class HydraAutomaton:
             yield_status = self._treasury_yield.get_yield_status()
         except Exception:
             pass
+        distribution_status = None
+        try:
+            if self._distribution is not None:
+                distribution_status = self._distribution.get_status()
+        except Exception:
+            pass
         return {
             "wallet_address": self.wallet_address,
             "balance_usdc": str(self._cached_balance),
@@ -730,6 +753,7 @@ class HydraAutomaton:
             ),
             "receiving_wallet": self.receiving_wallet,
             "treasury_yield": yield_status or None,
+            "distribution": distribution_status,
         }
 
     # ------------------------------------------------------------------
