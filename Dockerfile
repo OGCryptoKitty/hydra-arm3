@@ -41,6 +41,11 @@ WORKDIR /app
 # Copy application code
 COPY config/ ./config/
 COPY src/ ./src/
+# Discovery assets — REQUIRED. Without these the .well-known manifests, sitemap,
+# robots, favicon, apis.json and landing page 404 in production, making HYDRA
+# invisible to crawlers, x402scan, Glama, Smithery and the x402 Bazaar.
+COPY static/ ./static/
+COPY index.html ./index.html
 COPY .env.example .env.example
 
 # Ensure Python can find the app root
